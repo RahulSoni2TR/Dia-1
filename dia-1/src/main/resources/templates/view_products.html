@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>View Products</title>
+    <link rel="stylesheet" href="view_products_style.css">
+    <style>
+        /* General body styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4; /* Light background for contrast */
+            color: #333; /* Dark text color for readability */
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Container styles */
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background: #fff; /* White background for the container */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        /* Filter styles */
+        .filter {
+            margin-bottom: 20px; /* Space below the filter */
+        }
+        .filter select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc; /* Light border */
+            font-size: 16px; /* Font size for the dropdown */
+        }
+
+        /* Product grid styles */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Responsive grid */
+            gap: 20px; /* Space between grid items */
+        }
+
+        /* Product card styles */
+        .product-card {
+            background: #fff;
+            border: 1px solid #ccc; /* Light border */
+            border-radius: 5px; /* Rounded corners */
+            padding: 10px;
+            text-align: center; /* Center align text */
+            transition: transform 0.3s; /* Smooth transform on hover */
+        }
+
+        .product-card:hover {
+            transform: scale(1.05); /* Slightly enlarge on hover */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+        }
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.load-product {
+    padding: 10px 15px;
+    background-color: #28a745; /* Green for "View Product" */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 5px; /* Adds space below "View Product" */
+}
+
+.estimate-product {
+    padding: 10px 15px;
+    background-color: #ffc107; /* Yellow for "Estimate" */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+    text-align: center;
+}
+
+
+.load-product:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+
+.estimate-product:hover {
+    background-color: #e0a800; /* Darker yellow on hover */
+}
+.estimate-product {
+    background-color: #ffc107; /* Yellow background for the Estimate button */
+}
+
+        /* Back button styles */
+        .back-button {
+            margin-top: 20px; /* Space above the button */
+            padding: 10px 15px; /* Padding inside the button */
+            background-color: #007bff; /* Bootstrap primary color */
+            color: white; /* White text color */
+            text-decoration: none; /* Remove underline */
+            border-radius: 5px; /* Rounded corners */
+            transition: background-color 0.3s; /* Smooth background transition */
+        }
+
+        .back-button:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product List</h1>
+
+        <!-- Filter by Category -->
+        <div class="filter">
+            <label for="categoryFilter">Filter by Category:</label>
+            <select id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="1">Diamond Rings</option>
+                <option value="2">Open Setting</option>
+                <option value="3">Chains</option>
+                <option value="4">Diamond Earrings</option>
+                <option value="5">Vilandi</option>
+                <option value="6">Jadtar Register</option>
+                <!-- Add more categories as needed -->
+            </select>
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            <!-- Example Product Item -->
+            <!-- These will be populated dynamically -->
+        </div>
+        <button class="load-more" id="loadMoreButton">Load More</button>
+        <a href="/home" class="back-button">Back to Home</a>
+    </div>
+
+   <script>
+    let currentPage = 0;
+    const productsPerPage = 12;
+
+    function loadProducts(category = '') {
+        fetch(`/product/load?page=${currentPage}&size=${productsPerPage}&category=${category}`)
+            .then(response => response.json())
+            .then(data => {
+                const productGrid = document.getElementById('productGrid');
+                if (currentPage === 0) {
+                    productGrid.innerHTML = ''; // Clear previous products if starting fresh
+                }
+                data.products.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.classList.add('product-card');
+                    productCard.innerHTML = `
+                        <img src="${product.imageUrl}" alt="${product.item}">
+                        <h2 class="product-name">${product.item}</h2>
+                        <p class="product-price">$${product.price}</p>
+                        <button class="load-product" data-id="${product.productId}">View Product</button>
+                        <button class="estimate-product" data-id="${product.productId}">Estimate</button>
+                    `;
+                    productGrid.appendChild(productCard);
+                });
+                currentPage++;
+                if (currentPage * productsPerPage >= data.totalCount) {
+                    document.getElementById('loadMoreButton').style.display = 'none';
+                }
+            });
+    }
+
+    document.getElementById('loadMoreButton').addEventListener('click', () => {
+        loadProducts(document.getElementById('categoryFilter').value);
+    });
+
+    document.getElementById('categoryFilter').addEventListener('change', function() {
+        currentPage = 0; 
+        document.getElementById('loadMoreButton').style.display = 'block'; // Show button for fresh load
+        loadProducts(this.value);
+    });
+
+    document.getElementById('productGrid').addEventListener('click', function(e) {
+        if (e.target.classList.contains('load-product')) {
+            const productId = e.target.getAttribute('data-id'); // Get the product ID
+            sessionStorage.setItem('productId', productId); // Store the product ID
+            window.location.href = '/load-product'; // Navigate to the product details page
+        }
+    });
+        
+        document.getElementById('productGrid').addEventListener('click', function(e) {
+            if (e.target.classList.contains('estimate-product')) {
+                const productId = e.target.getAttribute('data-id'); // Get the product ID
+                sessionStorage.setItem('productId', productId); // Store the product ID
+                window.location.href = '/get-estimate'; // Navigate to the product details page
+            }
+    });
+    
+    loadProducts(); // Initial load
+</script>
+
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify Product</title>
+    <link rel="stylesheet" href="modify_product_style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Modify Product</h1>
+        <form id="productForm" enctype="multipart/form-data" onsubmit="submitForm(event)" method="POST">
+            <label for="productId">Enter Product ID to Modify:</label>
+            <input type="number" id="productId" name="productId" required>
+
+            <button type="button" class="load-button" onclick="loadProductDetails()">Load Product Details</button>
+
+            <div id="productDetails" class="product-details" style="display: none;">
+                <label for="productName">Product Name:</label>
+                <input type="text" id="productName" name="item" required>
+
+                <label for="productPrice">Price:</label>
+                <input type="text" id="productPrice" name="price" required>
+
+                <label for="productRemarks">Remarks:</label>
+                <textarea id="productRemarks" name="remarks"></textarea>
+
+                <label for="productImageUrl">Image URL:</label>
+                <input type="text" id="productImageUrl" name="imageUrl" onchange="updateImagePreview()" readonly>
+                <button type="button" id="uploadImageButton" onclick="document.getElementById('imageFileInput').click()">Select Image</button>
+                <input type="file" id="imageFileInput" name="image" style="display: none;" accept="image/*" onchange="uploadImage()">
+                <img id="imagePreview" src="" alt="Image Preview" style="display: none; width: 200px;"/>
+
+                <label for="categoryId">Category ID:</label>
+                <select id="categoryId" name="categoryId" onchange="updateCategoryFields()">
+                    <option value="">Select Category</option>
+                    <option value="1">Diamond Rings</option>
+                    <option value="2">Open Setting</option>
+                    <option value="3">Chains</option>
+                    <option value="4">Diamond Earrings</option>
+                    <option value="5">Vilandi</option>
+                    <option value="6">Jadtar Register</option>
+                </select>
+
+                <!-- Common fields for all categories -->
+                <div id="commonFields">
+                    <label for="productNet">Net:</label>
+                    <input type="text" id="productNet" name="net">
+                </div>
+
+                <!-- Category-specific fields -->
+                <div id="categoryFields" style="display: none;">
+                    <div id="diamondRingsFields" class="category-specific" style="display: none;">
+                        <label for="pcs">Pieces:</label>
+                        <input type="number" id="pcs" name="pcs">
+                        <label for="diaWeight">Diamond Weight:</label>
+                        <input type="text" id="diaWeight" name="diaWeight">
+                    </div>
+
+                    <div id="openSettingFields" class="category-specific" style="display: none;">
+                        <label for="gross">Gross:</label>
+                        <input type="text" id="gross" name="gross">
+                        <label for="vilandiCt">Vilandi CT:</label>
+                        <input type="number" id="vilandiCt" name="vilandiCt">
+                        <label for="diamondsCt">Diamonds Count:</label>
+                        <input type="number" id="diamondsCt" name="diamondsCt">
+                        <label for="beadsCt">Beads Count:</label>
+                        <input type="number" id="beadsCt" name="beadsCt">
+                        <label for="pearlsGm">Pearls GM:</label>
+                        <input type="text" id="pearlsGm" name="pearlsGm">
+                        <label for="otherStonesCt">Other Stones Count:</label>
+                        <input type="number" id="otherStonesCt" name="otherStonesCt">
+                        <label for="others">Others:</label>
+                        <input type="text" id="others" name="others">
+                    </div>
+
+                    <div id="chainsFields" class="category-specific" style="display: none;">
+                        <label for="designNo">Design No:</label>
+                        <input type="text" id="designNo" name="designNo">
+                    </div>
+
+                    <div id="diamondEarringsFields" class="category-specific" style="display: none;">
+                        <label for="designNoEarrings">Design No:</label>
+                        <input type="text" id="designNoEarrings" name="designNoEarrings">
+                        <label for="pcsEarrings">Pieces:</label>
+                        <input type="number" id="pcsEarrings" name="pcsEarrings">
+                        <label for="diamondsCtEarrings">Diamonds Count:</label>
+                        <input type="number" id="diamondsCtEarrings" name="diamondsCtEarrings">
+                    </div>
+
+                    <div id="vilandiFields" class="category-specific" style="display: none;">
+                        <label for="designNoVilandi">Design No:</label>
+                        <input type="text" id="designNoVilandi" name="designNoVilandi">
+                        <label for="vilandiCtVilandi">Vilandi CT:</label>
+                        <input type="number" id="vilandiCtVilandi" name="vilandiCtVilandi">
+                        <label for="grossVilandi">Gross:</label>
+                        <input type="text" id="grossVilandi" name="grossVilandi">
+                        <label for="netVilandi">Net:</label>
+                        <input type="text" id="netVilandi" name="netVilandi">
+                        <label for="stones">Stones:</label>
+                        <input type="number" id="stones" name="stones">
+                        <label for="beadsCtVilandi">Beads Count:</label>
+                        <input type="number" id="beadsCtVilandi" name="beadsCtVilandi">
+                        <label for="pearlsGmVilandi">Pearls GM:</label>
+                        <input type="text" id="pearlsGmVilandi" name="pearlsGmVilandi">
+                        <label for="ssPearlCt">SS Pearl Count:</label>
+                        <input type="number" id="ssPearlCt" name="ssPearlCt">
+                        <label for="realStone">Real Stone:</label>
+                        <input type="text" id="realStone" name="realStone">
+                    </div>
+
+                    <div id="jadtarFields" class="category-specific" style="display: none;">
+                        <label for="designNoJadtar">Design No:</label>
+                        <input type="text" id="designNoJadtar" name="designNoJadtar">
+                        <label for="grossJadtar">Gross:</label>
+                        <input type="text" id="grossJadtar" name="grossJadtar">
+                        <label for="netJadtar">Net:</label>
+                        <input type="text" id="netJadtar" name="netJadtar">
+                        <label for="stonesJadtar">Stones:</label>
+                        <input type="number" id="stonesJadtar" name="stonesJadtar">
+                        <label for="beadsCtJadtar">Beads Count:</label>
+                        <input type="number" id="beadsCtJadtar" name="beadsCtJadtar">
+                        <label for="pearlsGmJadtar">Pearls GM:</label>
+                        <input type="text" id="pearlsGmJadtar" name="pearlsGmJadtar">
+                        <label for="ssPearlCtJadtar">SS Pearl Count:</label>
+                        <input type="number" id="ssPearlCtJadtar" name="ssPearlCtJadtar">
+                        <label for="realStoneJadtar">Real Stone:</label>
+                        <input type="text" id="realStoneJadtar" name="realStoneJadtar">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-button">Modify Product</button>
+        </form>
+        <a href="/home" class="back-button">Back to Home</a>
+    </div>
+
+    <script>
+        function loadProductDetails() {
+            const productId = document.getElementById('productId').value;
+
+            fetch(`/loadProduct/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Product not found');
+                    }
+                    return response.json();
+                })
+                .then(product => {
+                    document.getElementById('productName').value = product.item;
+                    document.getElementById('productPrice').value = product.price.toFixed(2);
+                    document.getElementById('productRemarks').value = product.remarks;
+                    document.getElementById('productNet').value = product.net;
+                    document.getElementById('productImageUrl').value = product.imageUrl;
+                    updateImagePreview();
+
+                    const categoryId = product.categoryId;
+                    document.getElementById('categoryId').value = categoryId;
+                    updateCategoryFields();
+
+                    // Populate category-specific fields based on category
+                    if (categoryId === 1) { // Diamond Rings
+                        document.getElementById('pcs').value = product.pcs;
+                        document.getElementById('diaWeight').value = product.diaWeight;
+                    } else if (categoryId === 2) { // Open Setting
+                        document.getElementById('gross').value = product.gross;
+                        document.getElementById('vilandiCt').value = product.vilandiCt;
+                        document.getElementById('diamondsCt').value = product.diamondsCt;
+                        document.getElementById('beadsCt').value = product.beadsCt;
+                        document.getElementById('pearlsGm').value = product.pearlsGm;
+                        document.getElementById('otherStonesCt').value = product.otherStonesCt;
+                        document.getElementById('others').value = product.others;
+                    } else if (categoryId === 3) { // Chains
+                        document.getElementById('designNo').value = product.designNo;
+                    } else if (categoryId === 4) { // Diamond Earrings
+                        document.getElementById('designNoEarrings').value = product.designNo;
+                        document.getElementById('pcsEarrings').value = product.pcs;
+                        document.getElementById('diamondsCtEarrings').value = product.diamondsCt;
+                    } else if (categoryId === 5) { // Vilandi
+                        document.getElementById('designNoVilandi').value = product.designNo;
+                        document.getElementById('vilandiCtVilandi').value = product.vilandiCt;
+                        document.getElementById('grossVilandi').value = product.gross;
+                        document.getElementById('netVilandi').value = product.net;
+                        document.getElementById('stones').value = product.stones;
+                        document.getElementById('beadsCtVilandi').value = product.beadsCt;
+                        document.getElementById('pearlsGmVilandi').value = product.pearlsGm;
+                        document.getElementById('ssPearlCt').value = product.ssPearlCt;
+                        document.getElementById('realStone').value = product.realStone;
+                    } else if (categoryId === 6) { // Jadtar Register
+                        document.getElementById('designNoJadtar').value = product.designNo;
+                        document.getElementById('grossJadtar').value = product.gross;
+                        document.getElementById('netJadtar').value = product.net;
+                        document.getElementById('stonesJadtar').value = product.stones;
+                        document.getElementById('beadsCtJadtar').value = product.beadsCt;
+                        document.getElementById('pearlsGmJadtar').value = product.pearlsGm;
+                        document.getElementById('ssPearlCtJadtar').value = product.ssPearlCt;
+                        document.getElementById('realStoneJadtar').value = product.realStone;
+                    }
+
+                    document.getElementById('productDetails').style.display = 'block'; // Show details
+                })
+                .catch(error => {
+                    alert(error.message);
+                    document.getElementById('productDetails').style.display = 'none'; // Hide details if error
+                });
+        }
+
+        function updateImagePreview() {
+            const imageUrl = document.getElementById('productImageUrl').value;
+            const imagePreview = document.getElementById('imagePreview');
+
+            if (imageUrl) {
+                imagePreview.src = imageUrl;
+                imagePreview.style.display = 'block'; // Show the image
+            } else {
+                imagePreview.style.display = 'none'; // Hide the image if URL is empty
+            }
+        }
+
+        function uploadImage() {
+            const fileInput = document.getElementById('imageFileInput');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('productImageUrl').value = event.target.result; // Set the image URL to the base64 data
+                    updateImagePreview(); // Update the preview
+                };
+                reader.readAsDataURL(file); // Convert the file to base64
+            }
+        }
+
+        function updateCategoryFields() {
+            const categoryId = document.getElementById('categoryId').value;
+
+            // Hide all category-specific fields
+            const categoryFields = document.querySelectorAll('.category-specific');
+            categoryFields.forEach(field => field.style.display = 'none');
+
+            // Show the relevant category fields
+            if (categoryId) {
+                document.getElementById('categoryFields').style.display = 'block';
+                const selectedFields = {
+                    1: 'diamondRingsFields',
+                    2: 'openSettingFields',
+                    3: 'chainsFields',
+                    4: 'diamondEarringsFields',
+                    5: 'vilandiFields',
+                    6: 'jadtarFields',
+                };
+                document.getElementById(selectedFields[categoryId]).style.display = 'block';
+            }
+        }
+
+        function submitForm(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(document.getElementById('productForm')); // Use FormData to handle multipart
+
+            $.ajax({
+                url: `/updateProduct/${formData.get('productId')}`,
+                type: 'PUT',
+                data: formData,
+                contentType: false, // Set to false to tell jQuery not to set the Content-Type header
+                processData: false, // Prevent jQuery from automatically transforming the data into a query string
+                success: function(data) {
+                    alert('Product updated successfully!');
+                    window.location.href = '/home'; // Redirect after successful update
+                },
+                error: function(jqXHR) {
+                    alert('Failed to update product: ' + jqXHR.responseText);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

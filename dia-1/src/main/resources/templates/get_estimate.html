@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimate Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .estimate-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .estimate-table th, .estimate-table td {
+            padding: 8px;
+            text-align: right;
+            border: 1px solid #ddd;
+        }
+
+        .estimate-table th {
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+
+        .estimate-table .description {
+            text-align: left;
+        }
+
+        .estimate-table .total-row {
+            font-weight: bold;
+        }
+
+        .estimate-table input[type="text"] {
+            width: 100%;
+            text-align: right;
+            border: none;
+            background: transparent;
+            outline: none;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Estimate for Mor Chokar + Long Earrings pair -1</h1>
+    <table class="estimate-table">
+        <thead>
+            <tr>
+                <th class="description">Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+    <td class="description">Gold</td>
+    <td id="gold-qty">17.000</td>
+    <td id="gold-rate"></td>
+    <td id="gold-amt">115175</td>
+</tr>
+           <tr>
+    <td class="description">Gold Rate</td>
+    <td id="gold-qty"></td>
+    <td id="gold-qty"><input type="text" id="gold-rate-input" value="6775"></td>
+    <td id="gold-qty"></td>
+</tr>
+            <tr>
+                <td class="description">Labour</td>
+                <td id="labour-qty">17.000</td>
+                <td id="labour-rate">1100</td>
+                <td id="labour-amt">18700</td>
+            </tr>
+            <tr>
+                <td class="description">Stones</td>
+                <td id="stone-qty">160</td>
+                <td id="stone-rate">150</td>
+                <td id="stone-amt">24000</td>
+            </tr>
+            <tr>
+                <td class="description">Beads</td>
+                <td id="beads-qty">48.15</td>
+                <td id="beads-rate">60</td>
+                <td id="beads-amt">2889</td>
+            </tr>
+            <tr>
+                <td class="description">Pearls</td>
+                <td id="pearls-qty">9.150</td>
+                <td id="pearls-rate">1200</td>
+                <td id="pearls-amt">10980</td>
+            </tr>
+            <tr>
+                <td class="description">SS Pearls</td>
+               <td id="sspearls-qty">0</td>
+                <td id="sspearls-rate">0</td>
+                <td id="sspearls-amt">0</td>
+            </tr>
+            <tr>
+                <td class="description">Mozonite</td>
+                <td id="mozo-qty">0</td>
+                <td id="mozo-rate">0</td>
+                <td id="mozo-amt">0</td>
+            </tr>
+            <tr>
+                <td class="description">Real St</td>
+                <td id="realSt-qty"></td>
+                <td id="realSt-rate"></td>
+                <td id="realSt-amt">3000</td>
+            </tr>
+            <tr>
+                <td class="description">Fitting</td>
+                <td id="fitting-qty"></td>
+                <td id="fitting-rate"></td>
+                <td id="fitting-amt">1500</td>
+            </tr>
+            <tr>
+                <td class="description">GST 3%</td>
+                <td id="gst-qty"></td>
+                <td id="gst-rate"></td>
+                <td id="gst-amt">5197</td>
+            </tr>
+            <tr class="total-row">
+                <td class="description">Total</td>
+                <td id="total-qty"></td>
+                <td id="total-rate"></td>
+                <td id="total-amt">178441</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    	const productId = sessionStorage.getItem('productId');
+        // Replace `1` with the actual product ID you want to fetch.
+        fetch(`/getEstimate/${productId}`)
+            .then(response => response.json())
+            .then(data => {
+                const product = data.object1;
+                const estimate = data.object2;
+                const rate = data.object3;
+                const goldRate = rate.find(item => item.commodity === 'gold')?.price || 0;
+                const adjustedgoldRate= goldRate/10;
+                // Populate table cells based on the `estimate` fields
+                document.getElementById("gold-qty").textContent = product.net;
+                document.getElementById("gold-rate").textContent = adjustedgoldRate;
+                document.getElementById("gold-amt").textContent = estimate.gold;
+                document.getElementById("labour-qty").textContent = product.net;
+                document.getElementById("labour-rate").textContent = 1100;
+                document.getElementById("labour-amt").textContent = estimate.labour;
+                document.getElementById("stone-qty").textContent = product.stones;
+                document.getElementById("stone-rate").textContent = product.stRate;
+                document.getElementById("stone-amt").textContent = estimate.stones;
+                document.getElementById("beads-qty").textContent = product.beadsCt;
+                document.getElementById("beads-rate").textContent = product.bdRate;
+                document.getElementById("beads-amt").textContent = estimate.beads;
+                document.getElementById("pearls-qty").textContent = product.pearlsGm;
+                document.getElementById("pearls-rate").textContent = product.prlRate;
+                document.getElementById("pearls-amt").textContent = estimate.pearls;
+                document.getElementById("sspearls-qty").textContent = product.ssPearlCt;
+                document.getElementById("sspearls-rate").textContent = product.ssRate;
+                document.getElementById("sspearls-amt").textContent = estimate.ssPearls;
+                document.getElementById("mozo-qty").textContent = product.mozonite;
+                document.getElementById("mozo-rate").textContent = product.mozonite;
+                document.getElementById("mozo-amt").textContent = estimate.mozo;
+            //    document.getElementById("realSt-qty").textContent = product.realStone;
+            //    document.getElementById("realSt-rate").textContent = estimate.labour;
+                document.getElementById("realSt-amt").textContent = product.realStone;
+           //     document.getElementById("fitting-qty").textContent = product.net;
+           //     document.getElementById("fitting-rate").textContent = estimate.labour;
+                document.getElementById("fitting-amt").textContent = estimate.fitting;
+           //     document.getElementById("total-qty").textContent = product.net;
+           //     document.getElementById("total-rate").textContent = estimate.labour;
+           document.getElementById("gst-amt").textContent = estimate.gst;
+                document.getElementById("total-amt").textContent = estimate.total;
+          //      document.getElementById("gold-rate-input").textContent = estimate.gold;
+               
+                // Add more fields as necessary, for example:
+                // document.getElementById("stones-amount").textContent = estimate.stones;
+                // document.getElementById("total-amount").textContent = estimate.total;
+
+                // Update the "Total" field, if it is computed in the backend
+            //    document.getElementById("total-amount").textContent = estimate.total;
+            })
+            .catch(error => console.error('Error fetching estimate:', error));
+    });
+</script>
+
+</body>
+</html>

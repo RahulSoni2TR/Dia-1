@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Prices</title>
+    <style>
+        /* Set the page background color to green */
+        body {
+            background-color: #4CAF50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Centered container with green border */
+        .container {
+            width: 100%;
+            max-width: 320px;
+            padding: 40px; /* Adjusted padding for better spacing */
+            background-color: white;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Styling form group labels and inputs */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* Green button styling */
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column; /* Change to column for vertical stacking */
+            align-items: center; /* Center align buttons */
+        }
+        .button-group button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            width: 100%; /* Full width buttons */
+        }
+        .button-group button:hover {
+            background-color: #388E3C;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Set Prices</h2>
+        
+        <!-- Gold Price Field -->
+        <div class="form-group">
+            <label for="goldPrice">Gold Price</label>
+            <input type="text" id="goldPrice" placeholder="Enter Gold Price">
+        </div>
+
+        <!-- Diamond Price Field -->
+        <div class="form-group">
+            <label for="diamondPrice">Diamond Price</label>
+            <input type="text" id="diamondPrice" placeholder="Enter Diamond Price">
+        </div>
+
+        <!-- Vilandi Price Field -->
+        <div class="form-group">
+            <label for="vilandiPrice">Silver Price</label>
+            <input type="text" id="silverPrice" placeholder="Enter Silver Price">
+        </div>
+        
+        <div class="form-group">
+            <label for="gstPrice">GST Price</label>
+            <input type="text" id="gstPrice" placeholder="Enter GST Price">
+        </div>
+
+        <!-- Button Group for Set and Edit Prices -->
+        <div class="button-group">
+            <!-- Set Prices Button -->
+            <button onclick="setPrices()">Set Prices</button>
+            <!-- Edit Prices Button -->
+            <button onclick="editPrices()">Edit Prices</button>
+        </div>
+
+        <!-- Back to Home Button on a new row -->
+        <div class="button-group">
+            <button onclick="window.location.href='/home'">Back to Home</button>
+        </div>
+    </div>
+
+   <script>
+    function setPrices() {
+        // Disable input fields after setting prices
+        document.getElementById("goldPrice").disabled = true;
+        document.getElementById("diamondPrice").disabled = true;
+        document.getElementById("silverPrice").disabled = true;
+        document.getElementById("gstPrice").disabled = true;
+
+        // Gather price data from inputs
+        const prices = {
+            gold: document.getElementById("goldPrice").value,
+            diamond: document.getElementById("diamondPrice").value,
+            silver: document.getElementById("silverPrice").value,
+            gst: document.getElementById("gstPrice").value
+        };
+
+        // Send POST request to backend to update prices
+        fetch('/updatePrices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(prices)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to update prices');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Prices updated successfully:', data);
+        })
+        .catch(error => {
+            console.error('Error updating prices:', error);
+        });
+    }
+
+    function editPrices() {
+        document.getElementById("goldPrice").disabled = false;
+        document.getElementById("diamondPrice").disabled = false;
+        document.getElementById("silverPrice").disabled = false;
+        document.getElementById("gstPrice").disabled = false;
+    }
+</script>
+</body>
+</html>

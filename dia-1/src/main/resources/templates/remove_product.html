@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Product</title>
+    <link rel="stylesheet" href="remove_product_style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Remove Product</h1>
+        <form id="productForm" onsubmit="removeProduct(event)">
+            <label for="productId">Enter Product ID to Remove:</label>
+            <input type="number" id="productId" name="productId" required>
+
+            <button type="button" class="load-button" onclick="loadProductDetails()">Load Product Details</button>
+            <div id="productDetails" class="product-details"></div>
+
+            <button type="submit" class="submit-button">Remove Product</button>
+        </form>
+        <a href="/home" class="back-button">Back to Home</a>
+    </div>
+
+    <script>
+        function loadProductDetails() {
+            const productId = document.getElementById('productId').value;
+
+            $.ajax({
+                url: `/loadProduct/${productId}`,
+                type: 'GET',
+                success: function(product) {
+                    const productDetailsDiv = document.getElementById('productDetails');
+                    productDetailsDiv.innerHTML = `
+                        <p>Product Name: ${product.item}</p>
+                        <p>Price: $${product.price.toFixed(2)}</p>
+                        <p>Stock Quantity: ${product.stockQuantity}</p>
+                        <p>Category ID: ${product.categoryId}</p>
+                        ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Product Image" />` : ''}
+                    `;
+                },
+                error: function() {
+                    const productDetailsDiv = document.getElementById('productDetails');
+                    productDetailsDiv.innerHTML = `<p style="color: red;">Product not found.</p>`;
+                }
+            });
+        }
+
+        function removeProduct(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const productId = document.getElementById('productId').value;
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `/remove/${productId}`, true);
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    alert('Product removed successfully!');
+                    window.location.href = '/remove-product'; // Redirect to remove-product page
+                } else {
+                    alert('Error removing product!');
+                }
+            };
+
+            xhr.send();
+        }
+    </script>
+</body>
+</html>
