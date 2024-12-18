@@ -1,80 +1,184 @@
+/* General styling for the page */
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     margin: 0;
-    padding: 20px;
+    padding: 0;
 }
 
 .container {
-    max-width: 600px;
-    margin: auto;
-    background: white;
-    padding: 30px;
+    width: 80%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 20px;
 }
 
 label {
     display: block;
-    margin: 15px 0 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    color: #555;
 }
 
-input[type="number"],
-input[type="text"],
-textarea {
+input, select, textarea, button {
     width: 100%;
-    padding: 12px;
-    margin: 5px 0 20px;
-    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
+    box-sizing: border-box;
 }
 
-textarea {
-    resize: vertical; /* Allow vertical resizing only */
+input[type="file"] {
+    width: auto;
 }
 
-.load-button, .submit-button {
-    width: 100%;
+button {
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
     padding: 12px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+a {
+    display: inline-block;
+    margin-top: 20px;
+    text-decoration: none;
+    color: #007bff;
+    font-size: 16px;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Styling for top-right navigation */
+.top-right-nav {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.logout-btn {
+    background-color: #ff4c4c;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.logout-btn:hover {
+    background-color: #e04040;
+}
+
+/* Product details section */
+.product-details {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+ 	overflow: auto;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex; /* Display modal when needed */
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    width: 50%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-content h2 {
+    color: #333;
+}
+
+.modal-content p {
+    color: #555;
+}
+
+.close-btn {
+    padding: 10px 20px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px; /* Add margin for spacing between elements */
-    transition: background-color 0.3s; /* Smooth transition */
 }
 
-.load-button:hover, .submit-button:hover {
+.close-btn:hover {
     background-color: #0056b3;
 }
 
-.product-details {
-    margin: 20px 0;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-}
-
-.back-button {
-    display: inline-block;
+/* Category-specific fields */
+.category-specific {
+    background-color: #f2f2f2;
+    padding: 20px;
     margin-top: 20px;
-    text-align: center;
-    color: #007bff;
-    text-decoration: none;
-    font-size: 16px;
+    border-radius: 8px;
+    display: none;
 }
 
-.back-button:hover {
-    text-decoration: underline;
+.category-specific label {
+    font-weight: bold;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        margin: 10px auto;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .top-right-nav {
+        position: static;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .logout-btn {
+        display: block;
+        margin: 0 auto;
+    }
+}
+
+/* Hover effect for buttons */
+button:hover {
+    background-color: #0056b3;
 }

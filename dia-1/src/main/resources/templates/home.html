@@ -6,19 +6,50 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Product Management</title>
   <link rel="stylesheet" href="home_style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to the Product Management System</h1>
-    <div class="button-container">
-      <button class="action-button" onclick="window.location.href='/add-product'">Add Product</button>
-      <button class="action-button" onclick="window.location.href='/remove-product'">Remove Product</button>
-      <button class="action-button" onclick="window.location.href='/modify-product'">Modify Product</button>
-      <button class="action-button" onclick="window.location.href='/view-product'">View Product</button>
-      <button class="action-button" onclick="window.location.href='/set-price'">Set Prices</button>
-      <button class="action-button" onclick="window.location.href='/generate-report'">Generate Report</button>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">Product<span>Manager</span></div>
+    <div class="logout-container">
+      <a href="/logout" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
     </div>
-    <a href="/logout" class="logout-button">Logout</a>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1>Welcome, [User's Name]</h1>
+    <p class="subtitle">Your one-stop solution for managing all product operations</p>
+
+    <!-- Action Buttons -->
+    <div class="button-container">
+      <button class="action-button" onclick="window.location.href='/add-product'">
+        <i class="fas fa-plus"></i> Add Product
+      </button>
+      <button class="action-button" onclick="window.location.href='/remove-product'">
+        <i class="fas fa-trash"></i> Remove Product
+      </button>
+      <button class="action-button" onclick="window.location.href='/modify-product'">
+        <i class="fas fa-edit"></i> Modify Product
+      </button>
+      <button class="action-button" onclick="window.location.href='/view-product'">
+        <i class="fas fa-eye"></i> View Product
+      </button>
+      <button class="action-button" onclick="window.location.href='/set-price'">
+        <i class="fas fa-dollar-sign"></i> Set Prices
+      </button>
+      <button class="action-button" onclick="window.location.href='/generate-report'">
+        <i class="fas fa-file-alt"></i> Generate Report
+      </button>
+    </div>
   </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2024 Product Management System. All rights reserved.</p>
+  </footer>
 </body>
 </html>

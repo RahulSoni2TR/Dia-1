@@ -1,73 +1,136 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
     margin: 0;
     padding: 20px;
+    color: #333;
 }
 
 .container {
     max-width: 1200px;
     margin: auto;
-    padding: 20px;
+    padding: 30px;
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.intro-text {
+    text-align: center;
+    color: #555;
+    font-size: 16px;
     margin-bottom: 20px;
 }
 
+/* Filter Section */
+.filter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Aligns filter elements to the left */
+    margin-bottom: 10px; /* Adjust space below the filter section */
+    position: relative;
+    top: -10px; /* Shifts the filter section slightly upward */
+}
+
+.filter label {
+    font-weight: bold; /* Bold text for the label */
+    margin-right: 10px; /* Space between label and dropdown */
+}
+
+.filter select {
+    padding: 10px;
+    font-size: 16px; /* Larger font size for readability */
+    border-radius: 5px; /* Rounded corners for dropdown */
+    border: 1px solid #ccc; /* Light border */
+    background-color: #f9f9f9; /* Subtle background color for the dropdown */
+    color: #333; /* Text color */
+    cursor: pointer; /* Pointer cursor for hover effect */
+}
+
+
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Responsive grid */
-    gap: 20px; /* Spacing between grid items */
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
 }
 
 .product-card {
     background: #fff;
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
     border-radius: 8px;
     text-align: center;
-    padding: 15px;
-    transition: transform 0.2s; /* Smooth scaling effect */
-    overflow: hidden; /* Ensure content does not overflow */
+    padding: 20px;
+    transition: box-shadow 0.3s, transform 0.3s;
 }
 
 .product-card:hover {
-    transform: scale(1.05); /* Slightly scale up on hover */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
 }
 
 .product-card img {
-    width: 100%; /* Make image fill the width of the card */
-    height: 200px; /* Set a fixed height for uniformity */
-    object-fit: contain; /* Ensure the entire image is visible */
-    border-radius: 4px; /* Rounded image corners */
+    max-width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
 }
 
 .product-name {
-    font-size: 1.2em;
+    font-size: 1.1rem;
+    font-weight: bold;
     margin: 10px 0;
 }
 
 .product-price {
-    font-size: 1.1em;
-    color: #28a745; /* Green color for price */
+    color: #28a745;
+    font-size: 1.2rem;
+}
+
+.button-container button {
+    margin: 5px 0;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.load-product {
+    background-color: #007bff;
+    color: white;
+}
+
+.load-product:hover {
+    background-color: #0056b3;
+}
+
+.estimate-product {
+    background-color: #ffc107;
+    color: white;
+}
+
+.estimate-product:hover {
+    background-color: #e0a800;
 }
 
 .load-more {
     display: block;
-    width: 100%;
-    padding: 12px;
+    margin: 30px auto 0;
+    padding: 12px 20px;
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    border-radius: 6px;
     font-size: 16px;
-    margin-top: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .load-more:hover {
@@ -77,12 +140,33 @@ h1 {
 .back-button {
     display: inline-block;
     margin-top: 20px;
-    text-align: center;
-    color: #007bff;
+    padding: 10px 15px;
+    background-color: #6c757d;
+    color: white;
     text-decoration: none;
-    font-size: 16px;
+    border-radius: 5px;
+    text-align: center;
+    transition: background-color 0.3s;
 }
 
 .back-button:hover {
-    text-decoration: underline;
+    background-color: #5a6268;
+}
+
+.logout-btn {
+    position: absolute;
+    top: 40px;
+    right: 50px;
+    padding: 10px 15px;
+    background-color: #dc3545;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: #c82333;
 }

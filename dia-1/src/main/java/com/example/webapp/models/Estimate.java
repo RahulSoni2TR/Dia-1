@@ -11,10 +11,12 @@ public class Estimate {
     private BigDecimal beads;
     private BigDecimal pearls;
     private BigDecimal ssPearls; // "ss pearls"
+    private BigDecimal vilandi;
     private BigDecimal mozo;
     private BigDecimal realStones; // "real stones"
     private BigDecimal fitting;
     private BigDecimal gst;
+    private BigDecimal nogsttotal;
     private BigDecimal total;
 
     // No-argument constructor
@@ -30,12 +32,14 @@ public class Estimate {
         this.fitting = BigDecimal.ZERO;
         this.gst = BigDecimal.ZERO;
         this.total = BigDecimal.ZERO;
+        this.vilandi = BigDecimal.ZERO;
+        this.nogsttotal = BigDecimal.ZERO;
     }
 
     // Parameterized constructor
     public Estimate(String estimateId, BigDecimal gold, BigDecimal labour, BigDecimal stones,
-                   BigDecimal beads, BigDecimal pearls, BigDecimal ssPearls, BigDecimal mozo,
-                   BigDecimal realStones, BigDecimal fitting, BigDecimal gst) {
+                   BigDecimal beads, BigDecimal pearls, BigDecimal ssPearls,BigDecimal vilandi, BigDecimal mozo,
+                   BigDecimal realStones, BigDecimal fitting, BigDecimal gst,BigDecimal nogsttotal) {
         this.estimateId = estimateId;
         this.gold = gold;
         this.labour = labour;
@@ -43,10 +47,12 @@ public class Estimate {
         this.beads = beads;
         this.pearls = pearls;
         this.ssPearls = ssPearls;
+        this.vilandi = vilandi;
         this.mozo = mozo;
         this.realStones = realStones;
         this.fitting = fitting;
         this.gst = gst;
+        this.nogsttotal = nogsttotal;
     }
 
     // Getters and Setters
@@ -64,7 +70,7 @@ public class Estimate {
     }
 
     public void setGold(BigDecimal gold) {
-        this.gold = gold;
+        this.gold = gold.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getLabour() {
@@ -72,7 +78,7 @@ public class Estimate {
     }
 
     public void setLabour(BigDecimal labour) {
-        this.labour = labour;
+        this.labour = labour.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getStones() {
@@ -80,7 +86,7 @@ public class Estimate {
     }
 
     public void setStones(BigDecimal stones) {
-        this.stones = stones;
+        this.stones = stones.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getBeads() {
@@ -88,7 +94,7 @@ public class Estimate {
     }
 
     public void setBeads(BigDecimal beads) {
-        this.beads = beads;
+        this.beads = beads.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getPearls() {
@@ -96,15 +102,23 @@ public class Estimate {
     }
 
     public void setPearls(BigDecimal pearls) {
-        this.pearls = pearls;
+        this.pearls = pearls.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getSsPearls() {
         return ssPearls;
     }
 
-    public void setSsPearls(BigDecimal ssPearls) {
-        this.ssPearls = ssPearls;
+    public BigDecimal getVilandi() {
+		return vilandi;
+	}
+
+	public void setVilandi(BigDecimal vilandi) {
+		this.vilandi = vilandi.setScale(0, RoundingMode.HALF_UP);
+	}
+
+	public void setSsPearls(BigDecimal ssPearls) {
+        this.ssPearls = ssPearls.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getMozo() {
@@ -112,7 +126,7 @@ public class Estimate {
     }
 
     public void setMozo(BigDecimal mozo) {
-        this.mozo = mozo;
+        this.mozo = mozo.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getRealStones() {
@@ -120,7 +134,7 @@ public class Estimate {
     }
 
     public void setRealStones(BigDecimal realStones) {
-        this.realStones = realStones;
+        this.realStones = realStones.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getFitting() {
@@ -128,7 +142,7 @@ public class Estimate {
     }
 
     public void setFitting(BigDecimal fitting) {
-        this.fitting = fitting;
+        this.fitting = fitting.setScale(0, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getGst() {
@@ -136,11 +150,11 @@ public class Estimate {
     }
 
     public void setGst(BigDecimal gst) {
-        this.gst = gst;
+        this.gst = gst.setScale(0, RoundingMode.HALF_UP);
     }
 
     public void setTotal(BigDecimal total) {
-		this.total = total;
+		this.total = total.setScale(0, RoundingMode.HALF_UP);
 	}
 
 	public BigDecimal getTotal() {
@@ -166,4 +180,12 @@ public class Estimate {
                 ", total=" + total +
                 '}';
     }
+
+	public BigDecimal getNogsttotal() {
+		return nogsttotal;
+	}
+
+	public void setNogsttotal(BigDecimal nogsttotal) {
+		this.nogsttotal = nogsttotal.setScale(0, RoundingMode.HALF_UP);
+	}
 }

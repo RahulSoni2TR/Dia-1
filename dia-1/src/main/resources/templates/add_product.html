@@ -8,6 +8,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+
+ <div class="top-right-nav">
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+    
     <div class="container">
         <h1>Add New Product</h1>
         <form id="productForm" enctype="multipart/form-data">
@@ -26,13 +31,15 @@
             <input type="text" id="productName" name="productName" required>
 
             <label for="price">Price:</label>
-            <input type="number" id="price" name="price" step="0.01" required>
-
+            <div class="price-container">
+            <input type="number" id="price" name="price" step="any" required>
+			</div>
+			
             <label for="stockQuantity">Stock Quantity:</label>
-            <input type="number" id="stockQuantity" name="stockQuantity" required>
+            <input type="number" id="stockQuantity" name="stockQuantity" >
 
             <label for="imageUrl">Product Image:</label>
-            <input type="file" id="imageUrl" name="imageUrl" accept="image/*" required>
+            <input type="file" id="imageUrl" name="imageUrl" accept="image/*" >
 
             <!-- Dynamic Fields -->
             <div id="dynamicFields"></div>
@@ -40,6 +47,14 @@
             <input type="submit" value="Add Product">
         </form>
         <a href="/home" class="back-button">Back to Home</a>
+    </div>
+    
+     <div id="notificationModal" class="modal">
+        <div id="modalContent" class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <p id="modalMessage"></p>
+            <button class="close-btn">OK</button>
+        </div>
     </div>
 
     <script>
@@ -50,54 +65,66 @@
 
                 if (categoryId == "1") { // Diamond Rings
                     $('#dynamicFields').append(`
+                    		<label for="designNoDR">Design No:</label>  
+                            <input type="text" id="designNoDR" name="designNoDR" step="any" required>   
                         <label for="net">Net:</label>
-                        <input type="number" id="net" name="net" step="0.01" required>
+                        <input type="number" id="net" name="net" step="any" required>
                         <label for="pcs">Pieces:</label>
-                        <input type="number" id="pcs" name="pcs">
+                        <input type="number" id="pcs" name="pcs" step="any">
                         <label for="diaWeight">Diamond Weight (ct):</label>
-                        <input type="number" id="diaWeight" name="diaWeight" step="0.01">
+                        <input type="number" id="diaWeight" name="diaWeight" step="any">
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "2") { // Open Setting
                     $('#dynamicFields').append(`
+                    		
+                            <label for="designNoOS">Design No:</label>   
+                            <input type="text" id="designNoOS" name="designNoOS" step="any" required>   
+                    		
                     	<label for="net">Net:</label>
-                        <input type="number" id="net" name="net" step="0.01" required>
+                        <input type="number" id="net" name="net" step="any" required>
                         
                         
                         <label for="gross">Gross:</label>
-                        <input type="number" id="gross" name="gross" step="0.01" required>
+                        <input type="number" id="gross" name="gross" step="any" required>
                         
                         
                         <div class="inline-fields">
                         <label for="vilandiCt">Vilandi:</label>
-                        <input type="number" id="vilandiCt" name="vilandiCt" step="0.01">
+                        <input type="number" id="vilandiCt" name="vilandiCt" step="any">
                         <label for="vilandiRate">Vilandi Rate:</label>
-                        <input type="number" id="vilandiRate" name="vilandiRate" step="0.01">
+                        <div class="price-container">
+                        <input type="number" id="vilandiRate" name="vilandiRate" step="any">
+                        </div>
                   		  </div>
                         
                         
                         <label for="diamondsCt">Diamonds (ct):</label>
-                        <input type="number" id="diamondsCt" name="diamondsCt">
+                        <input type="number" id="diamondsCt" name="diamondsCt" step="any">
                         
                         <div class="inline-fields">
                         <label for="beadsCt">Beads (Ct.):</label>
-                        <input type="number" id="beadsCt" name="beadsCt">
+                        <input type="number" id="beadsCt" name="beadsCt" step="any">
                         <label for="vilandiBeadsRate">Beads Rate:</label>
-                        <input type="number" id="vilandiBeadsRate" name="vilandiBeadsRate" step="0.01">
+                        <div class="price-container">
+                        <input type="number" id="vilandiBeadsRate" name="vilandiBeadsRate" step="any">
+                        </div>
                     </div>
                         
                         
                         <div class="inline-fields">
                         <label for="pearlsGm">Pearls (gm):</label>
-                        <input type="number" id="pearlsGm" name="pearlsGm" step="0.01">
+                        <input type="number" id="pearlsGm" name="pearlsGm" step="any">
                         <label for="vilandiPearlRate">Pearls Rate:</label>
-                        <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="0.01">
+                        <div class="price-container">
+                        <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="any">
+                        </div>
                     </div> 
                         
                     
                         <label for="otherStonesCt">Other Stones:</label>
-                        <input type="number" id="otherStonesCt" name="otherStonesCt">
+                        <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
                         
                         
                         <label for="remarks">Remarks:</label>
@@ -105,140 +132,162 @@
                     `);
                 } else if (categoryId == "3") { // Chains
                     $('#dynamicFields').append(`
-                        <label for="designNo">Design No:</label>
-                        <input type="text" id="designNo" name="designNo" required>
+                        <label for="designNo">Design No:</label>   
+                        <input type="text" id="designNo" name="designNo" step="any" required>    
                         <label for="chainNet">Net:</label>
-                        <input type="number" id="chainNet" name="chainNet" step="0.01" required>
+                        <input type="number" id="chainNet" name="chainNet" step="any" required>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "4") { // Diamond Earrings
                     $('#dynamicFields').append(`
-                        <label for="designNoEarring">Design No:</label>
-                        <input type="text" id="designNoEarring" name="designNoEarring" required>
+                    	<label for="designNoEarring">Design No:</label>    
+                        <input type="text" id="designNoEarring" name="designNoEarring" step="any" required>   
                         <label for="earringNet">Net:</label>
-                        <input type="number" id="earringNet" name="earringNet" step="0.01" required>
+                        <input type="number" id="earringNet" name="earringNet" step="any" required>
                         <label for="earringPcs">Pieces:</label>
-                        <input type="number" id="earringPcs" name="earringPcs">
+                        <input type="number" id="earringPcs" name="earringPcs" step="any">
                         <label for="diamondWeightEarring">Diamond (ct):</label>
-                        <input type="number" id="diamondWeightEarring" name="diamondWeightEarring" step="0.01">
+                        <input type="number" id="diamondWeightEarring" name="diamondWeightEarring" step="any">
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "5") { // Vilandi
                     $('#dynamicFields').append(`
-                        <label for="designNoVilandi">Design No:</label>
-                        <input type="text" id="designNoVilandi" name="designNoVilandi" required>
+                        <label for="designNoVilandi">Design No:</label>    
+                        <input type="text" id="designNoVilandi" name="designNoVilandi" step="any" required>   
                         <label for="vilandiNet">Net:</label>
-                        <input type="number" id="vilandiNet" name="vilandiNet" step="0.01" required>
+                        <input type="number" id="net" name="net" step="any" required>
 
                         <div class="inline-fields">
                         <label for="vilandi">Vilandi:</label>
-                        <input type="number" id="vilandi" name="vilandi">
+                        <input type="number" id="vilandi" name="vilandi" step="any">
                         <label for="vilandiRate">Vilandi Rate:</label>
-                        <input type="number" id="vilandiRate" name="vilandiRate" step="0.01">
+                        <div class="price-vilandi">
+                        <input type="number" id="vilandiRate" name="vilandiRate" step="any">
+                  		  </div>
                   		  </div>
                         
                         
                         <div class="inline-fields">
                         <label for="stones">Stones:</label>
-                        <input type="number" id="stones" name="stones">
+                        <input type="number" id="stones" name="stones" step="any">
                         <label for="vilandiStoneRate">Stones Rate:</label>
-                        <input type="number" id="vilandiStoneRate" name="vilandiStoneRate" step="0.01">
+                        <div class="price-vilandi">
+                        <input type="number" id="vilandiStoneRate" name="vilandiStoneRate" step="any">
+                  		  </div>
                   		  </div>
 
                         
                         <!-- Beads and Beads Rate -->
                         <div class="inline-fields">
                             <label for="beadsVilandi">Beads (Ct.):</label>
-                            <input type="number" id="beadsVilandi" name="beadsVilandi">
+                            <input type="number" id="beadsVilandi" name="beadsVilandi" step="any">
                             <label for="vilandiBeadsRate">Beads Rate:</label>
-                            <input type="number" id="vilandiBeadsRate" name="vilandiBeadsRate" step="0.01">
+                            <div class="price-vilandi">
+                            <input type="number" id="vilandiBeadsRate" name="vilandiBeadsRate" step="any">
+                        </div>
                         </div>
 
                         <div class="inline-fields">
                         <label for="pearlsVilandi">Pearls (gm):</label>
-                        <input type="number" id="pearlsVilandi" name="pearlsVilandi" step="0.01">
+                        <input type="number" id="pearlsVilandi" name="pearlsVilandi" step="any">
                         <label for="vilandiPearlRate">Pearls Rate:</label>
-                        <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="0.01">
+                        <div class="price-vilandi">
+                        <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="any">
                     </div> 
-                        
+                        </div>
 
                         
                         <div class="inline-fields">
                         <label for="ssPearlCt">SS Pearls (Ct.):</label>
-                        <input type="number" id="ssPearlCt" name="ssPearlCt">
+                        <input type="number" id="ssPearlCt" name="ssPearlCt" step="any">
                         <label for="vilandiSSPearlRate">SS Pearls Rate:</label>
-                        <input type="number" id="vilandiSSPearlRate" name="vilandiSSPearlRate" step="0.01">
+                        <div class="price-vilandi">
+                        <input type="number" id="vilandiSSPearlRate" name="vilandiSSPearlRate" step="any">
+                    </div>
                     </div>
                         
                
                 <div class="inline-fields">
                                 <label for="realStone">Real Stones (Ct.):</label>
-                                <input type="number" id="realStone" name="realStone">
+                                <div class="price-container">
+                                <input type="number" id="realStone" name="realStone" step="any">
+                                </div>
                                 <label for="vilandiFitting">Fitting:</label>
-                                <input type="text" id="vilandiFitting" name="vilandiFitting">
+                                <div class="price-container">
+                                <input type="number" id="vilandiFitting" name="vilandiFitting">
                             </div>
-                        
+                        	</div>
                         
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "6") { // Jadtar Register
                     $('#dynamicFields').append(`
-                            <label for="designNoJadtar">Design No:</label>
-                            <input type="text" id="designNoJadtar" name="designNoJadtar" required>
+                            <label for="designNoJadtar">Design No:</label>   
+                            <input type="text" id="designNoJadtar" name="designNoJadtar" step="any" required>   
                             <label for="jadtarGross">Gross:</label>
-                            <input type="number" id="jadtarGross" name="jadtarGross" step="0.01" required>
+                            <input type="number" id="jadtarGross" name="jadtarGross" step="any" required>
                             <label for="jadtarNet">Net:</label>
-                            <input type="number" id="jadtarNet" name="jadtarNet" step="0.01" required>
+                            <input type="number" id="jadtarNet" name="jadtarNet" step="any" required>
 
                             <!-- Stones and Stone Rate -->
                             <div class="inline-fields">
                                 <label for="jadtarStones">Stones:</label>
-                                <input type="number" id="jadtarStones" name="jadtarStones">
+                                <input type="number" id="jadtarStones" name="jadtarStones" step="any">
                                 <label for="jadtarStoneRate">Stones Rate:</label>
-                                <input type="number" id="jadtarStoneRate" name="jadtarStoneRate" step="0.01">
-                            </div>
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarStoneRate" name="jadtarStoneRate" step="any">
+                            </div></div>
 
                             <!-- Beads and Beads Rate -->
                             <div class="inline-fields">
                                 <label for="jadtarBeads">Beads (Ct.):</label>
-                                <input type="number" id="jadtarBeads" name="jadtarBeads">
+                                <input type="number" id="jadtarBeads" name="jadtarBeads" step="any">
                                 <label for="jadtarBeadsRate">Beads Rate:</label>
-                                <input type="number" id="jadtarBeadsRate" name="jadtarBeadsRate" step="0.01">
-                            </div>
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarBeadsRate" name="jadtarBeadsRate" step="any">
+                            </div></div>
 
                             <!-- Pearls and Pearl Rate -->
                             <div class="inline-fields">
                                 <label for="jadtarPearls">Pearls Weight (gm):</label>
-                                <input type="number" id="jadtarPearls" name="jadtarPearls" step="0.01">
+                                <input type="number" id="jadtarPearls" name="jadtarPearls" step="any">
                                 <label for="jadtarPearlRate">Pearls Rate:</label>
-                                <input type="number" id="jadtarPearlRate" name="jadtarPearlRate" step="0.01">
-                            </div>
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarPearlRate" name="jadtarPearlRate" step="any">
+                            </div></div>
 
                             <!-- SS Pearls and SS Pearl Rate -->
                             <div class="inline-fields">
                                 <label for="jadtarSSPearl">SS Pearls (Ct.):</label>
-                                <input type="number" id="jadtarSSPearl" name="jadtarSSPearl">
+                                <input type="number" id="jadtarSSPearl" name="jadtarSSPearl" step="any">
                                 <label for="jadtarSSPearlRate">SS Pearls Rate:</label>
-                                <input type="number" id="jadtarSSPearlRate" name="jadtarSSPearlRate" step="0.01">
-                            </div>
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarSSPearlRate" name="jadtarSSPearlRate" step="any">
+                            </div></div>
 
                             <!-- Real Stone and Fitting -->
                             <div class="inline-fields">
                                 <label for="jadtarRealStone">Real Stones (Ct.):</label>
-                                <input type="number" id="jadtarRealStone" name="jadtarRealStone">
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarRealStone" name="jadtarRealStone" step="any">
+                                </div>
                                 <label for="jadtarFitting">Fitting:</label>
-                                <input type="text" id="jadtarFitting" name="jadtarFitting">
+                                <div class="price-jadtar">
+                                <input type="number" id="jadtarFitting" name="jadtarFitting" step="any">
+                                </div>
                             </div>
 
                             <!-- Mozonite and Mozonite Rate -->
                             <div class="inline-fields">
                                 <label for="mozStone">Mozonite:</label>
-                                <input type="number" id="mozStone" name="mozStone">
+                                <input type="number" id="mozStone" name="mozStone" step="any">
                                 <label for="mozStoneRate">Mozonite Rate:</label>
-                                <input type="number" id="mozStoneRate" name="mozStoneRate" step="0.01">
+                                <div class="price-container">
+                                <input type="number" id="mozStoneRate" name="mozStoneRate" step="any">
+                                </div>
                             </div>
 
                             <!-- Remarks -->
@@ -247,12 +296,37 @@
                         `);
                     }
             });
+            
+            function showModal(title, message, isSuccess) {
+                const modal = $("#notificationModal");
+                const modalContent = $("#modalContent");
+
+                // Update modal content and styling
+                $("#modalTitle").text(title);
+                $("#modalMessage").text(message);
+                modalContent.removeClass("modal-success modal-error");
+                modalContent.addClass(isSuccess ? "modal-success" : "modal-error");
+
+                // Show the modal
+                modal.fadeIn();
+            }
+
+            // Close modal on button click
+            $(".close-btn").on("click", function () {
+                $("#notificationModal").fadeOut();
+            });
+            
 
             $('#productForm').on('submit', function(e) {
                 e.preventDefault(); // Prevent default form submission
 
                 // Create a FormData object to capture form data
                 const formData = new FormData(this);
+                
+                if (!formData.get('imageUrl')) {
+                    // Set a default value for the imageUrl field
+                    formData.set('imageUrl', 'default'); // Replace with your default image URL
+                }
 
                 // Send AJAX request
                 $.ajax({
@@ -262,14 +336,12 @@
                     contentType: false,
                     processData: false,
                     success: function(response) {
-                        alert('Product added successfully!');
-                        // Optionally, redirect or reset the form
-                        $('#productForm')[0].reset();
-                        $('#dynamicFields').empty();
+                    	showModal("Success", "Product added successfully!", true);
+                        $("#productForm")[0].reset();
+                        $("#dynamicFields").empty();
                     },
                     error: function(xhr, status, error) {
-                        alert('An error occurred while adding the product.');
-                    }
+                    	 showModal("Error", "An error occurred while adding the product.", false);                    }
                 });
             });
         });

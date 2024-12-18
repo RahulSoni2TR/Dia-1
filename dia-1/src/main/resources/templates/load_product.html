@@ -6,219 +6,144 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Product Details</title>
     <link rel="stylesheet" href="product_details_style.css">
-    <style>
-        /* Add some styling for the Generate Report button */
-        .report-button-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
-        .generate-report-button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        .generate-report-button:hover {
-            background-color: #45a049;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <a href="/view-product" class="back-button">Back to Product List</a>
-    <div class="container" id="productDetailsContainer">
-        <!-- Product details will be populated here -->
-    </div>
+    <header class="header">
+        <h1>Product Details</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </header>
 
-    <div class="report-button-container">
-        <button class="generate-report-button" onclick="generateReport()">Generate Report</button>
-    </div>
+    <main>
+        <a href="/view-product" class="back-button">← Back to Product List</a>
+        <div class="container" id="productDetailsContainer">
+            <!-- Product details will be populated here -->
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+    </footer>
 
     <script>
-    function loadProductDetails() {
-        const productId = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
+        function loadProductDetails() {
+            const productId = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
 
-        if (!productId) {
-            document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
-            return;
-        }
+            if (!productId) {
+                document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
+                return;
+            }
 
-        fetch(`/loadProduct/${productId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(product => {
-                const details = {
-                    1: `Diamond Rings`,
-                    2: `Open Setting`,
-                    3: `Chains`,
-                    4: `Diamond Earrings`,
-                    5: `Vilandi`,
-                    6: `Jadtar Register`
-                };
+            fetch(`/loadProductDetail/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(product => {
+                    const details = {
+                        1: 'Diamond Rings',
+                        2: 'Open Setting',
+                        3: 'Chains',
+                        4: 'Diamond Earrings',
+                        5: 'Vilandi',
+                        6: 'Jadtar Register'
+                    };
 
-                // Build the HTML content
-                let productDetailsHTML = `
-                    <div class="product-image">
-                        <img src="${product.imageUrl}" alt="${product.item}">
-                    </div>
-                    <div class="product-details">
-                        <h1>${product.item}</h1>
-                        <h2>Details:</h2>
-                        <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
-                        <p><strong>ID:</strong> ${product.productId}</p>
-                `;
+                    const renderText = value => value ? value : '<span class="empty-label">No value</span>';
 
-                // Additional fields based on category
-                switch (product.categoryId) {
+                    let productDetailsHTML = `
+                        <div class="product-image">
+                            <img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}">
+                        </div>
+                        <div class="product-details">
+                            <h2>${renderText(product.item)}</h2>
+                            <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
+                            <p><strong>Design No:</strong> ${renderText(product.designNo)}</p>
+                            <h3>Additional Details:</h3>
+                    `;
+
+                      switch (product.categoryId) {
                     case 1:
                         productDetailsHTML += `
-                            <p><strong>Net:</strong> ${product.net}</p>
-                            <p><strong>Pcs:</strong> ${product.pcs}</p>
-                            <p><strong>Dia Wt (ct):</strong> ${product.diaWeight}</p>
-                            <p><strong>Remarks:</strong> ${product.remarks}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+                            <p><strong>Dia Wt (ct):</strong> ${renderText(product.diaWeight)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 2:
                         productDetailsHTML += `
-                            <p><strong>Gross:</strong> ${product.gross}</p>
-                            <p><strong>Net:</strong> ${product.net}</p>
-                            <p><strong>Vilandi (Ct):</strong> ${product.vilandiCt}</p>
-                            <p><strong>Diamonds (Ct):</strong> ${product.diamondsCt}</p>
-                            <p><strong>Beads (Ct):</strong> ${product.beadsCt}</p>
-                            <p><strong>Pearls (Gm):</strong> ${product.pearlsGm}</p>
-                            <p><strong>Other Stones (Ct):</strong> ${product.otherStonesCt}</p>
-                            <p><strong>Others:</strong> ${product.others}</p>
+                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Vilandi (Ct):</strong> ${renderText(product.vilandiCt)}</p>
+                            <p><strong>Diamonds (Ct):</strong> ${renderText(product.diamondsCt)}</p>
+                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
+                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
+                            <p><strong>Other Stones (Ct):</strong> ${renderText(product.otherStonesCt)}</p>
+                            <p><strong>Others:</strong> ${renderText(product.others)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 3:
                         productDetailsHTML += `
-                            <p><strong>Design No:</strong> ${product.designNo}</p>
-                            <p><strong>Net:</strong> ${product.net}</p>
+                        	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 4:
                         productDetailsHTML += `
-                            <p><strong>Design No:</strong> ${product.designNo}</p>
-                            <p><strong>Net:</strong> ${product.net}</p>
-                            <p><strong>Pcs:</strong> ${product.pcs}</p>
-                            <p><strong>Diamond Wt (ct):</strong> ${product.diaWeight}</p>
-                            <p><strong>Remarks:</strong> ${product.remarks}</p>
+                        	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+                            <p><strong>Diamond Wt (ct):</strong> ${renderText(product.diaWeight)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 5:
                         productDetailsHTML += `
-                            <p><strong>Design No:</strong> ${product.designNo}</p>
-                            <p><strong>Vilandi:</strong> ${product.vilandiCt}</p>
-                            <p><strong>Gross:</strong> ${product.gross}</p>
-                            <p><strong>Net:</strong> ${product.net}</p>
-                            <p><strong>Stones:</strong> ${product.stones}</p>
-                            <p><strong>Beads (Ct):</strong> ${product.beadsCt}</p>
-                            <p><strong>Pearls (Gm):</strong> ${product.pearlsGm}</p>
-                            <p><strong>SS Pearl (Ct):</strong> ${product.ssPearlCt}</p>
-                            <p><strong>Real Stone:</strong> ${product.realStone}</p>
-                            <p><strong>Remarks:</strong> ${product.remarks}</p>
+                        	<!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                            <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)}</p>
+                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
+                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
+                            <p><strong>SS Pearl (Ct):</strong> ${renderText(product.ssPearlCt)}</p>
+                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 6:
                         productDetailsHTML += `
-                            <p><strong>Design No:</strong> ${product.designNo}</p>
-                            <p><strong>Gross:</strong> ${product.gross}</p>
-                            <p><strong>Net:</strong> ${product.net}</p>
-                            <p><strong>Stones:</strong> ${product.stones}</p>
-                            <p><strong>Beads (Ct):</strong> ${product.beadsCt}</p>
-                            <p><strong>Pearls (Gm):</strong> ${product.pearlsGm}</p>
-                            <p><strong>SS Pearl (Ct):</strong> ${product.ssPearlCt}</p>
-                            <p><strong>Real Stone (Ct):</strong> ${product.realStone}</p>
-                            <p><strong>Remarks:</strong> ${product.remarks}</p>
+                           <!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
+                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
+                            <p><strong>SS Pearl (Ct):</strong> ${renderText(product.ssPearlCt)}</p>
+                            <p><strong>Real Stone (Ct):</strong> ${renderText(product.realStone)}</p>
+                            <p><strong>Mozonite (Ct):</strong> ${renderText(product.mozonite)}</p>
+                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     default:
                         productDetailsHTML += '<p>Category not recognized.</p>';
                 }
+                    // Add other categories as needed
+                    productDetailsHTML += '</div>';
 
-                productDetailsHTML += `</div>`; // Close product-details div
+                    document.getElementById('productDetailsContainer').innerHTML = productDetailsHTML;
+                })
+                .catch(err => {
+                    console.error('Error fetching product details:', err);
+                    document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
+                });
+        }
 
-                const container = document.getElementById('productDetailsContainer');
-                container.innerHTML = productDetailsHTML;
-            })
-            .catch(err => {
-                console.error('Error fetching product details:', err);
-                document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
-            });
-    }
-
-    async function generateReport() {
-        const { jsPDF } = window.jspdf;  // Initialize jsPDF
-        const container = document.getElementById('productDetailsContainer');
-
-        // First, capture the HTML content using html2canvas
-        html2canvas(container, {
-            useCORS: true,
-            allowTaint: false,
-            logging: true,
-            scale: 2 // Increase scale for higher resolution
-        }).then(async (canvas) => {
-            const pdf = new jsPDF('p', 'mm', 'a4');  // Create a new jsPDF instance
-
-            // Convert container to an image data URL
-            const containerImgData = canvas.toDataURL('image/png');
-
-            // Calculate width and height to fit image in A4 size PDF (210 x 297 mm)
-            const pdfWidth = 190;
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            // Add the HTML content as an image to PDF
-            pdf.addImage(containerImgData, 'PNG', 10, 10, pdfWidth, pdfHeight);
-
-            // Now, fetch and embed the product image separately
-            const productImage = container.querySelector('img'); // Assumes product image is an <img> tag within container
-            if (productImage && productImage.src) {
-                const imgData = await fetchImageData(productImage.src);
-
-                // Set position and size for the product image in the PDF
-                const imgX = 10; 
-                const imgY = pdfHeight + 20; // Position below HTML content
-                const imgWidth = 50; // Adjust as needed
-                const imgHeight = (50 * productImage.naturalHeight) / productImage.naturalWidth;
-
-                // Add the product image to PDF
-                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth, imgHeight);
-            }
-
-            // Save the PDF
-            pdf.save(`Product_Report_${Date.now()}.pdf`);
-        }).catch((error) => {
-            console.error('Error generating PDF:', error);
-        });
-    }
-
-    // Helper function to fetch image data as Base64
-    async function fetchImageData(url) {
-        const response = await fetch(url, { mode: 'cors' }); // Fetch image
-        const blob = await response.blob(); // Convert to blob
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result); // Get Base64 string
-            reader.onerror = reject;
-            reader.readAsDataURL(blob); // Convert to Base64
-        });
-    }
-
-
-
-    // Load product details on page load
-    loadProductDetails();
+        loadProductDetails();
     </script>
 </body>
 </html>

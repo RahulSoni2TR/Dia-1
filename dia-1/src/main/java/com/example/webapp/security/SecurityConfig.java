@@ -16,6 +16,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import com.example.webapp.service.CustomUserDetailsService;
 
@@ -25,6 +31,21 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
+    
+    
+    @Bean
+    public AmazonS3 amazonS3() {
+        // Replace with your actual access key and secret key
+        BasicAWSCredentials awsCredentials = new BasicAWSCredentials(
+                "AKIAQF44NC2M3PU2LRQP", 
+                "f8Al6nOd9dFqVDMS99BeQLK79REXgg/n53MpqTuI"
+        );
+
+        return AmazonS3ClientBuilder.standard()
+                .withRegion("ap-south-1") // Replace with your desired region
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials))
+                .build();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

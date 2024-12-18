@@ -4,71 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estimate Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+    <link rel="stylesheet" href="get_estimate_style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
 
-        .container {
-            width: 80%;
-            max-width: 600px;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .estimate-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .estimate-table th, .estimate-table td {
-            padding: 8px;
-            text-align: right;
-            border: 1px solid #ddd;
-        }
-
-        .estimate-table th {
-            background-color: #f4f4f4;
-            text-align: center;
-        }
-
-        .estimate-table .description {
-            text-align: left;
-        }
-
-        .estimate-table .total-row {
-            font-weight: bold;
-        }
-
-        .estimate-table input[type="text"] {
-            width: 100%;
-            text-align: right;
-            border: none;
-            background: transparent;
-            outline: none;
-            padding: 4px;
-        }
-    </style>
 </head>
 <body>
-
+<div class="top-right-nav">
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
 <div class="container">
-    <h1>Estimate for Mor Chokar + Long Earrings pair -1</h1>
+    <h1>Please update the product name</h1>
     <table class="estimate-table">
         <thead>
             <tr>
@@ -84,12 +30,6 @@
     <td id="gold-qty">17.000</td>
     <td id="gold-rate"></td>
     <td id="gold-amt">115175</td>
-</tr>
-           <tr>
-    <td class="description">Gold Rate</td>
-    <td id="gold-qty"></td>
-    <td id="gold-qty"><input type="text" id="gold-rate-input" value="6775"></td>
-    <td id="gold-qty"></td>
 </tr>
             <tr>
                 <td class="description">Labour</td>
@@ -120,6 +60,12 @@
                <td id="sspearls-qty">0</td>
                 <td id="sspearls-rate">0</td>
                 <td id="sspearls-amt">0</td>
+            </tr>
+            <tr>
+                <td class="description">Vilandi</td>
+               <td id="vilandi-qty">0</td>
+                <td id="vilandi-rate">0</td>
+                <td id="vilandi-amt">0</td>
             </tr>
             <tr>
                 <td class="description">Mozonite</td>
@@ -153,51 +99,62 @@
             </tr>
         </tbody>
     </table>
+    <button id="download-pdf" style="margin-top: 20px;">Download Estimate</button>
+    <div style="margin-top: 20px; text-align: center;">
+    <a href="/view-product" class="back-button">Back to View Products</a>
+</div>
 </div>
 <script>
+let estimate;
+let product;
     document.addEventListener("DOMContentLoaded", function() {
     	const productId = sessionStorage.getItem('productId');
         // Replace `1` with the actual product ID you want to fetch.
         fetch(`/getEstimate/${productId}`)
             .then(response => response.json())
             .then(data => {
-                const product = data.object1;
-                const estimate = data.object2;
+                product = data.object1;
+                estimate = data.object2;
                 const rate = data.object3;
                 const goldRate = rate.find(item => item.commodity === 'gold')?.price || 0;
                 const adjustedgoldRate= goldRate/10;
                 // Populate table cells based on the `estimate` fields
-                document.getElementById("gold-qty").textContent = product.net;
-                document.getElementById("gold-rate").textContent = adjustedgoldRate;
-                document.getElementById("gold-amt").textContent = estimate.gold;
-                document.getElementById("labour-qty").textContent = product.net;
-                document.getElementById("labour-rate").textContent = 1100;
-                document.getElementById("labour-amt").textContent = estimate.labour;
-                document.getElementById("stone-qty").textContent = product.stones;
-                document.getElementById("stone-rate").textContent = product.stRate;
-                document.getElementById("stone-amt").textContent = estimate.stones;
-                document.getElementById("beads-qty").textContent = product.beadsCt;
-                document.getElementById("beads-rate").textContent = product.bdRate;
-                document.getElementById("beads-amt").textContent = estimate.beads;
-                document.getElementById("pearls-qty").textContent = product.pearlsGm;
-                document.getElementById("pearls-rate").textContent = product.prlRate;
-                document.getElementById("pearls-amt").textContent = estimate.pearls;
-                document.getElementById("sspearls-qty").textContent = product.ssPearlCt;
-                document.getElementById("sspearls-rate").textContent = product.ssRate;
-                document.getElementById("sspearls-amt").textContent = estimate.ssPearls;
-                document.getElementById("mozo-qty").textContent = product.mozonite;
-                document.getElementById("mozo-rate").textContent = product.mozonite;
-                document.getElementById("mozo-amt").textContent = estimate.mozo;
+                 const titleElement = document.querySelector('h1');
+            	titleElement.textContent = `Estimate for ${product.item}`;
+                document.getElementById("gold-qty").textContent = product.net ?? 0;
+                document.getElementById("gold-rate").textContent = `₹ ${adjustedgoldRate ?? 0}`;
+                document.getElementById("gold-amt").textContent = `₹ ${estimate.gold ?? 0}`;
+                document.getElementById("labour-qty").textContent = product.net ?? 0;
+                document.getElementById("labour-rate").textContent = `₹ ${1100 ?? 0}`;
+                document.getElementById("labour-amt").textContent = `₹ ${estimate.labour ?? 0}`;
+                document.getElementById("vilandi-qty").textContent = product.vilandiCt ?? 0;
+                document.getElementById("vilandi-rate").textContent = `₹ ${product.vRate ?? 0}`;
+                document.getElementById("vilandi-amt").textContent = `₹ ${estimate.vilandi ?? 0}`;
+                document.getElementById("stone-qty").textContent = product.stones ?? 0;
+                document.getElementById("stone-rate").textContent = `₹ ${product.stRate ?? 0}`;
+                document.getElementById("stone-amt").textContent = `₹ ${estimate.stones ?? 0}`;
+                document.getElementById("beads-qty").textContent = product.beadsCt ?? 0;
+                document.getElementById("beads-rate").textContent = `₹ ${product.bdRate ?? 0}`;
+                document.getElementById("beads-amt").textContent = `₹ ${estimate.beads ?? 0}`;
+                document.getElementById("pearls-qty").textContent = product.pearlsGm ?? 0;
+                document.getElementById("pearls-rate").textContent = `₹ ${product.prlRate ?? 0}`;
+                document.getElementById("pearls-amt").textContent = `₹ ${estimate.pearls ?? 0}`;
+                document.getElementById("sspearls-qty").textContent = product.ssPearlCt ?? 0;
+                document.getElementById("sspearls-rate").textContent = `₹ ${product.ssRate ?? 0}`;
+                document.getElementById("sspearls-amt").textContent = `₹ ${estimate.ssPearls ?? 0}`;
+                document.getElementById("mozo-qty").textContent = product.mozonite ?? 0;
+                document.getElementById("mozo-rate").textContent = `₹ ${product.mRate ?? 0}`;
+                document.getElementById("mozo-amt").textContent = `₹ ${estimate.mozo ?? 0}`;
             //    document.getElementById("realSt-qty").textContent = product.realStone;
             //    document.getElementById("realSt-rate").textContent = estimate.labour;
-                document.getElementById("realSt-amt").textContent = product.realStone;
+                document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
            //     document.getElementById("fitting-qty").textContent = product.net;
            //     document.getElementById("fitting-rate").textContent = estimate.labour;
-                document.getElementById("fitting-amt").textContent = estimate.fitting;
+                document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
            //     document.getElementById("total-qty").textContent = product.net;
            //     document.getElementById("total-rate").textContent = estimate.labour;
-           document.getElementById("gst-amt").textContent = estimate.gst;
-                document.getElementById("total-amt").textContent = estimate.total;
+           document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
+                document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
           //      document.getElementById("gold-rate-input").textContent = estimate.gold;
                
                 // Add more fields as necessary, for example:
@@ -209,6 +166,119 @@
             })
             .catch(error => console.error('Error fetching estimate:', error));
     });
+    
+    document.getElementById("download-pdf").addEventListener("click", function () {
+        // Extract the title and table content
+        const title = document.querySelector("h1").textContent;
+        const table = document.querySelector(".estimate-table");
+
+        // Create table data for pdfMake
+        const headers = [];
+        const rows = [];
+
+        // Add headers (thead content)
+        const headerCells = table.querySelectorAll("thead th");
+        headerCells.forEach((cell) => headers.push({ text: cell.textContent, bold: true, alignment: 'center', fillColor: '#f2f2f2' }));
+
+        // Add rows (tbody content)
+        const tableRows = table.querySelectorAll("tbody tr");
+        tableRows.forEach((row, index) => {
+            const rowData = [];
+            row.querySelectorAll("td").forEach((cell) => {
+                rowData.push({ 
+                    text: cell.textContent, 
+                    alignment: 'center', 
+                    fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9' // Alternate row colors
+                });
+            });
+            rows.push(rowData);
+        });
+
+        // Define PDF content
+        const docDefinition = {
+            content: [
+                // Header Section
+                {
+                    columns: [
+                        { 
+                            text: 'Your Company Name', 
+                            bold: true, 
+                            fontSize: 18, 
+                            alignment: 'left', 
+                            margin: [0, 0, 0, 10] 
+                        },
+                        { 
+                            text: `Estimate of ${product.item}`, 
+                            bold: true, 
+                            fontSize: 22, 
+                            alignment: 'right', 
+                            margin: [0, 0, 0, 10] 
+                        }
+                    ]
+                },
+                {
+                    text: `Prepared for: Customer Name\nDate: ${new Date().toLocaleDateString()}`,
+                    margin: [0, 0, 0, 20]
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['40%', '20%', '20%', '20%'], // Adjust column widths as needed
+                        body: [headers, ...rows],
+                    },
+                    layout: {
+                        hLineWidth: function () { return 0.5; },
+                        vLineWidth: function () { return 0.5; },
+                        hLineColor: function () { return '#cccccc'; }, // Subtle border colors
+                        vLineColor: function () { return '#cccccc'; },
+                        paddingLeft: function () { return 8; }, // Padding for better readability
+                        paddingRight: function () { return 8; },
+                        paddingTop: function () { return 5; },
+                        paddingBottom: function () { return 5; },
+                    },
+                },
+                // Summary Section
+                {
+                    text: 'Summary',
+                    bold: true,
+                    fontSize: 16,
+                    margin: [0, 20, 0, 10]
+                },
+                {
+                    table: {
+                        widths: ['70%', '30%'],
+                        body: [
+                            [
+                                { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
+                                { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                            ],
+                            [
+                                { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0] },
+                                { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9' }
+                            ],
+                            [
+                                { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
+                                { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                            ]
+                        ]
+                    },
+                    layout: 'noBorders'
+                }
+            ],
+            styles: {
+                header: { fontSize: 18, bold: true },
+                subheader: { fontSize: 14, bold: true },
+            },
+            defaultStyle: {
+                font: 'Roboto', // Roboto is supported by pdfMake by default
+            },
+        };
+
+        // Generate and download PDF
+        pdfMake.createPdf(docDefinition).download("Estimate.pdf");
+    });
+
+
 </script>
 
 </body>

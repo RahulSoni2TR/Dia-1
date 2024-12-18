@@ -1,82 +1,108 @@
-/* General body styles */
+/* General styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4; /* Light background for contrast */
-    color: #333; /* Dark text color for readability */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
     margin: 0;
+    color: #333;
+}
+
+.header {
+    background-color: #343a40;
+    color: #fff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.logout-btn {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    background-color: #c82333;
+}
+
+main {
     padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.container {
-    display: grid; /* Use grid layout */
-    grid-template-columns: 1fr 2fr; /* Divide the container into two columns */
-    gap: 20px; /* Add a gap between columns */
-    margin: 20px auto; /* Center container with margin */
-    max-width: 1200px; /* Maximum width for larger screens */
-    background: #fff; /* White background for the container */
-    padding: 20px; /* Padding inside the container */
-    border-radius: 8px; /* Rounded corners */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-}
-
-.product-image {
-    grid-column: 1; /* Place image in the first column */
-    max-width: 10cm; /* Maximum width of 10cm */
-    max-height: 10cm; /* Maximum height of 10cm */
-    overflow: hidden; /* Hide overflow */
-    border: 1px solid #ccc; /* Light border around the image */
-    border-radius: 5px; /* Rounded corners for the image */
-}
-
-.product-image img {
-    width: 100%; /* Image takes full width */
-    height: auto; /* Maintain aspect ratio */
-    object-fit: cover; /* Ensure image covers the entire container */
-}
-
-.product-details {
-    grid-column: 2; /* Place details in the second column */
-    display: grid; /* Use grid layout for details */
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Responsive columns */
-    gap: 15px; /* Add gap between fields */
-}
-
-.product-details h1, .product-details h2 {
-    grid-column: 1 / -1; /* Span the entire row */
-    margin: 0; /* Remove default margin */
-}
-
-.product-details h1 {
-    font-size: 24px; /* Larger font size for title */
-}
-
-.product-details h2 {
-    margin-top: 10px; /* Space above subtitle */
-    font-size: 20px; /* Slightly smaller subtitle */
-}
-
-/* Paragraph styles */
-.product-details p {
-    margin: 10px 0; /* Increased space between paragraphs */
-}
-
-/* Strong text styles */
-.product-details p strong {
-    color: #555; /* Slightly darker color for labels */
-}
-
-/* Back button styles */
 .back-button {
-    margin-bottom: 20px; /* Space below the back button */
-    display: inline-block; /* Allow padding and margin */
-    padding: 10px 15px; /* Padding inside the button */
-    background-color: #007bff; /* Bootstrap primary color */
-    color: white; /* White text color */
-    text-decoration: none; /* Remove underline */
-    border-radius: 5px; /* Rounded corners */
-    transition: background-color 0.3s; /* Smooth background transition */
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
 }
 
 .back-button:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f9f9f9;
+}
+
+.product-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.product-details h2 {
+    color: #007bff;
+    margin-bottom: 15px;
+}
+
+.product-details p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.empty-label {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #f1f1f1;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #555;
 }

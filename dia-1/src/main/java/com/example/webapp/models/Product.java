@@ -1,12 +1,17 @@
 package com.example.webapp.models;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,7 +36,7 @@ public class Product {
 
     @NotNull(message = "Stock quantity cannot be null")
     @Positive(message = "Stock quantity must be positive")
-    @Column(name = "stock_quantity", nullable = false)
+    @Column(name = "stock_quantity", nullable = true)
     private Integer stockQuantity;
 
     @Column(name = "category_id")
@@ -103,8 +108,42 @@ public class Product {
 
     @Column(name = "mozonite")
     private BigDecimal mozonite;
+
+    @Column(name = "m_rate")
+    private BigDecimal mRate;
     
-    @Column(name = "vilandi_rate")
+    @Column(name = "createDateTime", updatable = false)
+    private LocalDateTime createDateTime;
+
+    public LocalDateTime getCreateDateTime() {
+		return createDateTime;
+	}
+
+	public void setCreateDateTime(LocalDateTime createDateTime) {
+		this.createDateTime = createDateTime;
+	}
+
+	public LocalDateTime getUpdateDateTime() {
+		return updateDateTime;
+	}
+
+	public void setUpdateDateTime(LocalDateTime updateDateTime) {
+		this.updateDateTime = updateDateTime;
+	}
+
+	@Column(name = "updateDateTime")
+    private LocalDateTime updateDateTime;
+
+    
+    public BigDecimal getmRate() {
+		return mRate;
+	}
+
+	public void setmRate(BigDecimal mRate) {
+		this.mRate = mRate;
+	}
+
+	@Column(name = "vilandi_rate")
     private BigDecimal vRate;
 
 	public BigDecimal getvRate() {
@@ -331,5 +370,52 @@ public class Product {
 		this.mozonite = mozonite;
 	}
 
+	@PrePersist
+	protected void onCreate() {
+	    ZoneId zoneId = ZoneId.of("Asia/Kolkata"); // IST Timezone
+	    createDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
+	    updateDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+	    ZoneId zoneId = ZoneId.of("Asia/Kolkata"); // IST Timezone
+	    updateDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
+	}
+	
+	 @Override
+	    public String toString() {
+	        return "Product{" +
+	               "productId=" + productId +
+	               ", item='" + item + '\'' +
+	               ", price=" + price +
+	               ", stockQuantity=" + stockQuantity +
+	               ", categoryId=" + categoryId +
+	               ", imageUrl='" + imageUrl + '\'' +
+	               ", net=" + net +
+	               ", pcs=" + pcs +
+	               ", diaWeight=" + diaWeight +
+	               ", remarks='" + remarks + '\'' +
+	               ", gross=" + gross +
+	               ", vilandiCt=" + vilandiCt +
+	               ", diamondsCt=" + diamondsCt +
+	               ", beadsCt=" + beadsCt +
+	               ", pearlsGm=" + pearlsGm +
+	               ", otherStonesCt=" + otherStonesCt +
+	               ", others='" + others + '\'' +
+	               ", designNo='" + designNo + '\'' +
+	               ", stones=" + stones +
+	               ", ssPearlCt=" + ssPearlCt +
+	               ", realStone=" + realStone +
+	               ", stRate=" + stRate +
+	               ", bdRate=" + bdRate +
+	               ", prlRate=" + prlRate +
+	               ", ssRate=" + ssRate +
+	               ", fitting=" + fitting +
+	               ", mozonite=" + mozonite +
+	               ", mRate=" + mRate +
+	               ", vRate=" + vRate +
+	               '}';
+	    }
   
 }
