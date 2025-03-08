@@ -1,95 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="set_price_style.css">
-    <title>Set Prices</title>
-</head>
-<body>
-    <div class="container">
-        <!-- Moving Prices Label -->
-        <div class="moving-prices">
-            <span class="scrolling-text" id="priceLabel">Loading prices...</span>
-        </div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Prices</title>
+  <link rel="stylesheet" href="set_price_style.css">
+  <script>
+    document.addEventListener("DOMContentLoaded", fetchPrices);
 
-        <h2>Set Prices</h2>
-        
-        <!-- Gold Price Field -->
-        <div class="form-group">
-            <label for="goldPrice">Gold Price</label>
-            <input type="text" id="goldPrice" placeholder="Enter Gold Price">
-        </div>
-
-        <!-- Diamond Price Field -->
-        <div class="form-group">
-            <label for="diamondPrice">Diamond Price</label>
-            <input type="text" id="diamondPrice" placeholder="Enter Diamond Price">
-        </div>
-
-        <!-- Vilandi Price Field -->
-        <div class="form-group">
-            <label for="labourPrice">Labour Price</label>
-            <input type="text" id="labourPrice" placeholder="Enter Labour Price">
-        </div>
-        
-        <div class="form-group">
-            <label for="gstPrice">GST Price</label>
-            <input type="text" id="gstPrice" placeholder="Enter GST Price">
-        </div>
-
-        <!-- Button Group for Set and Edit Prices -->
-        <div class="button-group">
-            <!-- Set Prices Button -->
-            <button onclick="setPrices()">Set Prices</button>
-            <button onclick="fetchPrices()">Refresh Prices</button>
-            
-        <!-- Back to Home Button on a new row -->
-        <div class="button-group">
-            <button onclick="window.location.href='/home'">Back to Home</button>
-        </div>
-    </div>
-
-   <script>
-    // Function to fetch prices from the API
     function fetchPrices() {
         fetch('/rates')
             .then(response => response.json())
             .then(data => {
-                // Assuming 'data' is an array of rate objects with commodity and price
-                const prices = {
-                    gold: getPriceForCommodity(data, 'gold'),
-                    diamond: getPriceForCommodity(data, 'diamond'),
-                    labour: getPriceForCommodity(data, 'labour'),
-                    gst: getPriceForCommodity(data, 'gst')
-                };
+                data.forEach(rate => {
+                    let fieldId = getFieldId(rate.commodity);
+                    if (fieldId) {
+                        document.getElementById(fieldId).value = rate.price;
+                    }
+                });
 
-                // Update the moving price label with fetched values
-                const priceLabel = `Gold Price: ₹${prices.gold} | Diamond Price: ₹${prices.diamond} | Labour Price: ₹${prices.labour} | GST Price: ${prices.gst}%`;
-                document.getElementById("priceLabel").textContent = priceLabel;
+                updatePriceLabel(data);
             })
             .catch(error => {
                 console.error('Error fetching prices:', error);
+                alert('Failed to load prices. Please try again.');
             });
     }
 
-    // Helper function to get the price for a specific commodity
-    function getPriceForCommodity(data, commodity) {
-        const rate = data.find(item => item.commodity === commodity);
-        return rate ? rate.price : 'Not Available';
+    function getFieldId(commodity) {
+        const mapping = {
+            '10.00': 'gold_10k',
+            '14.00': 'gold_14k',
+            '18.00': 'gold_18k',
+            '22.00': 'gold_22k',
+            '24.00': 'gold_24k',
+            'silver': 'silver',
+            'diamond': 'diamond',
+            'gst': 'gst'
+        };
+        return mapping[commodity] || null;
     }
 
-    // Function to set prices by posting the data
-    function setPrices() {
-        // Gather price data from inputs
+    function updatePriceLabel(data) {
         const prices = {
-            gold: document.getElementById("goldPrice").value,
-            diamond: document.getElementById("diamondPrice").value,
-            silver: document.getElementById("labourPrice").value,
-            gst: document.getElementById("gstPrice").value
+            gold_10k: getPriceForCommodity(data, '10.00'),
+            gold_14k: getPriceForCommodity(data, '14.00'),
+            gold_18k: getPriceForCommodity(data, '18.00'),
+            gold_22k: getPriceForCommodity(data, '22.00'),
+            gold_24k: getPriceForCommodity(data, '24.00'),
+            silver: getPriceForCommodity(data, 'silver'),
+            diamond: getPriceForCommodity(data, 'diamond'),
+            gst: getPriceForCommodity(data, 'gst')
         };
 
-        // Send POST request to backend to update prices
+        const priceLabel = `Gold 10k: ₹${prices.gold_10k} | Gold 14k: ₹${prices.gold_14k} | Gold 18k: ₹${prices.gold_18k} | Gold 22k: ₹${prices.gold_22k} | Gold 24k: ₹${prices.gold_24k} | Silver: ₹${prices.silver} | Diamond: ₹${prices.diamond} | GST: ${prices.gst}%`;
+        document.getElementById("priceLabel").textContent = priceLabel;
+    }
+
+    function getPriceForCommodity(data, commodity) {
+        const rate = data.find(item => item.commodity === commodity);
+        return rate ? rate.price : 'N/A';
+    }
+
+    function setPrices() {
+        const prices = {};
+        document.querySelectorAll(".price-input").forEach(input => {
+            prices[input.getAttribute("data-commodity")] = input.value;
+        });
+
         fetch('/updatePrices', {
             method: 'POST',
             headers: {
@@ -98,22 +76,67 @@
             body: JSON.stringify(prices)
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to update prices');
-            }
-            return response.json();
+            if (!response.ok) throw new Error('Failed to update prices');
+            return response.text();
         })
-        .then(data => {
-            console.log('Prices updated successfully:', data);
-            fetchPrices(); 
+        .then(message => {
+            alert('Prices updated successfully!');
+            fetchPrices();
         })
         .catch(error => {
             console.error('Error updating prices:', error);
+            alert('Failed to update prices. Please try again.');
         });
     }
 
-    // Fetch the prices when the page loads
-    window.onload = fetchPrices;
-</script>
+    function editPrices() {
+        document.querySelectorAll(".price-input").forEach(input => input.disabled = false);
+    }
+
+    function goBack() {
+        window.location.href = "/home";
+    }
+  </script>
+</head>
+<body>
+  <header class="header">Product Manager</header>
+  <div class="moving-prices">
+      <span class="scrolling-text" id="priceLabel">Loading prices...</span>
+  </div>
+
+  <div class="price-container">
+    <h1>Set Prices</h1>
+<label class="label" for="gold_10k">Gold 10K/10gm</label>
+  <input type="text" id="gold_10k" class="price-input" data-commodity="10.00" disabled>
+
+  <label class="label" for="gold_14k">Gold 14K/10gm</label>
+  <input type="text" id="gold_14k" class="price-input" data-commodity="14.00" disabled>
+
+  <label class="label" for="gold_18k">Gold 18K/10gm</label>
+  <input type="text" id="gold_18k" class="price-input" data-commodity="18.00" disabled>
+
+  <label class="label" for="gold_22k">Gold 22K/10gm</label>
+  <input type="text" id="gold_22k" class="price-input" data-commodity="22.00" disabled>
+
+  <label class="label" for="gold_24k">Gold 24K/10gm</label>
+  <input type="text" id="gold_24k" class="price-input" data-commodity="24.00" disabled>
+
+  <label class="label" for="silver">Silver</label>
+  <input type="text" id="silver" class="price-input" data-commodity="silver" disabled>
+
+  <label class="label" for="diamond">Diamond</label>
+  <input type="text" id="diamond" class="price-input" data-commodity="diamond" disabled>
+
+  <label class="label" for="gst">GST</label>
+  <input type="text" id="gst" class="price-input" data-commodity="gst" disabled>
+    
+    <div class="button-group">
+      <button class="button" onclick="setPrices()">Set Prices</button>
+      <button class="button" onclick="editPrices()">Edit Prices</button>
+      <button class="button back-button" onclick="goBack()">Back</button>
+    </div>
+  </div>
+
+  <footer class="footer">&copy; 2024 Product Management System. All rights reserved.</footer>
 </body>
 </html>

@@ -1,63 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Product</title>
-    <link rel="stylesheet" href="add_product_style.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Product</title>
+<link rel="stylesheet" href="add_product_style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 
- <div class="top-right-nav">
-        <a href="/logout" class="logout-btn">Logout</a>
-    </div>
-    
-    <div class="container">
-        <h1>Add New Product</h1>
-        <form id="productForm" enctype="multipart/form-data">
-            <label for="categoryId">Category:</label>
-            <select id="categoryId" name="categoryId" required>
-                <option value="">Select Category</option>
-                <option value="1">Diamond Rings</option>
-                <option value="2">Open Setting</option>
-                <option value="3">Chains</option>
-                <option value="4">Diamond Earrings</option>
-                <option value="5">Vilandi</option>
-                <option value="6">Jadtar Register</option>
-            </select>
+	<div class="top-right-nav">
+		<a href="/logout" class="logout-btn">Logout</a>
+	</div>
 
-            <label for="productName">Product Name:</label>
-            <input type="text" id="productName" name="productName" required>
+	<div class="container">
+		<h1>Add New Product</h1>
+		<form id="productForm" enctype="multipart/form-data">
+			<label for="categoryId">Category:</label> <select id="categoryId"
+				name="categoryId" required>
+				<option value="">Select Category</option>
+				<option value="1">Diamond Rings</option>
+				<option value="2">Open Setting</option>
+				<option value="3">Chains</option>
+				<option value="4">Diamond Earrings</option>
+				<option value="5">Vilandi</option>
+				<option value="6">Jadtar Register</option>
+			</select> <label for="productName">Product Name:</label> <input type="text"
+				id="productName" name="productName" required> <label
+				for="karatId">Gold Karat:</label> <select id="karatId"
+				name="karatId" required>
+				<option value="">Select Karat</option>
+				<option value="10">10K</option>
+				<option value="14">14K</option>
+				<option value="18">18K</option>
+				<option value="22">22K</option>
+				<option value="24">24K</option>
+			</select> <label for="stockQuantity">Stock Quantity:</label> <input
+				type="number" id="stockQuantity" name="stockQuantity"> <label
+				for="imageUrl">Product Image:</label> <input type="file"
+				id="imageUrl" name="imageUrl" accept="image/*">
 
-            <label for="price">Price:</label>
-            <div class="price-container">
-            <input type="number" id="price" name="price" step="any" required>
-			</div>
-			
-            <label for="stockQuantity">Stock Quantity:</label>
-            <input type="number" id="stockQuantity" name="stockQuantity" >
+			<!-- Dynamic Fields -->
+			<div id="dynamicFields"></div>
 
-            <label for="imageUrl">Product Image:</label>
-            <input type="file" id="imageUrl" name="imageUrl" accept="image/*" >
+			<input type="submit" value="Add Product">
+		</form>
+		<a href="/home" class="back-button">Back to Home</a>
+	</div>
 
-            <!-- Dynamic Fields -->
-            <div id="dynamicFields"></div>
+	<div id="notificationModal" class="modal">
+		<div id="modalContent" class="modal-content">
+			<h2 id="modalTitle"></h2>
+			<p id="modalMessage"></p>
+			<button class="close-btn">OK</button>
+		</div>
+	</div>
 
-            <input type="submit" value="Add Product">
-        </form>
-        <a href="/home" class="back-button">Back to Home</a>
-    </div>
-    
-     <div id="notificationModal" class="modal">
-        <div id="modalContent" class="modal-content">
-            <h2 id="modalTitle"></h2>
-            <p id="modalMessage"></p>
-            <button class="close-btn">OK</button>
-        </div>
-    </div>
-
-    <script>
+	<script>
         $(document).ready(function() {
             $('#categoryId').on('change', function() {
                 const categoryId = $(this).val();
@@ -70,9 +69,30 @@
                         <label for="net">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
                         <label for="pcs">Pieces:</label>
-                        <input type="number" id="pcs" name="pcs" step="any">
-                        <label for="diaWeight">Diamond Weight (ct):</label>
+                        <input type="number" id="pcs" name="pcs" step="any">                        
+                        <div class="inline-fields">
+                        <label for="diaWeight">Diamonds (ct):</label>
                         <input type="number" id="diaWeight" name="diaWeight" step="any">
+                        <label for="diaRate">Diamonds Rate:</label>
+                        <div class="price-container">
+                        <input type="number" id="diaRate" name="diaRate" step="any">
+                        </div></div>
+                        <div class="inline-fields">
+                        <label for="diaSt">Other Stones:</label>
+                        <input type="number" id="diaSt" name="diaSt" step="any">
+                        <label for="diaStRate">Other Stones Rate:</label>
+                        <div class="price-container">
+                        <input type="number" id="diaStRate" name="diaStRate" step="any">
+                        </div>
+                    </div>
+                        
+                        <div class="inline-fields">
+                        <label for="drLabour">Labour/Gm:</label>
+                        <input type="number" id="drLabour" name="drLabour" step="any">
+                        <label for="drLabourAll">Labour Amount:</label>
+                        <div class="price-jadtar">
+                        <input type="number" id="drLabourAll" name="drLabourAll" step="any">
+                    </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
@@ -89,7 +109,13 @@
                         <label for="gross">Gross:</label>
                         <input type="number" id="gross" name="gross" step="any" required>
                         
-                        
+                        <div class="inline-fields">
+                        <label for="osLabour">Labour/Gm:</label>
+                        <input type="number" id="osLabour" name="osLabour" step="any">
+                        <label for="osLabourAll">Labour Amount:</label>
+                        <div class="price-jadtar">
+                        <input type="number" id="osLabourAll" name="osLabourAll" step="any">
+                    </div></div>
                         <div class="inline-fields">
                         <label for="vilandiCt">Vilandi:</label>
                         <input type="number" id="vilandiCt" name="vilandiCt" step="any">
@@ -99,9 +125,14 @@
                         </div>
                   		  </div>
                         
-                        
+                        <div class="inline-fields">
                         <label for="diamondsCt">Diamonds (ct):</label>
                         <input type="number" id="diamondsCt" name="diamondsCt" step="any">
+                        <label for="diamondsCtRate">Diamonds Rate:</label>
+                        <div class="price-container">
+                        <input type="number" id="diamondsCtRate" name="diamondsCtRate" step="any">
+                        </div>
+                    </div>
                         
                         <div class="inline-fields">
                         <label for="beadsCt">Beads (Ct.):</label>
@@ -121,11 +152,13 @@
                         <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="any">
                         </div>
                     </div> 
-                        
-                    
-                        <label for="otherStonesCt">Other Stones:</label>
-                        <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
-                        
+                    <div class="inline-fields">
+                    <label for="otherStonesCt">Other Stones:</label>
+                    <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
+                    <label for="openStRate">Other Stones Rate:</label>
+                    <div class="price-container">
+                    <input type="number" id="openStRate" name="openStRate" step="any">
+                    </div></div>                 
                         
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
@@ -136,6 +169,13 @@
                         <input type="text" id="designNo" name="designNo" step="any" required>    
                         <label for="chainNet">Net:</label>
                         <input type="number" id="chainNet" name="chainNet" step="any" required>
+                        <div class="inline-fields">
+                        <label for="chainLabour">Labour/Gm:</label>
+                        <input type="number" id="chainLabour" name="chainLabour" step="any">
+                        <label for="chainLabourAll">Labour Amount:</label>
+                        <div class="price-jadtar">
+                        <input type="number" id="chainLabourAll" name="chainLabourAll" step="any">
+                    </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
@@ -147,8 +187,28 @@
                         <input type="number" id="earringNet" name="earringNet" step="any" required>
                         <label for="earringPcs">Pieces:</label>
                         <input type="number" id="earringPcs" name="earringPcs" step="any">
-                        <label for="diamondWeightEarring">Diamond (ct):</label>
+                        <div class="inline-fields">
+                        <label for="diamondWeightEarring">Diamonds (ct):</label>
                         <input type="number" id="diamondWeightEarring" name="diamondWeightEarring" step="any">
+                        <label for="diamondsWtRate">Diamonds Rate:</label>
+                        <div class="price-container">
+                        <input type="number" id="diamondsWtRate" name="diamondsWtRate" step="any">
+                        </div>
+                    </div>
+                    <div class="inline-fields">
+                    <label for="earSt">Other Stones:</label>
+                    <input type="number" id="earSt" name="earSt" step="any">
+                    <label for="earStRate">Other Stones Rate:</label>
+                    <div class="price-container">
+                    <input type="number" id="earStRate" name="earStRate" step="any">
+                    </div></div>
+                        <div class="inline-fields">
+                        <label for="diamondLabour">Labour/Gm:</label>
+                        <input type="number" id="diamondLabour" name="diamondLabour" step="any">
+                        <label for="diamondLabourAll">Labour Amount:</label>
+                        <div class="price-jadtar">
+                        <input type="number" id="diamondLabourAll" name="diamondLabourAll" step="any">
+                    </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     `);
@@ -159,6 +219,14 @@
                         <label for="vilandiNet">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
 
+                        <div class="inline-fields">
+                        <label for="vilandiLabour">Labour/Gm:</label>
+                        <input type="number" id="vilandiLabour" name="vilandiLabour" step="any">
+                        <label for="vilandiLabourAll">Labour Amount:</label>
+                        <div class="price-jadtar">
+                        <input type="number" id="vilandiLabourAll" name="vilandiLabourAll" step="any">
+                    </div></div>
+                        
                         <div class="inline-fields">
                         <label for="vilandi">Vilandi:</label>
                         <input type="number" id="vilandi" name="vilandi" step="any">
@@ -231,6 +299,14 @@
                             <input type="number" id="jadtarGross" name="jadtarGross" step="any" required>
                             <label for="jadtarNet">Net:</label>
                             <input type="number" id="jadtarNet" name="jadtarNet" step="any" required>
+                            
+                            <div class="inline-fields">
+                            <label for="jadtarLabour">Labour/Gm:</label>
+                            <input type="number" id="jadtarLabour" name="jadtarLabour" step="any">
+                            <label for="jadtarLabourAll">Labour Amount:</label>
+                            <div class="price-jadtar">
+                            <input type="number" id="jadtarLabourAll" name="jadtarLabourAll" step="any">
+                        </div></div>
 
                             <!-- Stones and Stone Rate -->
                             <div class="inline-fields">
@@ -315,8 +391,99 @@
             $(".close-btn").on("click", function () {
                 $("#notificationModal").fadeOut();
             });
-            
+    		 
+    	    const fieldsContainer = document.getElementById('dynamicFields');
 
+    	    // Function to toggle disabled state
+    	    function toggleDisabledState(event) {
+    	    	//disable fields
+   			 const labourGmInput = document.getElementById('vilandiLabour');
+       		const labourAllInput = document.getElementById('vilandiLabourAll');
+   			 const drLabourInput = document.getElementById('drLabour');
+   	    		const drLabourAllInput = document.getElementById('drLabourAll');
+   				 const orLabourInput = document.getElementById('osLabour');
+   		    		const orLabourAllInput = document.getElementById('osLabourAll');
+   					 const chainLabourInput = document.getElementById('chainLabour');
+   			    		const chainLabourAllInput = document.getElementById('chainLabourAll');
+   						 const jadtarLabourInput = document.getElementById('jadtarLabour');
+   				    		const jadtarLabourAllInput = document.getElementById('jadtarLabourAll');
+   							 const diamondLabourInput = document.getElementById('diamondLabour');
+   					    		const diamondLabourAllInput = document.getElementById('diamondLabourAll');
+
+    	        if (labourGmInput && labourAllInput) {
+    	            if (labourGmInput.value) {
+    	                labourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (labourAllInput.value) {
+    	                labourGmInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	                labourGmInput.disabled = false; // Enable both fields if neither has a value
+    	                labourAllInput.disabled = false;
+    	            }
+    	        }
+    	        if (drLabourInput && drLabourAllInput) {
+    	            if (drLabourInput.value) {
+    	            	drLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (drLabourAllInput.value) {
+    	            	drLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	            	drLabourInput.disabled = false; // Enable both fields if neither has a value
+    	            	drLabourAllInput.disabled = false;
+    	            }
+    	        }
+    	        if (orLabourInput && orLabourAllInput) {
+    	            if (orLabourInput.value) {
+    	            	orLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (orLabourAllInput.value) {
+    	            	orLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	            	orLabourInput.disabled = false; // Enable both fields if neither has a value
+    	            	orLabourAllInput.disabled = false;
+    	            }
+    	        }
+    	        if (chainLabourInput && chainLabourAllInput) {
+    	            if (chainLabourInput.value) {
+    	            	chainLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (chainLabourAllInput.value) {
+    	            	chainLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	            	chainLabourInput.disabled = false; // Enable both fields if neither has a value
+    	            	chainLabourAllInput.disabled = false;
+    	            }
+    	        }
+    	        if (jadtarLabourInput && jadtarLabourAllInput) {
+    	            if (jadtarLabourInput.value) {
+    	            	jadtarLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (jadtarLabourAllInput.value) {
+    	            	jadtarLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	            	jadtarLabourInput.disabled = false; // Enable both fields if neither has a value
+    	                jadtarLabourAllInput.disabled = false;
+    	            }
+    	        }
+    	        if (diamondLabourInput && diamondLabourAllInput) {
+    	            if (diamondLabourInput.value) {
+    	            	diamondLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            } else if (diamondLabourAllInput.value) {
+    	            	diamondLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else {
+    	            	diamondLabourInput.disabled = false; // Enable both fields if neither has a value
+    	            	diamondLabourAllInput.disabled = false;
+    	            }
+    	        }
+    	    }
+
+    	    // Add event listener to the parent container
+    	    fieldsContainer.addEventListener('input', function(event) {
+    	        if (event.target.id === 'vilandiLabour' || event.target.id === 'vilandiLabourAll' || 
+    	        		event.target.id === 'drLabour' || event.target.id === 'drLabourAll' || event.target.id === 'osLabour' 
+    	        		|| event.target.id === 'osLabourAll' || event.target.id === 'chainLabour' || 
+    	        		event.target.id === 'chainLabourAll' || event.target.id === 'jadtarLabour' || 
+    	        		event.target.id === 'jadtarLabourAll' || event.target.id === 'diamondLabour' || 
+    	        		event.target.id === 'diamondLabourAll') {
+    	            toggleDisabledState(event);
+    	        }
+    	    });
+    		
             $('#productForm').on('submit', function(e) {
                 e.preventDefault(); // Prevent default form submission
 

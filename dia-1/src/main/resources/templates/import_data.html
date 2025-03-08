@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Data</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="import_data_style.css">
+  <style>
+    .notes {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 5px;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 15px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .form-group label {
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-group input, .form-group select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+      width: 100%;
+    }
+    .button-group {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .button-group button, .button-group a {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">Product<span>Manager</span></div>
+    <div class="logout-container">
+      <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+  </header>
+
+  <!-- Import Data Section -->
+  <div class="import-container">
+    <h1><i class="fas fa-file-import"></i> Import Data</h1>
+    <p>Upload product data files to keep your catalog updated.</p>
+
+    <div class="form-group">
+      <label for="categorySelect"><i class="fas fa-tags"></i> Select Category:</label>
+      <select id="categorySelect">
+        <option value="">Select Category</option>
+        <option value="1">Diamond Rings</option>
+        <option value="2">Open Setting</option>
+        <option value="3">Chains</option>
+        <option value="4">Diamond Earrings</option>
+        <option value="5">Vilandi</option>
+        <option value="6">Jadtar Register</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="fileUpload"><i class="fas fa-upload"></i> Upload File:</label>
+      <input type="file" id="fileUpload" accept=".csv, .xlsx">
+    </div>
+
+    <div class="button-group">
+      <button id="importButton"><i class="fas fa-cloud-upload-alt"></i> Import Data</button>
+      <a href="/files/sample.xlsx" download class="download-sample-btn"><i class="fas fa-file-download"></i> Download Sample</a>
+    </div>
+    <a href="/home" class="back-button"><i class="fas fa-arrow-left"></i> Back to Home</a>
+  </div>
+
+  <!-- Notes Section -->
+  <div class="notes">
+    <p><strong>Notes:</strong></p>
+    <ul>
+      <li>DO NOT KEEP BLANK VALUES IN EXCEL SHEET. THIS MIGHT NOT IMPORT THE DATA.</li>
+      <li>MAKE SURE TO KEEP A UNIQUE DESIGN NO FOR EVERY PRODUCT. IF THE DESIGN NO IS DUPLICATE, THEN SYSTEM WILL CREATE A NEW/ALTERNATE DESIGN NO FOR THAT PRODUCT.</li>
+      <li>IMPORT DATA FOLLOWS A SPECIFIC EXCEL TEMPLATE, PLEASE USE THE SAMPLE EXCEL TEMPLATE TO ADD THE DATA. USE "DOWNLOAD SAMPLE" BUTTON TO GET THE SAMPLE.</li>
+    </ul>
+  </div>
+
+  <!-- Loading Modal -->
+  <div id="loadingModal">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>Import in progress...</p>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <p id="modalMessage"></p>
+      <button id="closeModal">OK</button>
+    </div>
+  </div>
+
+  <script>
+   // Handle Import Button Click
+    document.getElementById('importButton').addEventListener('click', () => {
+      const category = document.getElementById('categorySelect').value;
+      const fileInput = document.getElementById('fileUpload');
+      const modal = document.getElementById('modal');
+      const modalMessage = document.getElementById('modalMessage');
+      const loadingModal = document.getElementById('loadingModal');
+
+      // Validate inputs
+      if (!category || !fileInput.files.length) {
+        modalMessage.textContent = "Please select a category and upload a file.";
+        modal.style.display = "flex";
+        return;
+      }
+
+      // Prepare FormData
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('category', category);
+
+      // Show loading modal
+      loadingModal.style.display = "flex";
+
+      // Send POST request to the backend
+      fetch('/uploadFile', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(data => {
+          // Hide loading modal
+          loadingModal.style.display = "none";
+
+          // Display success message
+          modalMessage.textContent = data;
+          modal.style.display = "flex";
+        })
+        .catch(error => {
+          // Hide loading modal
+          loadingModal.style.display = "none";
+
+          // Display error message
+          modalMessage.textContent = `Import failed: ${error.message}`;
+          modal.style.display = "flex";
+        });
+    });
+
+    // Close Modal
+    document.getElementById('closeModal').addEventListener('click', () => {
+      const modal = document.getElementById('modal');
+      modal.style.display = "none";
+    });
+  </script>
+</body>
+</html>

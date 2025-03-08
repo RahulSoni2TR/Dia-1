@@ -14,6 +14,8 @@ public class Estimate {
     private BigDecimal vilandi;
     private BigDecimal mozo;
     private BigDecimal realStones; // "real stones"
+    private BigDecimal diamonds;
+    private BigDecimal otherStones;
     private BigDecimal fitting;
     private BigDecimal gst;
     private BigDecimal nogsttotal;
@@ -187,5 +189,21 @@ public class Estimate {
 
 	public void setNogsttotal(BigDecimal nogsttotal) {
 		this.nogsttotal = nogsttotal.setScale(0, RoundingMode.HALF_UP);
+	}
+
+	public BigDecimal getDiamonds() {
+		return diamonds;
+	}
+
+	public void setDiamonds(BigDecimal diamonds) {
+		this.diamonds = diamonds;
+	}
+
+	public BigDecimal getOtherStones() {
+		return otherStones;
+	}
+
+	public void setOtherStones(BigDecimal otherStones) {
+		this.otherStones = otherStones;
 	}
 }

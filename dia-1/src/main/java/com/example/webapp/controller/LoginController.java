@@ -2,10 +2,14 @@ package com.example.webapp.controller;
 
 import com.example.webapp.models.Role;
 import com.example.webapp.models.User;
+import com.example.webapp.models.UserTemp;
 import com.example.webapp.service.CustomUserDetailsService;
 import com.example.webapp.service.UserService;
 
+import jakarta.servlet.http.HttpSession;
+
 import java.util.Iterator;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 
 @Controller
 public class LoginController {
@@ -43,8 +48,9 @@ public class LoginController {
         return "home";  // Renders the home.html page
     }
     
+    
     @PostMapping("/process-login")
-    public String processLogin(@RequestParam String username, @RequestParam String password) {
+    public String processLogin(@RequestParam String username, @RequestParam String password,HttpSession session) {
         // Retrieve user from the database
     	System.out.println("login endpoint");
         User user = userService.findByUsername(username);
@@ -57,7 +63,9 @@ public class LoginController {
         
         if (user != null && passwordEncoder.matches(password, user.getPassword())) {
         	System.out.println("authentication complete");
-            return "redirect:/home";  // Password matches, redirect to home
+        	session.setAttribute("username", user.getUsername());
+        	System.out.println(user.getUsername());
+            return "home";  // Password matches, redirect to home
         } else {
         	System.out.println("authentication incomplete");
             return "index";  // Invalid login, return to login page
@@ -85,5 +93,6 @@ public class LoginController {
         
         return ResponseEntity.ok("User registered successfully!");
     }
-
+    
+   
 }

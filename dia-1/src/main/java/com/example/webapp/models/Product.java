@@ -25,16 +25,13 @@ public class Product {
     @Column(name = "product_id", nullable = false)
     private Integer productId;
 
-    @NotNull(message = "Product name cannot be null")
-    @Column(name = "item", nullable = false, length = 100)
+    @Column(name = "item", nullable = true, length = 100)
     private String item;
 
-    @NotNull(message = "Price cannot be null")
     @Positive(message = "Price must be positive")
-    @Column(name = "price", nullable = false)
+    @Column(name = "price", nullable = true)
     private BigDecimal price;
 
-    @NotNull(message = "Stock quantity cannot be null")
     @Positive(message = "Stock quantity must be positive")
     @Column(name = "stock_quantity", nullable = true)
     private Integer stockQuantity;
@@ -53,11 +50,33 @@ public class Product {
 
     @Column(name = "dia_weight")
     private BigDecimal diaWeight;
+    
+    @Column(name = "diamond_rate")
+    private BigDecimal diaRt;
 
     @Column(name = "remarks")
     private String remarks;
 
-    @Column(name = "gross")
+    public BigDecimal getDiaRt() {
+		return diaRt;
+	}
+
+
+	public void setDiaRt(BigDecimal diaRt) {
+		this.diaRt = diaRt;
+	}
+
+
+	public BigDecimal getOtherStonesRt() {
+		return otherStonesRt;
+	}
+
+
+	public void setOtherStonesRt(BigDecimal otherStonesRt) {
+		this.otherStonesRt = otherStonesRt;
+	}
+
+	@Column(name = "gross")
     private BigDecimal gross;
 
     @Column(name = "vilandi_ct")
@@ -75,6 +94,9 @@ public class Product {
     @Column(name = "other_stones_ct")
     private BigDecimal otherStonesCt;
 
+    @Column(name = "other_stones_rate")
+    private BigDecimal otherStonesRt;
+    
     @Column(name = "others")
     private String others;
 
@@ -112,8 +134,82 @@ public class Product {
     @Column(name = "m_rate")
     private BigDecimal mRate;
     
-    @Column(name = "createDateTime", updatable = false)
+    @Column(name = "labour_gm")
+    private BigDecimal labour;
+    
+    @Column(name = "labour_all")
+    private BigDecimal labourAll;
+    
+    
+    @Column(name = "karat")
+    private BigDecimal karat;
+    
+
+    public void resetProduct() {
+        this.item = null;
+        this.price = null;
+        this.stockQuantity = null;
+        this.categoryId = null;
+        this.imageUrl = null;
+        this.net = null;
+        this.pcs = null;
+        this.diaWeight = null;
+        this.remarks = null;
+        this.gross = null;
+        this.vilandiCt = null;
+        this.diamondsCt = null;
+        this.beadsCt = null;
+        this.pearlsGm = null;
+        this.otherStonesCt = null;
+        this.others = null;
+        this.designNo = null;
+        this.stones = null;
+        this.ssPearlCt = null;
+        this.realStone = null;
+
+        // Reset rates and additional fields
+        this.stRate = null;
+        this.bdRate = null;
+        this.prlRate = null;
+        this.ssRate = null;
+        this.fitting = null;
+        this.mozonite = null;
+        this.mRate = null;
+        this.labour = null;
+        this.labourAll = null;
+        this.karat = null;
+    }
+
+    
+	public void setLabour(BigDecimal labour) {
+		this.labour = labour;
+	}
+
+    public BigDecimal getLabour() {
+		return labour;
+	}
+	
+	public BigDecimal getLabourAll() {
+		return labourAll;
+	}
+
+	public void setLabourAll(BigDecimal labourAll) {
+		this.labourAll = labourAll;
+	}
+
+	public BigDecimal getKarat() {
+		return karat;
+	}
+
+	public void setKarat(BigDecimal karat) {
+		this.karat = karat;
+	}
+
+	@Column(name = "create_date_time", updatable = false)
     private LocalDateTime createDateTime;
+    
+	@Column(name = "update_date_time")
+    private LocalDateTime updateDateTime;
 
     public LocalDateTime getCreateDateTime() {
 		return createDateTime;
@@ -130,9 +226,6 @@ public class Product {
 	public void setUpdateDateTime(LocalDateTime updateDateTime) {
 		this.updateDateTime = updateDateTime;
 	}
-
-	@Column(name = "updateDateTime")
-    private LocalDateTime updateDateTime;
 
     
     public BigDecimal getmRate() {

@@ -170,3 +170,126 @@ h1 {
 .logout-btn:hover {
     background-color: #c82333;
 }
+
+/* Container to hold the filter, sort, and search options in a row */
+.filter-sort-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    width: 100%; /* Ensure container stays within the page */
+    box-sizing: border-box; /* Prevent overflow from affecting layout */
+}
+
+/* Button for opening filter/sort options */
+.filter-sort-btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.filter-sort-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Search box styling */
+.search-box-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.search-box-container input {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    width: 250px;
+    box-sizing: border-box;
+}
+
+/* Dropdown container for filter/sort options */
+.filter-sort-options {
+    display: none; /* Initially hidden */
+    flex-direction: row;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-left: 20px;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    top: 100%; /* Ensure it appears below the button */
+    left: 0; /* Align it to the left side of the button */
+    z-index: 10;
+    gap: 20px;
+    width: auto; /* Prevents dropdown from extending too far */
+    max-width: 100%; /* Ensure it doesn't overflow off the screen */
+    box-sizing: border-box;
+}
+
+/* Each filter section */
+.filter {
+    margin-bottom: 0;
+}
+
+/* Style for the select dropdowns */
+.filter-sort-options select {
+    width: 150px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    color: #333;
+    box-sizing: border-box; /* Prevents dropdown from overflowing */
+}
+
+/* Search Button */
+.search-btn {
+    padding: 10px 15px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Reset Button */
+.reset-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+ position: relative;
+    top: -15px; /* Move it up by 5px */
+}
+
+.reset-btn:hover {
+    background-color: #c82333;
+}
+
+/* Align Reset Button to the Left */
+#resetFilters {
+    display: block;
+    margin-top: 10px;
+}

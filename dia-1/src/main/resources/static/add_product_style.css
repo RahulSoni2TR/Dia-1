@@ -106,6 +106,13 @@ input[type="submit"]:hover {
     padding-left: 20px; /* Adjust spacing for the symbol */
 }
 
+.rupee-symbol {
+    margin-right: 5px; /* Add space between the symbol and the input */
+    font-size: 16px; /* Match the font size of the input */
+    color: #000; /* Set the color of the symbol */
+    font-weight: bold; /* Make the symbol bold */
+}
+
 .price-container::before {
     content: "₹";
     position: absolute;

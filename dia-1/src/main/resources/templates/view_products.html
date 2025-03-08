@@ -17,7 +17,18 @@
         <h1>Explore Our Product Range</h1>
         <p class="intro-text">Browse our wide range of products and use the filter to find exactly what you need.</p>
 
-        <!-- Filter by Category -->
+<!-- Filter & Sort Container -->
+<div class="filter-sort-container">
+    <button id="toggleFilters" class="filter-sort-btn">Filter & Sort</button>
+
+    <!-- Search Box -->
+    <div class="search-box-container">
+        <input type="text" id="searchInput" placeholder="Search products by name...">
+        <button id="searchSubmit" class="search-btn">Submit</button>
+    </div>
+
+    <!-- Filter & Sort Dropdown -->
+    <div id="filterSortOptions" class="filter-sort-options">
         <div class="filter">
             <label for="categoryFilter">Filter by Category:</label>
             <select id="categoryFilter">
@@ -30,6 +41,17 @@
                 <option value="6">Jadtar Register</option>
             </select>
         </div>
+        <div class="filter">
+            <label for="sortFilter">Sort by:</label>
+            <select id="sortFilter">
+                <option value="" disabled selected>Select Sorting</option>
+                <option value="recent">Most Recent</option>
+                <option value="old">Old Products</option>
+            </select>
+        </div>
+        <button id="resetFilters" class="reset-btn">Reset</button>
+    </div>
+</div>
 
         <!-- Product Grid -->
         <div class="product-grid" id="productGrid"></div>
@@ -45,14 +67,24 @@
         // JavaScript code remains the same
         let currentPage = 0;
         const productsPerPage = 12;
-
-        function loadProducts(category = '') {
-            fetch(`/product/load?page=${currentPage}&size=${productsPerPage}&category=${category}`)
+        let lastCategory = '';
+        let lastSearchTerm = '';
+        let lastSortBy = '';
+        
+        function loadProducts(category = '',searchTerm = '', sortBy = '',reset = false) {
+        	if (reset || category !== lastCategory || searchTerm !== lastSearchTerm || sortBy !== lastSortBy) {
+                currentPage = 0;
+                document.getElementById('productGrid').innerHTML = ''; // Clear previous results
+            }
+            fetch(`/product/load?page=${currentPage}&size=${productsPerPage}&category=${category}&searchTerm=${searchTerm}&sortBy=${sortBy}`)
                 .then(response => response.json())
                 .then(data => {
                     const productGrid = document.getElementById('productGrid');
+                    if (!data.products || data.products.length === 0) {
                     if (currentPage === 0) {
-                        productGrid.innerHTML = ''; // Clear previous products if starting fresh
+                        productGrid.innerHTML = '<p>No products found.</p>'; // Clear previous products if starting fresh
+                    }
+                    return;
                     }
                     data.products.forEach(product => {
                         const productCard = document.createElement('div');
@@ -60,7 +92,7 @@
                         productCard.innerHTML = `
                             <img src="${product.imageUrl}" alt="${product.item}">
                             <h2 class="product-name">${product.item}</h2>
-                            <p class="product-price">₹${product.price.toFixed(2)}</p>
+                            <p class="product-price">₹${product.price?.toFixed(2) || ''}</p>
                             <div class="button-container">
                                 <button class="load-product" data-id="${product.productId}">View Product</button>
                                 <button class="estimate-product" data-id="${product.productId}">Estimate</button>
@@ -71,19 +103,46 @@
                     currentPage++;
                     if (currentPage * productsPerPage >= data.totalCount) {
                         document.getElementById('loadMoreButton').style.display = 'none';
+                    }else {
+                        document.getElementById('loadMoreButton').style.display = 'block';
                     }
+                    lastCategory = category;
+                    lastSearchTerm = searchTerm;
+                    lastSortBy = sortBy;
                 });
+          //  .catch(error => console.error("Error loading products:", error));
         }
 
         document.getElementById('loadMoreButton').addEventListener('click', () => {
-            loadProducts(document.getElementById('categoryFilter').value);
+        	loadProducts(lastCategory, lastSearchTerm, lastSortBy);
         });
 
         document.getElementById('categoryFilter').addEventListener('change', function () {
             currentPage = 0;
             document.getElementById('loadMoreButton').style.display = 'block';
-            loadProducts(this.value);
+            loadProducts(this.value, document.getElementById('searchInput').value.trim(), document.getElementById('sortFilter').value,true);
         });
+
+        document.getElementById('searchSubmit').addEventListener('click', function () {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            loadProducts(document.getElementById('categoryFilter').value, searchTerm, document.getElementById('sortFilter').value,true);
+        });
+
+        document.getElementById('sortFilter').addEventListener('change', function () {
+            const sortBy = this.value;
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            loadProducts(document.getElementById('categoryFilter').value, searchTerm, sortBy,true);
+        });
+
+        document.getElementById('resetFilters').addEventListener('click', function () {
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('sortFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            currentPage = 0;
+            document.getElementById('loadMoreButton').style.display = 'block';
+            loadProducts('', '', '', true);
+        });
+
 
         document.getElementById('productGrid').addEventListener('click', function (e) {
             if (e.target.classList.contains('load-product')) {
@@ -102,6 +161,17 @@
         });
 
         loadProducts(); // Initial load
+        const toggleButton = document.getElementById('toggleFilters');
+        const filterSortOptions = document.getElementById('filterSortOptions');
+
+        toggleButton.addEventListener('click', function () {
+            // Toggle the visibility of the filter-sort-options
+            if (filterSortOptions.style.display === 'flex') {
+                filterSortOptions.style.display = 'none';
+            } else {
+                filterSortOptions.style.display = 'flex';
+            }
+        });
     </script>
 </body>
 </html>

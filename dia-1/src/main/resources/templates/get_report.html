@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Generate Product Report</title>
+  <link rel="stylesheet" href="generate_report_style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">Product<span>Manager</span></div>
+    <div class="logout-container">
+      <a href="/logout" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </a>
+    </div>
+  </header>
+
+<div class="filter">
+  <label for="categorySelect">Select Category:</label>
+  <select id="categorySelect">
+    <option value="">Select Category</option>
+    <option value="1">Diamond Rings</option>
+    <option value="2">Open Setting</option>
+    <option value="3">Chains</option>
+    <option value="4">Diamond Earrings</option>
+    <option value="5">Vilandi</option>
+    <option value="6">Jadtar Register</option>
+  </select>
+
+  <!-- Date Filters -->
+<label for="startDate">Start Date:</label>
+    <input type="text" id="startDate" placeholder="Select Start Date">
+    <label for="endDate">End Date:</label>
+    <input type="text" id="endDate" placeholder="Select End Date">
+</div>
+
+
+<div class="submit-container">
+    <button onclick="loadFilteredProducts()">Submit</button>
+  </div>
+
+    <!-- Product Table -->
+<!-- Product Table -->
+<div id="productTableContainer" style="display:none;">
+  <div class="table-wrapper">
+    <table id="productTable">
+      <thead>
+        <tr id="tableHeaders"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="button-container">
+    <button id="loadMoreButton" onclick="loadMoreProducts()">Load More</button>
+    <button id="generatePDFButton" onclick="generatePDF()">Generate PDF</button>
+  </div>
+</div>
+
+  
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <button class="back-button" onclick="window.history.back()">← Back</button>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2024 Product Management System. All rights reserved.</p>
+  </footer>
+
+  <!-- Add to your existing HTML -->
+<script>
+
+  let currentPage = 0;
+  const productsPerPage = 10;
+  let loadedProducts = [];
+  let selectedCategory = "";
+
+  // Category field mappings
+  const categoryFields = {
+    1: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    2: ["S.No", "Design No", "Product Name","Karat", "Net", "Gross", "Vilandi", "Vilandi Rate", "Diamonds (Ct)","Diamond Price", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "Other Stones", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    3: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    4: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    5: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Vilandi", "Vilandi Rate", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Remarks"],
+    6: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Gross", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls Weight (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Mozonite", "Mozonite Rate", "Remarks"]
+  };
+
+  flatpickr("#startDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      defaultDate: new Date(),
+      onChange: function(selectedDates, dateStr, instance) {
+        instance.close(); // Close the dropdown immediately after selection
+      }
+    });
+
+    flatpickr("#endDate", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      defaultDate: new Date(),
+      onChange: function(selectedDates, dateStr, instance) {
+        instance.close(); // Close the dropdown immediately after selection
+      }
+    });
+  
+  function loadFilteredProducts() {
+    const categoryId = document.getElementById('categorySelect').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!categoryId) {
+      alert("Please select a category.");
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+
+    selectedCategory = categoryId;
+
+    const formattedStartDate = new Date(startDate).toISOString().slice(0, 19).replace('T', ' ');
+    const formattedEndDate = new Date(endDate).toISOString().slice(0, 19).replace('T', ' ');
+
+    fetch(`/getReport/${categoryId}?startDate=${formattedStartDate}&endDate=${formattedEndDate}`)
+      .then(response => response.json())
+      .then(data => {
+        loadedProducts = data;
+        renderTableHeaders();
+        displayProducts();
+        document.getElementById('productTableContainer').style.display = 'block';
+      })
+      .catch(error => console.error("Error loading products:", error));
+  }
+
+  function renderTableHeaders() {
+    const headers = categoryFields[selectedCategory];
+    const tableHeaders = document.getElementById("tableHeaders");
+    tableHeaders.innerHTML = "";
+
+    headers.forEach(header => {
+      const th = document.createElement("th");
+      th.textContent = header;
+      tableHeaders.appendChild(th);
+    });
+  }
+
+  function displayProducts() {
+    const tableBody = document.getElementById('productTable').getElementsByTagName('tbody')[0];
+    const start = currentPage * productsPerPage;
+    const end = start + productsPerPage;
+    const productsToShow = loadedProducts.slice(start, end);
+
+    productsToShow.forEach((product, index) => {
+      const row = tableBody.insertRow();
+      const fields = categoryFields[selectedCategory];
+
+      fields.forEach((field, idx) => {
+        const cell = row.insertCell(idx);
+        cell.classList.add('small-text');
+        switch (field) {
+          case "S.No":
+            cell.textContent = start + index + 1;
+            break;
+          case "Design No":
+            cell.textContent = product.designNo || "N/A";
+            console.log(product);
+            break;
+          case "Product Name":
+            cell.textContent = product.item || "N/A";
+            break;
+          case "Karat":
+              cell.textContent = product.karat || "N/A";
+              break;
+          case "Price":
+            cell.textContent =`₹ ${product.price || "N/A"}`;
+            break;
+          case "Net":
+            cell.textContent = product.net || "N/A";
+            break;
+          case "Gross":
+            cell.textContent = product.gross || "N/A";
+            break;
+          case "Vilandi":
+            cell.textContent = product.vilandiCt || "N/A";
+            break;
+          case "Vilandi Rate":
+            cell.textContent = `₹ ${product.vRate || "N/A"}`;
+            break;
+          case "Diamonds (Ct)":
+            cell.textContent = product.diamondsCt || "N/A";
+            break;
+          case "Diamond Price":
+              cell.textContent = `₹ ${product.diaRt || "N/A"}`;
+              break;
+          case "Beads (Ct.)":
+            cell.textContent = product.beadsCt || "N/A";
+            break;
+          case "Beads Rate":
+            cell.textContent = `₹ ${product.bdRate || "N/A"}`;
+            break;
+          case "Pearls (gm)":
+          case "Pearls Weight (gm)":
+            cell.textContent = product.pearlsGm || "N/A";
+            break;
+          case "Pearls Rate":
+            cell.textContent = `₹ ${product.prlRate || "N/A"}`;
+            break;
+          case "Other Stones":
+            cell.textContent = product.otherStonesCt || "N/A";
+            break;
+          case "SS Pearls (Ct.)":
+            cell.textContent = product.ssPearlCt || "N/A";
+            break;
+          case "SS Pearls Rate":
+            cell.textContent = `₹ ${product.ssRate || "N/A"}`;
+            break;
+          case "Real Stones (Ct.)":
+            cell.textContent = `₹ ${product.realStone || "N/A"}`;
+            break;
+          case "Fitting":
+            cell.textContent = `₹ ${product.fitting || "N/A"}`;
+            break;
+          case "Mozonite":
+            cell.textContent = product.mozonite || "N/A";
+            break;
+          case "Mozonite Rate":
+            cell.textContent = `₹ ${product.mRate || "N/A"}`;
+            break;
+          case "Labour Charges":
+              cell.textContent = `₹ ${product.labour || "N/A"}`;
+              break;
+          case "Remarks":
+            cell.textContent = product.remarks || "N/A";
+            break;
+          case "Stones":
+              cell.textContent = product.stones || "N/A";
+              break;
+          case "Stones Rate":
+              cell.textContent = `₹ ${product.stRate || "N/A"}`;
+              break;
+          case "Create Date":
+            cell.textContent = product.createDateTime || "N/A";
+            break;
+          case "Update Date":
+            cell.textContent = product.updateDateTime || "N/A";
+            break;
+          default:
+            cell.textContent = "N/A";
+        }
+      });
+    });
+
+    currentPage++;
+    if (currentPage * productsPerPage >= loadedProducts.length) {
+      document.getElementById('loadMoreButton').style.display = 'none';
+    } else {
+      document.getElementById('loadMoreButton').style.display = 'inline-block';
+    }
+  }
+
+  function loadMoreProducts() {
+    displayProducts();
+  }
+  
+  function generatePDF() {
+	    // Table setup
+	    const table = document.getElementById('productTable');
+
+	    // Extract headers
+	    const headers = Array.from(table.rows[0].cells).map(cell => ({
+	        text: cell.textContent,
+	        style: 'tableHeader',
+	    }));
+
+	    // Extract rows
+	    const rows = Array.from(table.rows).slice(1).map(row =>
+	        Array.from(row.cells).map(cell => ({
+	            text: cell.textContent,
+	            style: 'tableCell',
+	        }))
+	    );
+
+	    // Define the PDF document
+	    const docDefinition = {
+	        pageSize: 'A2', // Page size (A3)
+	        pageOrientation: 'landscape', // Landscape orientation
+	        content: [
+	            { text: 'Product Report', style: 'title' },
+	            { text: 'Category: Vilandi', style: 'subtitle', margin: [0, 10, 0, 20] },
+	            {
+	                table: {
+	                    headerRows: 1,
+	                    widths: Array(headers.length).fill('*'), // Auto width for columns
+	                    body: [headers, ...rows], // Combine headers and rows
+	                },
+	                layout: 'lightHorizontalLines', // Use a predefined table layout
+	            },
+	        ],
+	        styles: {
+	            title: {
+	                fontSize: 18,
+	                bold: true,
+	                margin: [0, 0, 0, 10], // Bottom margin
+	            },
+	            subtitle: {
+	                fontSize: 14,
+	                italics: true,
+	                color: '#666666',
+	            },
+	            tableHeader: {
+	                bold: true,
+	                fillColor: '#f2f2f2',
+	                color: '#000000',
+	                alignment: 'center',
+	            },
+	            tableCell: {
+	                margin: [2, 2, 2, 2],
+	            },
+	        },
+	    };
+
+	    // Generate and download the PDF
+	    pdfMake.createPdf(docDefinition).download('product_report.pdf');
+	}
+
+</script>
+
+</body>
+</html>

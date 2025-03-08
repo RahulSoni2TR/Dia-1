@@ -66,7 +66,7 @@ public class SecurityConfig {
             .cors()
             .and()
             .authorizeHttpRequests()
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**", "/files/**").permitAll()
                 .requestMatchers("/login", "/register", "/logout", "*.css").permitAll() 
                 .requestMatchers("/add-product", "/modify-product", "/remove-product", "/set-price").hasRole("ADMIN")
                 .requestMatchers("/view-product").authenticated()

@@ -1,0 +1,125 @@
+    /* General Styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #00a86b, #007bff);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      width: 100%;
+      background: #007bff;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .price-container {
+      width: 90%;
+      max-width: 500px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .price-container h1 {
+      color: #333;
+      font-size: 1.8rem;
+    }
+
+    .price-input {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      display: block;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .button {
+      flex: 1;
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: linear-gradient(90deg, #00a86b, #007bff);
+      color: white;
+      margin: 0 5px;
+      transition: 0.3s;
+    }
+
+    .button:hover {
+      opacity: 0.8;
+    }
+
+    .scrolling-text {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .footer {
+      width: 100%;
+      background: #333;
+      padding: 10px;
+      color: white;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .moving-prices {
+  margin-top: 20px; /* Shift it down to prevent touching the header */
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.scrolling-text {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000000;
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollText 10s linear infinite; /* Added animation */
+}
+
+@keyframes scrollText {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.price-container {
+  margin-top: 20px; /* Add space below moving text */
+}
+
+.label {
+  display: block;
+  font-weight: bold;
+  margin-top: 10px;
+  color: #000000; 
+}
+    

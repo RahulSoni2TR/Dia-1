@@ -119,3 +119,154 @@ h1 {
         font-size: 0.9rem;
     }
 }
+
+    /* Styling for the dropdown button */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropbtn {
+      background-color: #4CAF50; /* Green background */
+      color: white; /* White text */
+      padding: 10px 20px; /* Padding for the button */
+      font-size: 16px; /* Slightly larger font */
+      border: none; /* Remove border */
+      border-radius: 8px; /* Rounded corners */
+      cursor: pointer; /* Pointer cursor on hover */
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .dropbtn i {
+      font-size: 18px; /* Adjust icon size */
+    }
+
+    .dropbtn:hover {
+      background-color: #45a049; /* Slightly darker green on hover */
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Subtle shadow on hover */
+    }
+
+    .dropdown-content {
+      display: none; /* Hidden by default */
+      position: absolute;
+      background-color: #ffffff; /* White background */
+      min-width: 200px; /* Minimum width */
+      box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); /* Dropdown shadow */
+      border-radius: 8px; /* Rounded corners */
+      z-index: 1; /* Ensure it appears on top */
+      overflow: hidden; /* Prevent overflow */
+    }
+
+    .dropdown-content a {
+      color: #333; /* Dark gray text */
+      padding: 12px 16px; /* Padding inside links */
+      text-decoration: none; /* Remove underline */
+      display: flex; /* Flex layout for alignment */
+      align-items: center;
+      gap: 10px; /* Space between icon and text */
+      transition: background-color 0.2s ease; /* Smooth hover effect */
+    }
+
+    .dropdown-content a:hover {
+      background-color: #f1f1f1; /* Light gray on hover */
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block; /* Show dropdown on hover */
+    }
+
+    .dropdown:hover .dropbtn {
+      background-color: #3e8e41; /* Slightly darker green */
+    }
+    
+    .scrolling-prices-container {
+  background-color: linear-gradient(90deg, #00a86b, #007bff); /* Light background */
+  padding: 5px;
+  text-align: center;
+  border-bottom: 2px solid linear-gradient(90deg, #00a86b, #007bff);
+  margin-top: 5px; /* Shift it down from the header */
+}
+
+.scrolling-prices {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.scrolling-text {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  animation: scrollText 25s linear infinite;
+}
+
+@keyframes scrollText {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+    
+    /* Popup Overlay */
+.popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Ensures popup is on top */
+}
+
+/* Popup Box */
+.popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 350px;
+    position: relative;
+    z-index: 10000; /* Ensures content is above overlay */
+    color: #333;
+}
+
+/* Close Button */
+.close-btn {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10001; /* Ensures button is clickable */
+    color: #333;
+}
+
+.popup-buttons {
+    display: flex;
+    justify-content: center; /* Aligns buttons in center */
+    gap: 15px; /* Adds space between buttons */
+    margin-top: 15px; /* Adds spacing between text and buttons */
+}
+
+/* Popup Buttons */
+.popup-content button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.popup-content button:hover {
+    background-color: #0056b3;
+}
+    

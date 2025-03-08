@@ -25,73 +25,85 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
+            <tr id="gold_row">
     <td class="description">Gold</td>
     <td id="gold-qty">17.000</td>
     <td id="gold-rate"></td>
     <td id="gold-amt">115175</td>
 </tr>
-            <tr>
+            <tr id="labour_row">
                 <td class="description">Labour</td>
                 <td id="labour-qty">17.000</td>
                 <td id="labour-rate">1100</td>
                 <td id="labour-amt">18700</td>
             </tr>
-            <tr>
+            <tr id="stones_row">
                 <td class="description">Stones</td>
                 <td id="stone-qty">160</td>
                 <td id="stone-rate">150</td>
                 <td id="stone-amt">24000</td>
             </tr>
-            <tr>
+            <tr id="beads_row">
                 <td class="description">Beads</td>
                 <td id="beads-qty">48.15</td>
                 <td id="beads-rate">60</td>
                 <td id="beads-amt">2889</td>
             </tr>
-            <tr>
+            <tr id="pearls_row">
                 <td class="description">Pearls</td>
                 <td id="pearls-qty">9.150</td>
                 <td id="pearls-rate">1200</td>
                 <td id="pearls-amt">10980</td>
             </tr>
-            <tr>
+            <tr id="sspearls_row">
                 <td class="description">SS Pearls</td>
                <td id="sspearls-qty">0</td>
                 <td id="sspearls-rate">0</td>
                 <td id="sspearls-amt">0</td>
             </tr>
-            <tr>
+                        <tr id="diamonds_row">
+                <td class="description">Diamonds</td>
+               <td id="diamonds-qty">0</td>
+                <td id="diamonds-rate">0</td>
+                <td id="diamonds-amt">0</td>
+            </tr>
+            <tr id="os_row">
+                <td class="description">Other Stones</td>
+               <td id="ostones-qty">0</td>
+                <td id="ostones-rate">0</td>
+                <td id="ostones-amt">0</td>
+            </tr>
+            <tr id="vilandi_row">
                 <td class="description">Vilandi</td>
                <td id="vilandi-qty">0</td>
                 <td id="vilandi-rate">0</td>
                 <td id="vilandi-amt">0</td>
             </tr>
-            <tr>
+            <tr id="moz_row">
                 <td class="description">Mozonite</td>
                 <td id="mozo-qty">0</td>
                 <td id="mozo-rate">0</td>
                 <td id="mozo-amt">0</td>
             </tr>
-            <tr>
+            <tr id="realSt_row">
                 <td class="description">Real St</td>
                 <td id="realSt-qty"></td>
                 <td id="realSt-rate"></td>
                 <td id="realSt-amt">3000</td>
             </tr>
-            <tr>
+            <tr id="fitting_row">
                 <td class="description">Fitting</td>
                 <td id="fitting-qty"></td>
                 <td id="fitting-rate"></td>
                 <td id="fitting-amt">1500</td>
             </tr>
-            <tr>
+            <tr id="gst_row">
                 <td class="description">GST 3%</td>
                 <td id="gst-qty"></td>
                 <td id="gst-rate"></td>
                 <td id="gst-amt">5197</td>
             </tr>
-            <tr class="total-row">
+            <tr id="total_row" class="total-row">
                 <td class="description">Total</td>
                 <td id="total-qty"></td>
                 <td id="total-rate"></td>
@@ -107,6 +119,7 @@
 <script>
 let estimate;
 let product;
+let rate;
     document.addEventListener("DOMContentLoaded", function() {
     	const productId = sessionStorage.getItem('productId');
         // Replace `1` with the actual product ID you want to fetch.
@@ -115,8 +128,11 @@ let product;
             .then(data => {
                 product = data.object1;
                 estimate = data.object2;
-                const rate = data.object3;
-                const goldRate = rate.find(item => item.commodity === 'gold')?.price || 0;
+                rate = data.object3;
+                console.log(rate);
+                const productKarat = product.karat;
+                const formattedKarat = productKarat !== null ? productKarat.toFixed(2) : "0.00";
+                const goldRate = rate.find(item => item.commodity === formattedKarat)?.price || 0;
                 const adjustedgoldRate= goldRate/10;
                 // Populate table cells based on the `estimate` fields
                  const titleElement = document.querySelector('h1');
@@ -125,7 +141,7 @@ let product;
                 document.getElementById("gold-rate").textContent = `₹ ${adjustedgoldRate ?? 0}`;
                 document.getElementById("gold-amt").textContent = `₹ ${estimate.gold ?? 0}`;
                 document.getElementById("labour-qty").textContent = product.net ?? 0;
-                document.getElementById("labour-rate").textContent = `₹ ${1100 ?? 0}`;
+                document.getElementById("labour-rate").textContent = `₹ ${product.labour ?? 0}`;
                 document.getElementById("labour-amt").textContent = `₹ ${estimate.labour ?? 0}`;
                 document.getElementById("vilandi-qty").textContent = product.vilandiCt ?? 0;
                 document.getElementById("vilandi-rate").textContent = `₹ ${product.vRate ?? 0}`;
@@ -142,27 +158,46 @@ let product;
                 document.getElementById("sspearls-qty").textContent = product.ssPearlCt ?? 0;
                 document.getElementById("sspearls-rate").textContent = `₹ ${product.ssRate ?? 0}`;
                 document.getElementById("sspearls-amt").textContent = `₹ ${estimate.ssPearls ?? 0}`;
-                document.getElementById("mozo-qty").textContent = product.mozonite ?? 0;
+                document.getElementById("mozo-qty").textContent = `₹ ${product.mozonite ?? 0}`;
                 document.getElementById("mozo-rate").textContent = `₹ ${product.mRate ?? 0}`;
                 document.getElementById("mozo-amt").textContent = `₹ ${estimate.mozo ?? 0}`;
-            //    document.getElementById("realSt-qty").textContent = product.realStone;
-            //    document.getElementById("realSt-rate").textContent = estimate.labour;
+                document.getElementById("diamonds-qty").textContent = `₹ ${product.diamondsCt ?? 0}`;
+                document.getElementById("diamonds-rate").textContent = `₹ ${product.diaRt ?? 0}`;
+            	document.getElementById("diamonds-amt").textContent = `₹ ${estimate.diamonds ?? 0}`;
+                document.getElementById("ostones-qty").textContent = `₹ ${product.otherStonesCt ?? 0}`;
+                document.getElementById("ostones-rate").textContent = `₹ ${product.otherStonesRt ?? 0}`;
+            	document.getElementById("ostones-amt").textContent = `₹ ${estimate.otherStones ?? 0}`;
                 document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
-           //     document.getElementById("fitting-qty").textContent = product.net;
-           //     document.getElementById("fitting-rate").textContent = estimate.labour;
                 document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
-           //     document.getElementById("total-qty").textContent = product.net;
-           //     document.getElementById("total-rate").textContent = estimate.labour;
            document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
                 document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
-          //      document.getElementById("gold-rate-input").textContent = estimate.gold;
-               
-                // Add more fields as necessary, for example:
-                // document.getElementById("stones-amount").textContent = estimate.stones;
-                // document.getElementById("total-amount").textContent = estimate.total;
+                
+                const categoryId = product.categoryId;
+                console.log("Category ID:", categoryId);
+                function showHideRows(categoryId) {
+                    const rowsToHide = {
+                        1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row"],
+                        2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row"],
+                        3: ["gold_row", "labour_row", "gst_row", "total_row"],
+                        4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row"],
+                        5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row"],
+                        6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row"]
+                    };
 
-                // Update the "Total" field, if it is computed in the backend
-            //    document.getElementById("total-amount").textContent = estimate.total;
+                    // Hide all rows first
+                    const allRows = document.querySelectorAll('tr');
+                    allRows.forEach(row => row.style.display = 'none');
+
+                    // Show rows for the selected category
+                    const rowsToDisplay = rowsToHide[categoryId];
+                    rowsToDisplay.forEach(rowId => {
+                        const row = document.getElementById(rowId);
+                        if (row) row.style.display = 'table-row';
+                    });
+                }
+
+                // Call the function to show the appropriate rows
+                showHideRows(categoryId);
             })
             .catch(error => console.error('Error fetching estimate:', error));
     });

@@ -1,5 +1,7 @@
 package com.example.webapp.cmd;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +36,8 @@ public class DataInitializer {
     public CommandLineRunner initData() {
         return args -> {
             // Create roles if they don't exist
-            Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN");
+            Optional<Role> adminRoles = roleRepository.findByRoleName("ROLE_ADMIN");
+            Role adminRole = adminRoles.get();
             if (adminRole == null) {
                 adminRole = new Role();
                 adminRole.setRoleName("ROLE_ADMIN");

@@ -8,8 +8,17 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+
+    <header class="header">
+        <div class="logo">Product<span>Manager</span></div>
+        <div class="logout-container">
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </header>
+
 <div class="top-right-nav">
-        <a href="/logout" class="logout-btn">Logout</a>
     </div>
     <div class="container">
         <h1>Modify Product</h1>
@@ -24,7 +33,7 @@
                 <input type="text" id="productName" name="productName" required>
 
                 <label for="productPrice">Price:</label>
-                <input type="text" id="productPrice" name="productPrice" step="any" required>
+                <input type="text" id="productPrice" name="productPrice" step="any">
 
                 <label for="productRemarks">Remarks:</label>
                 <textarea id="productRemarks" name="productRemarks"></textarea>
@@ -33,7 +42,7 @@
                 <input type="text" id="productImageUrl" name="productImageUrl" onchange="updateImagePreview()" readonly>
                 <button type="button" id="uploadImageButton" onclick="document.getElementById('imageFileInput').click()">Select Image</button>
                 <input type="file" id="imageFileInput" name="image" style="display: none;" accept="image/*" onchange="uploadImage()">
-                <img id="imagePreview" src="" alt="Image Preview" style="display: none; width: 200px;"/>
+                <img id="imagePreview" src="" alt="Image Preview"/>
 
                 <label for="categoryId">Category ID:</label>
                 <select id="categoryId" name="categoryId" onchange="updateCategoryFields()">
@@ -50,6 +59,12 @@
                 <div id="commonFields">
                     <label for="productNet">Net:</label>
                     <input type="text" id="productNet" name="productNet" step="any">
+                        <label for="labour">Labour/Gm:</label>
+                        <input type="text" id="labour" name="labour" step="any">
+                       	<label for="labourAll">Labour Amount:</label>
+                        <input type="text" id="labourAll" name="labourAll" step="any">
+                        <label for="karat">Karat:</label>
+                        <input type="text" id="karat" name="karat" step="any">
                 </div>
 
                 <!-- Category-specific fields -->
@@ -61,6 +76,12 @@
                         <input type="number" id="pcs" name="pcs" step="any">
                         <label for="diaWeight">Diamond Weight:</label>
                         <input type="text" id="diaWeight" name="diaWeight" step="any">
+                        <label for="diaWeight">Diamond Rate:</label>
+                        <input type="text" id="diaRate" name="diaWeight" step="any">
+                        <label for="diaOs">Other Stones:</label>
+                        <input type="text" id="diaOs" name="diaOs" step="any">
+                        <label for="diaOsRate">Other Stones Rate:</label>
+                        <input type="text" id="diaOsRate" name="diaOsRate" step="any">
                     </div>
 
                     <div id="openSettingFields" class="category-specific" style="display: none;">
@@ -72,8 +93,10 @@
                         <input type="number" id="vilandiCt" name="vilandiCt" step="any">
                         <label for="vilandiRate">Vilandi Rate:</label>
                         <input type="number" id="vilandiRate" name="vilandiRate" step="any">
-                        <label for="diamondsCt">Diamonds Count:</label>
+                        <label for="diamondsCt">Diamonds Weight:</label>
                         <input type="number" id="diamondsCt" name="diamondsCt" step="any">
+                        <label for="diamondsCtRate">Diamond Rate:</label>
+                        <input type="text" id="diamondsCtRate" name="diamondsCtRate" step="any">
                         <label for="beadsCt">Beads(Ct.):</label>
                         <input type="number" id="beadsCt" name="beadsCt" step="any">
                         <label for="beadsRate">Beads Rate:</label>
@@ -84,6 +107,8 @@
                         <input type="number" id="openPearlsRate" name="openPearlsRate" step="any">
                         <label for="otherStonesCt">Other Stones(Ct.):</label>
                         <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
+                        <label for="otherOsRate">Other Stones Rate:</label>
+                        <input type="text" id="otherOsRate" name="otherOsRate" step="any">
                         <label for="others">Others:</label>
                         <input type="text" id="others" name="others" step="any">
                     </div>
@@ -100,6 +125,12 @@
                         <input type="number" id="pcsEarrings" name="pcsEarrings" step="any">
                         <label for="diamondsCtEarrings">Diamonds(Ct.):</label>
                         <input type="number" id="diamondsCtEarrings" name="diamondsCtEarrings" step="any">
+                        <label for="diamondsCtEarringsRate">Diamonds Rate:</label>
+                        <input type="number" id="diamondsCtEarringsRate" name="diamondsCtEarringsRate" step="any">
+                        <label for="diaEOs">Other Stones:</label>
+                        <input type="text" id="diaEOs" name="diaEOs" step="any">
+                        <label for="diaOsRate">Other Stones Rate:</label>
+                        <input type="text" id="diaEOsRate" name="diaEOsRate" step="any">
                     </div>
 
                     <div id="vilandiFields" class="category-specific" style="display: none;">
@@ -199,9 +230,13 @@
             })
             .then(product => {
                 document.getElementById('productName').value = product.item;
-                document.getElementById('productPrice').value = product.price.toFixed(2);
+            //    document.getElementById('productPrice').value = product.price !== undefined ? product.price?.toFixed(2) : '';
+                document.getElementById('productPrice').value = product.price?.toFixed(2) || '';
                 document.getElementById('productRemarks').value = product.remarks;
                 document.getElementById('productNet').value = product.net;
+                document.getElementById('labour').value = product.labour;
+                document.getElementById('labourAll').value = product.labourAll;
+                document.getElementById('karat').value = product.karat;
                 document.getElementById('productImageUrl').value = product.imageUrl;
                 updateImagePreview();
 
