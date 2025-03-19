@@ -60,27 +60,28 @@
                             <h2>${renderText(product.item)}</h2>
                             <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
                             <p><strong>Design No:</strong> ${renderText(product.designNo)}</p>
+                            <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
                             <h3>Additional Details:</h3>
                     `;
 
                       switch (product.categoryId) {
                     case 1:
                         productDetailsHTML += `
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
                             <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                            <p><strong>Dia Wt (ct):</strong> ${renderText(product.diaWeight)}</p>
+                            <p><strong>Diamonds:</strong> ${renderText(product.diaWeight)} Carat</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 2:
                         productDetailsHTML += `
-                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
-                            <p><strong>Vilandi (Ct):</strong> ${renderText(product.vilandiCt)}</p>
-                            <p><strong>Diamonds (Ct):</strong> ${renderText(product.diamondsCt)}</p>
-                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
-                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
-                            <p><strong>Other Stones (Ct):</strong> ${renderText(product.otherStonesCt)}</p>
+                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
+                            <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} Carat</p>
+                            <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} Carat</p>
+                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
+                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
+                            <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} Carat</p>
                             <p><strong>Others:</strong> ${renderText(product.others)}</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
@@ -88,16 +89,16 @@
                     case 3:
                         productDetailsHTML += `
                         	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 4:
                         productDetailsHTML += `
                         	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
                             <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                            <p><strong>Diamond Wt (ct):</strong> ${renderText(product.diaWeight)}</p>
+                            <p><strong>Diamonds:</strong> ${renderText(product.diaWeight)} Carat</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
@@ -105,27 +106,27 @@
                         productDetailsHTML += `
                         	<!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
                             <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)}</p>
-                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
+                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
                             <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
-                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
-                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
-                            <p><strong>SS Pearl (Ct):</strong> ${renderText(product.ssPearlCt)}</p>
-                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)}</p>
+                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
+                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
+                            <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} Carat</p>
+                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)} Carat</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;
                     case 6:
                         productDetailsHTML += `
                            <!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Gross:</strong> ${renderText(product.gross)}</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)}</p>
-                            <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
-                            <p><strong>Beads (Ct):</strong> ${renderText(product.beadsCt)}</p>
-                            <p><strong>Pearls (Gm):</strong> ${renderText(product.pearlsGm)}</p>
-                            <p><strong>SS Pearl (Ct):</strong> ${renderText(product.ssPearlCt)}</p>
-                            <p><strong>Real Stone (Ct):</strong> ${renderText(product.realStone)}</p>
-                            <p><strong>Mozonite (Ct):</strong> ${renderText(product.mozonite)}</p>
+                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
+                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
+                            <p><strong>Stones:</strong> ${renderText(product.stones)} Carat</p>
+                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
+                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
+                            <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} Carat</p>
+                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)} Carat</p>
+                            <p><strong>Mozonite:</strong> ${renderText(product.mozonite)}</p>
                             <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
                         `;
                         break;

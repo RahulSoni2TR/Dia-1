@@ -113,6 +113,15 @@
         instance.close(); // Close the dropdown immediately after selection
       }
     });
+    
+    function convertToIST(date) {
+        // Convert to IST (Asia/Kolkata)
+        const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+        const istDate = new Date(date.getTime() + istOffset);
+        
+        return istDate.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
   
   function loadFilteredProducts() {
     const categoryId = document.getElementById('categorySelect').value;
@@ -131,16 +140,39 @@
 
     selectedCategory = categoryId;
 
-    const formattedStartDate = new Date(startDate).toISOString().slice(0, 19).replace('T', ' ');
-    const formattedEndDate = new Date(endDate).toISOString().slice(0, 19).replace('T', ' ');
+    const formattedStartDate = convertToIST(new Date(startDate));
+    const formattedEndDate = convertToIST(new Date(endDate));
+    
+    loadedProducts = [];
+    currentPage = 0; // Reset pagination
+    document.getElementById('productTable').getElementsByTagName('tbody')[0].innerHTML = ""; // Clear old table rows
+
 
     fetch(`/getReport/${categoryId}?startDate=${formattedStartDate}&endDate=${formattedEndDate}`)
-      .then(response => response.json())
-      .then(data => {
-        loadedProducts = data;
+ .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.text(); // Read as text first
+  })
+  .then(text => {
+    const data = text ? JSON.parse(text) : []; // Handle empty response
+
+    console.log("Fetched Data:", data); // Debugging
+    	  if(!data || data.length === 0)
+    	  {
+    		  console.log('if');
+              productTableContainer.innerHTML = "<p style='color:red; font-size:18px;'>No products found.</p>";
+              productTableContainer.style.display = 'block';
+              return;
+          }
+      	else{ 
+    	
+    	loadedProducts = data;
         renderTableHeaders();
         displayProducts();
         document.getElementById('productTableContainer').style.display = 'block';
+      }
       })
       .catch(error => console.error("Error loading products:", error));
   }
@@ -240,8 +272,8 @@
             cell.textContent = `₹ ${product.mRate || "N/A"}`;
             break;
           case "Labour Charges":
-              cell.textContent = `₹ ${product.labour || "N/A"}`;
-              break;
+        	cell.textContent = product.labour ? `₹ ${product.labour}` : product.labourAll ? `₹ ${product.labourAll}` : "N/A";
+        	break;
           case "Remarks":
             cell.textContent = product.remarks || "N/A";
             break;
@@ -333,7 +365,8 @@
 	    };
 
 	    // Generate and download the PDF
-	    pdfMake.createPdf(docDefinition).download('product_report.pdf');
+        const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+        pdfMake.createPdf(docDefinition).download(`Report_${timestamp}.pdf`);
 	}
 
 </script>

@@ -120,7 +120,7 @@ button[type="submit"] {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
- 	overflow: auto;
+    overflow: auto;
     z-index: 1000;
 }
 
@@ -129,7 +129,8 @@ button[type="submit"] {
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: rgb(255, 255, 255); /* White background */
+    color: black; /* Black font color */
     margin: 15% auto;
     padding: 20px;
     border-radius: 8px;
@@ -142,12 +143,13 @@ button[type="submit"] {
 
 /* Modal Success/Error Styling */
 .modal-success {
-    background-color: #d4edda;
+    background-color: rgb(255, 255, 255); /* White background for success */
 }
 
 .modal-error {
-    background-color: #f8d7da;
+    background-color: #f8d7da; /* Light red for error messages */
 }
+
 
 .close-btn {
     background: #007bff;

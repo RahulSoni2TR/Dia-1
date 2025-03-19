@@ -8,14 +8,22 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<input type="checkbox" id="check">
+      <input type="checkbox" id="forgot-check">
+<input type="checkbox" id="reset-check">
   <div class="container">
-    <input type="checkbox" id="check">
-    <div class="login form">
+    
+      <div class="login form">
       <header>Login</header>
       <form action="/process-login" method="POST">
         <input type="text" name="username" placeholder="Enter your email" required>
         <input type="password" name="password" placeholder="Enter your password" required>
-        <a href="#">Forgot password?</a>
+ <div class="signup">
+      <label for="forgot-check">Forgot password?</label>
+    </div>
+    <div class="signup">
+      <label for="reset-check">Reset password?</label>
+    </div>
         <input type="submit" class="button" value="Login">
       </form>
       <div class="signup">
@@ -26,18 +34,249 @@
     </div>
     <div class="registration form">
       <header>Signup</header>
-      <form action="/register" method="POST">
-        <input type="text" name="username" placeholder="Enter your email" required>
-        <input type="password" name="password" placeholder="Create a password" required>
-        <input type="password" name="confirmPassword" placeholder="Confirm your password" required>
-        <input type="submit" class="button" value="Signup">
-      </form>
+     <form id="registerForm">
+    <input type="text" id="usernameS" name="username" placeholder="Enter your email" required>
+    <input type="password" id="password" name="password" placeholder="Create a password" required>
+    <input type="password" id="confirmSPassword" name="confirmPassword" placeholder="Confirm your password" required>
+
+    <select name="securityQuestion" id="securityQuestion" required>
+        <option value="" disabled selected>Select a security question</option>
+        <option value=">What is the name of your first pet?">What is the name of your first pet?</option>
+        <option value="What is your maiden name?">What is your maiden name?</option>
+        <option value="In what city were you born?">In what city were you born?</option>
+        <option value="What was the name of your first school?">What was the name of your first school?</option>
+        <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+        <option value="Anything Else!">Anything Else!</option>
+    </select>
+
+    <input type="text" id="securityAnswer" name="securityAnswer" placeholder="Your answer" required>
+
+    <input type="submit" class="button" value="Signup">
+</form>
+
       <div class="signup">
         <span class="signup">Already have an account?
          <label for="check">Login</label>
         </span>
       </div>
     </div>
+    
+<div class="forgot-password form">
+  <header>Forgot Password</header>
+  <form id="forgot-password-form">
+    <!-- Username Input -->
+    <div id="username-container">
+      <input type="text" id="username" name="username" placeholder="Enter your username" required>
+      <button type="button" class="button" onclick="fetchSecurityQuestion()">Get Security Question</button>
+    </div>
+
+    <!-- Security Question Section (Initially Hidden) -->
+    <div id="security-section" style="display: none;">
+      Security Question<input type="text" id="security-question" disabled>
+      <input type="text" id="security-answer" name="securityAnswer" placeholder="Enter your answer" required>
+      <button type="button" class="button" onclick="verifySecurityAnswer()">Verify Answer</button>
+    </div>
+
+    <!-- Password Reset Section (Initially Hidden) -->
+    <div id="password-reset-section" style="display: none;">
+      <input type="password" id="new-password" name="newPassword" placeholder="Enter new password" required>
+      <input type="password" id="confirm-password" placeholder="Confirm new password" required>
+      <button type="button" class="button" onclick="resetPassword()">Reset Password</button>
+    </div>
+  </form>
+
+  <div class="signup">
+    <label for="forgot-check">Back to Login</label>
   </div>
+</div>
+
+<div class="reset-password form">
+  <header>Reset Password</header>
+  <form id="reset-password-form">
+    <input type="text" id="usernameNs" name="username" placeholder="Enter your username" required>
+    <input type="password" name="oldPassword" id="oldPassword" placeholder="Enter current password" required>
+    <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password" required>
+    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password" required>
+    <input type="submit" class="button" value="Reset Password">
+  </form>
+  <div class="signup">
+    <label for="reset-check">Back to Login</label>
+  </div>
+</div>
+
+  </div>
+  
+   <script>
+   
+   document.getElementById("registerForm").addEventListener("submit", function(event) {
+	    event.preventDefault(); // Prevent form from submitting normally
+
+	    let username = document.getElementById("usernameS").value;
+	    let password = document.getElementById("password").value;
+	    let confirmPassword = document.getElementById("confirmSPassword").value;
+	    let securityQuestion = document.getElementById("securityQuestion").value;
+	    let securityAnswer = document.getElementById("securityAnswer").value;
+
+	    if (password !== confirmPassword) {
+	    	  showModal("Passwords do not match!");
+	          return;
+	    }
+
+	    fetch('/register', {
+	        method: 'POST',
+	        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+	        body: new URLSearchParams({
+	            username: username,
+	            password: password,
+	            securityQuestion: securityQuestion,
+	            securityAnswer: securityAnswer
+	        })
+	    })
+	    .then(response => response.text()) // Expecting plain text response
+	    .then(message => {
+	    	showModal("User registered successfully!");
+	    })
+	    .catch(error => console.error('Error:', error));
+	});
+
+   document.addEventListener("DOMContentLoaded", function () {
+       document.getElementById("reset-password-form").addEventListener("submit", validatePassword);
+   });
+        function fetchSecurityQuestion() {
+            let username = document.getElementById("username").value;
+
+            fetch('/get-security-question?username=' + encodeURIComponent(username))
+              .then(response => response.json())
+              .then(data => {
+                if (data.question) {
+                	document.getElementById("security-question").value = data.question;
+                  document.getElementById("username-container").style.display = "none"; // Hide username input
+                  document.getElementById("security-section").style.display = "block"; // Show security question
+                } else {
+                  showModal("User not found.");
+                }
+              })
+              .catch(error => {
+                console.error("Error fetching security question:", error);
+                showModal("Error fetching security question. Please try again.");
+              });
+          }
+
+          function verifySecurityAnswer() {
+            let username = document.getElementById("username").value;
+            let securityAnswer = document.getElementById("security-answer").value;
+
+            fetch('/verify-security-answer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, securityAnswer })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                document.getElementById("security-section").style.display = "none"; // Hide security section
+                document.getElementById("password-reset-section").style.display = "block"; // Show password reset section
+              } else {
+            	  showModal("Incorrect security answer.");
+              }
+            })
+            .catch(error => console.error('Error:', error));
+          }
+
+          function resetPassword() { 
+        	    let username = document.getElementById("username").value;
+        	    let newPassword = document.getElementById("new-password").value;
+        	    let confirmPassword = document.getElementById("confirm-password").value;
+
+        	    if (newPassword !== confirmPassword) {
+        	    	showModal("Passwords do not match!");
+        	        return;
+        	    }
+
+        	    fetch('/reset-password', {
+        	        method: 'POST',
+        	        headers: { 'Content-Type': 'application/json' },
+        	        body: JSON.stringify({ username, newPassword })
+        	    })
+        	    .then(response => response.json())
+        	    .then(data => {
+        	        if (data.success) {
+        	           showModal(data.message);
+        	        } else {
+        	        	showModal(data.message);
+        	        }
+        	    })
+        	    .catch(error => console.error('Error:', error));
+        	}
+
+
+          function validatePassword(event) {
+        	  event.preventDefault();
+        	    let newPassword = document.getElementById("newPassword").value;
+        	    let confirmPassword = document.getElementById("confirmPassword").value;
+
+        	    if (newPassword !== confirmPassword) {
+        	    	showModal("Passwords do not match. Please try again.");
+        	        return false; // Prevent form submission
+        	    }
+        	    resetNSPassword(); // Call resetPassword function if validation passes
+        	}
+
+          function resetNSPassword() {
+        	    console.log("resetNSPassword function called!"); // Debugging log
+
+        	    let username = document.getElementById("usernameNs").value;
+        	    let oldPassword = document.getElementById("oldPassword").value;
+        	    let newPassword = document.getElementById("newPassword").value;
+        	    let confirmPassword = document.getElementById("confirmPassword").value;
+
+        	    console.log("Sending reset request with:", { username, oldPassword, newPassword, confirmPassword });
+
+        	    fetch('/reset-ns-password', {
+        	        method: 'POST',
+        	        headers: { 'Content-Type': 'application/json' },
+        	        body: JSON.stringify({ username, oldPassword, newPassword, confirmPassword })
+        	    })
+        	    .then(response => {
+        	        console.log("Raw Response:", response);
+
+        	        if (!response.ok) {
+        	            return response.json().then(errData => {
+        	                throw new Error(errData.error || "Failed to reset password.");
+        	            });
+        	        }
+
+        	        return response.json();
+        	    })
+        	    .then(data => {
+        	        console.log("Parsed Response:", data);
+        	        
+        	        showModal(data.message || "Password reset successful!");
+        	    })
+        	    .catch(error => {
+        	        console.error("Fetch error:", error);
+        	        showModal(error.message || "Something went wrong. Please try again.");
+        	    });
+        	}
+
+          function showModal(message) {
+        	    document.getElementById("modal-message").innerText = message;
+        	    document.getElementById("modal").style.display = "block";
+        	  }
+          
+          
+        	  function redirectToLogin() {
+        	    window.location.href = "/login";
+        	  }
+
+  </script>
 </body>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <p id="modal-message"></p>
+    <button class="close-btn" onclick="redirectToLogin()">OK</button>
+  </div>
+</div>
+
 </html>

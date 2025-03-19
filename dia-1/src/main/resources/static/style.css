@@ -88,3 +88,156 @@ body{
 .signup label:hover{
   text-decoration: underline;
 }
+
+/* New styles for security question dropdown */
+.security-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+/* Add spacing between select dropdown and input field */
+select[name="securityQuestion"] {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-bottom: 15px; /* Adds space below the dropdown */
+}
+
+input[name="securityAnswer"] {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  transition: 0.3s;
+}
+
+
+select[name="securityQuestion"]:focus {
+  border-color: #009579;
+  box-shadow: 0 1px 0 rgba(0, 149, 121, 0.2);
+}
+
+select[name="securityQuestion"] option {
+  font-size: 15px;
+}
+
+/* Spacing for Reset Password */
+.form a {
+  display: block; /* Makes links appear on separate lines */
+  margin-top: 5px;
+}
+
+/* Hide all forms initially except login */
+.container .registration,
+.container .forgot-password,
+.container .reset-password {
+  display: none;
+}
+
+/* Show the Signup form when checkbox is checked */
+#check:checked ~ .container .registration {
+  display: block;
+}
+#check:checked ~ .container .login {
+  display: none;
+}
+
+/* Show the Forgot Password form */
+#forgot-check:checked ~ .container .forgot-password {
+  display: block;
+}
+#forgot-check:checked ~ .container .login,
+#forgot-check:checked ~ .container .registration,
+#forgot-check:checked ~ .container .reset-password {
+  display: none;
+}
+
+/* Show the Reset Password form */
+#reset-check:checked ~ .container .reset-password {
+  display: block;
+}
+#reset-check:checked ~ .container .login,
+#reset-check:checked ~ .container .registration,
+#reset-check:checked ~ .container .forgot-password {
+  display: none;
+}
+
+input[type="checkbox"] {
+  display: none;
+}
+
+.signup {
+  text-align: left;  /* Aligns the text to the left */
+  margin-top: 10px;  /* Adds some spacing */
+}
+
+.signup label {
+  display: inline-block;
+  color: #009579;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.signup label:hover {
+  text-decoration: underline;
+}
+
+.button, button {
+  color: #fff;
+  background: #009579;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  height: 50px;
+  width: 100%;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+.button:hover, button:hover {
+  background: #006653;
+}
+
+  .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 5px;
+      width: 30%;
+      text-align: center;
+    }
+    .close-btn {
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+    }

@@ -59,8 +59,30 @@ public class User {
 
     @Column(name = "password")
     private String password;
+    
+    @Column(name = "security_question")
+    private String question;
+    
+    @Column(name = "security_answer")
+    private String answer;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    public String getQuestion() {
+		return question;
+	}
+
+	public void setQuestion(String question) {
+		this.question = question;
+	}
+
+	public String getAnswer() {
+		return answer;
+	}
+
+	public void setAnswer(String answer) {
+		this.answer = answer;
+	}
+
+	@ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "USER_ROLES",
         joinColumns = @JoinColumn(name = "user_id"),

@@ -83,4 +83,95 @@ public class GlobalExceptionHandler {
         errorResponse.put("success", false);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
+    
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<Map<String, Object>> handleFileUploadException(FileUploadException ex) {
+        logger.error("File Upload Error: {}", ex.getMessage(), ex);
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("success", false);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(FileConversionException.class)
+    public ResponseEntity<Map<String, Object>> handleFileConversionException(FileConversionException ex) {
+        logger.error("File Conversion Error: {}", ex.getMessage(), ex);
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("success", false);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+    
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleCategoryNotFoundException(CategoryNotFoundException ex) {
+        logger.error("Category Not Found Error: {}", ex.getMessage(), ex);
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("success", false);
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+    
+    @ExceptionHandler(InvalidPaginationException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidPaginationException(InvalidPaginationException ex) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(SessionHandlingException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidSortParameterException(SessionHandlingException ex) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST);
+    }
+    
+    @ExceptionHandler(InvalidCalculationException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCalculationException(InvalidCalculationException ex) {
+        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    @ExceptionHandler(RateNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRateNotFoundException(RateNotFoundException ex) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND);
+    }
+    
+    @ExceptionHandler(ProductUpdateException.class)
+    public ResponseEntity<String> handleProductUpdateException(ProductUpdateException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+    
+    @ExceptionHandler(KaratRateNotFoundException.class)
+    public ResponseEntity<String> handleKaratRateNotFoundException(KaratRateNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(NoRatesAvailableException.class)
+    public ResponseEntity<String> handleNoRatesAvailableException(NoRatesAvailableException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NO_CONTENT);
+    }
+    
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<String> handleUserNotFoundException(UserNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(PermissionUpdateException.class)
+    public ResponseEntity<String> handlePermissionUpdateException(PermissionUpdateException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(UserDeletionException.class)
+    public ResponseEntity<String> handleUserDeletionException(UserDeletionException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(Exception ex, HttpStatus status) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("success", false);
+        return ResponseEntity.status(status).body(errorResponse);
+    }
+
 }

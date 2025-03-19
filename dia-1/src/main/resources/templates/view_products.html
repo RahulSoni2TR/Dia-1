@@ -172,6 +172,13 @@
                 filterSortOptions.style.display = 'flex';
             }
         });
+        
+        // Hide the container when clicking outside of it
+        document.addEventListener("click", function (event) {
+            if (!filterSortOptions.contains(event.target) && event.target !== toggleButton) {
+                filterSortOptions.style.display = "none";
+            }
+        });
     </script>
 </body>
 </html>

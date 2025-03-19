@@ -17,7 +17,7 @@
     <h1>Please update the product name</h1>
     <table class="estimate-table">
         <thead>
-            <tr>
+            <tr id="header_row">
                 <th class="description">Description</th>
                 <th>Qty</th>
                 <th>Rate</th>
@@ -176,17 +176,20 @@ let rate;
                 console.log("Category ID:", categoryId);
                 function showHideRows(categoryId) {
                     const rowsToHide = {
-                        1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row"],
-                        2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row"],
-                        3: ["gold_row", "labour_row", "gst_row", "total_row"],
-                        4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row"],
-                        5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row"],
-                        6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row"]
+                        1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row","header_row"],
+                        2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row","header_row"],
+                        3: ["gold_row", "labour_row", "gst_row", "total_row","header_row"],
+                        4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row","header_row"],
+                        5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row","header_row"],
+                        6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row","header_row"]
                     };
 
                     // Hide all rows first
-                    const allRows = document.querySelectorAll('tr');
+                    const allRows = document.querySelectorAll('tbody tr');
                     allRows.forEach(row => row.style.display = 'none');
+                    
+                    const thead = document.querySelector('thead');
+                    if (thead) thead.style.display = 'table-header-group';
 
                     // Show rows for the selected category
                     const rowsToDisplay = rowsToHide[categoryId];
@@ -310,7 +313,8 @@ let rate;
         };
 
         // Generate and download PDF
-        pdfMake.createPdf(docDefinition).download("Estimate.pdf");
+        const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+        pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
     });
 
 

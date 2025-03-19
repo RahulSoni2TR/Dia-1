@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +48,23 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.example.webapp.exceptions.AddProductException;
+import com.example.webapp.exceptions.CategoryNotFoundException;
+import com.example.webapp.exceptions.FileConversionException;
+import com.example.webapp.exceptions.FileUploadException;
+import com.example.webapp.exceptions.InvalidCalculationException;
+import com.example.webapp.exceptions.InvalidDateRangeException;
+import com.example.webapp.exceptions.InvalidPaginationException;
+import com.example.webapp.exceptions.InvalidPriceUpdateException;
+import com.example.webapp.exceptions.KaratRateNotFoundException;
+import com.example.webapp.exceptions.NoRatesAvailableException;
+import com.example.webapp.exceptions.PermissionUpdateException;
+import com.example.webapp.exceptions.ProductNotFoundException;
 import com.example.webapp.exceptions.ProductRemovalException;
+import com.example.webapp.exceptions.ProductUpdateException;
+import com.example.webapp.exceptions.RateNotFoundException;
+import com.example.webapp.exceptions.SessionHandlingException;
+import com.example.webapp.exceptions.UserDeletionException;
+import com.example.webapp.exceptions.UserNotFoundException;
 import com.example.webapp.models.Estimate;
 import com.example.webapp.models.Product;
 import com.example.webapp.models.ProductPage;
@@ -219,7 +237,7 @@ public class ProductController {
 			@RequestParam(value = "jadtarLabourAll", required = false) BigDecimal jadtarLabourAll) {
 
 		try {
-			 Product product = new Product();
+			Product product = new Product();
 			// Process the image file
 			String imageUrl = saveImageFile(imageFile);
 			System.out.println(imageUrl);
@@ -344,12 +362,16 @@ public class ProductController {
 	 */
 
 	public String saveImageFile(MultipartFile file) {
-		File fileObj = convertMultiPartFileToFile(file);
-		String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-		s3Client.putObject(
-				new PutObjectRequest(bucketName, fileName, fileObj).withCannedAcl(CannedAccessControlList.PublicRead));
-		fileObj.delete();
-		return s3Client.getUrl(bucketName, fileName).toString();
+		try {
+			File fileObj = convertMultiPartFileToFile(file);
+			String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+			s3Client.putObject(new PutObjectRequest(bucketName, fileName, fileObj)
+					.withCannedAcl(CannedAccessControlList.PublicRead));
+			fileObj.delete();
+			return s3Client.getUrl(bucketName, fileName).toString();
+		} catch (Exception e) {
+			throw new FileUploadException("Error uploading file: " + file.getOriginalFilename(), e);
+		}
 	}
 
 	private File convertMultiPartFileToFile(MultipartFile file) {
@@ -357,173 +379,177 @@ public class ProductController {
 		try (FileOutputStream fos = new FileOutputStream(convertedFile)) {
 			fos.write(file.getBytes());
 		} catch (IOException e) {
-			System.out.print("Error converting multipartFile to file");
+			throw new FileConversionException("Error converting multipartFile to file: " + file.getOriginalFilename(),
+					e);
 		}
 		return convertedFile;
 	}
 
 	@PostMapping("/remove/{productId}")
 	public ResponseEntity<Map<String, Object>> removeProduct(@PathVariable String productId) {
-		try{
-		productService.removeProduct(productId);
-		Map<String, Object> response = new HashMap<>();
-		response.put("message", "Product deleted successfully!");
-		response.put("success", true);
-		return ResponseEntity.ok(response);
-	 } catch (Exception e) {
-	        throw new ProductRemovalException("Failed to remove product with ID: " + productId, e);
-	    }
+		try {
+			productService.removeProduct(productId);
+			Map<String, Object> response = new HashMap<>();
+			response.put("message", "Product deleted successfully!");
+			response.put("success", true);
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			throw new ProductRemovalException("Failed to remove product with ID: " + productId, e);
+		}
 	}
 
 	@GetMapping("/category/{categoryId}")
 	public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable Long categoryId) {
 		List<Product> products = productService.findProductsByCategoryId(categoryId);
+		if (products.isEmpty()) {
+			throw new CategoryNotFoundException("No products found for category ID: " + categoryId);
+		}
 		return ResponseEntity.ok(products);
 	}
 
 	@GetMapping("loadProduct/{id}")
 	public ResponseEntity<Product> getProduct(@PathVariable String id) {
-		Optional<Product> product = productService.findProductById(id);
-		return product.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+		Product product = productService.findProductById(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+		return ResponseEntity.ok(product);
 	}
 
 	@GetMapping("loadProductDetail/{id}")
 	public ResponseEntity<Product> getProduct(@PathVariable Long id) {
-		Optional<Product> product = productService.findProductFromId(id);
-		return product.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+		Product product = productService.findProductFromId(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+		return ResponseEntity.ok(product);
 	}
 
 	@GetMapping("/product/load")
 	public ResponseEntity<ProductPage> loadProducts(@RequestParam int page, @RequestParam int size,
-			@RequestParam(required = false) Integer category, @RequestParam(required = false, defaultValue = "") String searchTerm,
-			String sortBy,HttpSession session) {
+			@RequestParam(required = false) Integer category,
+			@RequestParam(required = false, defaultValue = "") String searchTerm, String sortBy, HttpSession session) {
+		if (page < 0 || size <= 0) {
+			throw new InvalidPaginationException("Page index must be 0 or greater, and size must be greater than 0.");
+		}
+
 		Page<Product> products;
-		 RateWrapper rateWrapper = new RateWrapper();
-//		System.out.println("values searchTerm "+searchTerm+"category "+category+" soryBy "+sortBy);
-		  // Fetch previous search from session
-	    String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
-	    Integer prevCategory = (Integer) session.getAttribute("prevCategory");
+		RateWrapper rateWrapper = new RateWrapper();
 
-	    // If new search is different from the previous one, reset page to 0
-	    if (!searchTerm.equals(prevSearchTerm) || !Objects.equals(category, prevCategory)) {
-	//        System.out.println("New search detected, resetting page to 0");
-	        page = 0;  // Reset pagination
-	    }
+		try {
+			// Fetch previous search from session
+			String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
+			Integer prevCategory = (Integer) session.getAttribute("prevCategory");
 
+			// If new search is different from the previous one, reset page to 0
+			if (!searchTerm.equals(prevSearchTerm) || !Objects.equals(category, prevCategory)) {
+				page = 0; // Reset pagination
+			}
+			// Store current search values in session
+			session.setAttribute("prevSearchTerm", searchTerm);
+			session.setAttribute("prevCategory", category);
+		} catch (Exception e) {
+			throw new SessionHandlingException("Error accessing session attributes.");
+		}
 		Sort sort = Sort.unsorted(); // No sorting by default
 
 		if ("old".equals(sortBy)) {
-		    sort = Sort.by(Sort.Order.asc("createDateTime")); // Ascending for Old Products
+			sort = Sort.by(Sort.Order.asc("createDateTime")); // Ascending for Old Products
 		} else if ("recent".equals(sortBy)) {
-		    sort = Sort.by(Sort.Order.desc("createDateTime")); // Descending for Most Recent
+			sort = Sort.by(Sort.Order.desc("createDateTime")); // Descending for Most Recent
 		}
-		        if (category == null) {
-		       // 	System.out.println("if values searchTerm "+searchTerm+"category "+category+" soryBy "+sortBy);
-		        	products = productService.findWithoutCategory(category, PageRequest.of(page, size,sort),searchTerm);
-		        //	System.out.println("product value if "+products.toString());
-				}
-		        else {
-		       // 	System.out.println("else values searchTerm "+searchTerm+"category "+category+" soryBy "+sortBy);
-			products = productService.findByCategory(category, PageRequest.of(page, size,sort),searchTerm);
-		        }
-		        
-		        // Store current search values in session
-		        session.setAttribute("prevSearchTerm", searchTerm);
-		        session.setAttribute("prevCategory", category);
-	//		List<Product> productsAll = products.getContent();
-			List<Rate> rates = productService.getAllRates();
+		if (category == null) {
+			products = productService.findWithoutCategory(category, PageRequest.of(page, size, sort), searchTerm);
+		} else {
+			products = productService.findByCategory(category, PageRequest.of(page, size, sort), searchTerm);
+		}
+		if (products.isEmpty()) {
+			throw new ProductNotFoundException("No products found for the given filters.");
+		}
+		List<Rate> rates = productService.getAllRates();
 
-			// Fetch rates for calculations
+		// Fetch rates for calculations
 
-			for (Rate rate : rates) {
-				switch (rate.getCommodity().toLowerCase()) {
-				case "diamond":
-					rateWrapper.diamondPrice = rate.getPrice();
-					break;
-				case "gst":
-					rateWrapper.gst = rate.getPrice();
-					break;
-				case "silver":
-					rateWrapper.silver = rate.getPrice();
-					break;
-				}
+		for (Rate rate : rates) {
+			switch (rate.getCommodity().toLowerCase()) {
+			case "diamond":
+				rateWrapper.diamondPrice = rate.getPrice();
+				break;
+			case "gst":
+				rateWrapper.gst = rate.getPrice();
+				break;
+			case "silver":
+				rateWrapper.silver = rate.getPrice();
+				break;
 			}
-			Estimate e = new Estimate();
-			products.forEach(product -> {
-				BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
-				product.setPrice(calculatedPrice);
-				System.out.println("item name "+product.getItem());
-			});
+		}
+		Estimate e = new Estimate();
+		products.forEach(product -> {
+			BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
+			product.setPrice(calculatedPrice);
+			System.out.println("item name " + product.getItem());
+		});
 
-		
-	//	System.out.println("Products count:-" + products.getTotalElements());
-	//	System.out.println("product content "+products.getContent());
 		return ResponseEntity.ok(new ProductPage(products.getContent(), products.getTotalElements()));
 	}
 
 	private BigDecimal calculateProductPrice(Product product, RateWrapper rateWrapper, Estimate e, List<Rate> r) {
-//		BigDecimal estimateNoGst = BigDecimal.ZERO;
-//		BigDecimal goldPrice = null;
-//		BigDecimal diamondPrice = null;
-//		BigDecimal vilandiPrice = null;
-		BigDecimal labour = null;
-		BigDecimal gold1 = null;
-//		BigDecimal gst = null;
-		BigDecimal estimate_gst = null;
-		BigDecimal estimate_nogst = null;
-		BigDecimal total = null;
-	//	System.out.println("GST rate found: " + rateWrapper.gst);
-	//	System.out.println("Gold rate found: " + rateWrapper.goldPrice);
-	//	System.out.println("Karat rate found: " + product.getKarat());
+		try {
+			BigDecimal labour = null;
+			BigDecimal gold1 = null;
+			BigDecimal estimate_gst = null;
+			BigDecimal estimate_nogst = null;
+			BigDecimal total = null;
 
-		if (nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(24)) == 0
-				|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(22)) == 0
-				|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(18)) == 0
-				|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(14)) == 0
-				|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(10)) == 0) {
+			if (nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(24)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(22)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(18)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(14)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(10)) == 0) {
 
-			Rate rate = getKaratRate(product, r);
-			rateWrapper.goldPrice = rate.getPrice();
-	//		System.out.println("wrap gold " + rateWrapper.goldPrice);
-		} else {
-			rateWrapper.goldPrice = BigDecimal.ZERO;
+				Rate rate = getKaratRate(product, r);
+				if (rate == null) {
+					throw new RateNotFoundException("No rate found for karat: " + product.getKarat());
+				}
+				rateWrapper.goldPrice = rate.getPrice();
+			} else {
+				rateWrapper.goldPrice = BigDecimal.ZERO;
 
-		} 
+			}
 
-		if (product.getLabour() != null && product.getLabour().compareTo(BigDecimal.ZERO) != 0) {
-			labour = nullSafe(product.getNet()).multiply(nullSafe(product.getLabour()));
-		} else {
-			labour = nullSafe(product.getLabourAll());
+			if (product.getLabour() != null && product.getLabour().compareTo(BigDecimal.ZERO) != 0) {
+				labour = nullSafe(product.getNet()).multiply(nullSafe(product.getLabour()));
+			} else {
+				labour = nullSafe(product.getLabourAll());
+			}
+			e.setLabour(labour);
+
+			gold1 = nullSafe(rateWrapper.goldPrice.divide(BigDecimal.valueOf(10), RoundingMode.HALF_UP));
+
+			e.setGold(nullSafe(product.getNet()).multiply(gold1));
+			e.setStones(nullSafe(product.getStones()).multiply(nullSafe(product.getStRate())));
+			e.setBeads(nullSafe(product.getBeadsCt()).multiply(nullSafe(product.getBdRate())));
+			e.setPearls(nullSafe(product.getPearlsGm()).multiply(nullSafe(product.getPrlRate())));
+			e.setSsPearls(nullSafe(product.getSsPearlCt()).multiply(nullSafe(product.getSsRate())));
+			e.setVilandi(nullSafe(product.getVilandiCt()).multiply(nullSafe(product.getvRate())));
+			e.setMozo(nullSafe(product.getMozonite()).multiply(nullSafe(product.getmRate())));
+			e.setOtherStones(nullSafe(product.getOtherStonesCt()).multiply(nullSafe(product.getOtherStonesRt())));
+			e.setDiamonds(nullSafe(product.getDiamondsCt()).multiply(nullSafe(product.getDiaRt())));
+			e.setRealStones(nullSafe(product.getRealStone()));
+			e.setFitting(nullSafe(product.getFitting()));
+
+			estimate_nogst = nullSafe(e.getGold().add(e.getLabour()).add(e.getStones()).add(e.getBeads())
+					.add(e.getPearls()).add(e.getSsPearls()).add(e.getVilandi()).add(e.getMozo()).add(e.getRealStones())
+					.add(e.getFitting()).add(e.getDiamonds()).add(e.getOtherStones()));
+
+			estimate_gst = nullSafe(
+					estimate_nogst.multiply(rateWrapper.gst).divide(new BigDecimal("100"), RoundingMode.HALF_UP));
+
+			e.setGst(estimate_gst);
+
+			total = nullSafe(estimate_nogst.add(estimate_gst));
+
+			e.setTotal(total);
+			return e.getTotal() != null ? e.getTotal() : BigDecimal.valueOf(0);
+		} catch (ArithmeticException ex) {
+			throw new InvalidCalculationException("Error occurred while calculating product price", ex);
 		}
-		e.setLabour(labour);
-
-		gold1 = nullSafe(rateWrapper.goldPrice.divide(BigDecimal.valueOf(10), RoundingMode.HALF_UP));
-
-		e.setGold(nullSafe(product.getNet()).multiply(gold1));
-		e.setStones(nullSafe(product.getStones()).multiply(nullSafe(product.getStRate())));
-		e.setBeads(nullSafe(product.getBeadsCt()).multiply(nullSafe(product.getBdRate())));
-		e.setPearls(nullSafe(product.getPearlsGm()).multiply(nullSafe(product.getPrlRate())));
-		e.setSsPearls(nullSafe(product.getSsPearlCt()).multiply(nullSafe(product.getSsRate())));
-		e.setVilandi(nullSafe(product.getVilandiCt()).multiply(nullSafe(product.getvRate())));
-		e.setMozo(nullSafe(product.getMozonite()).multiply(nullSafe(product.getmRate())));
-		e.setOtherStones(nullSafe(product.getOtherStonesCt()).multiply(nullSafe(product.getOtherStonesRt())));
-		e.setDiamonds(nullSafe(product.getDiamondsCt()).multiply(nullSafe(product.getDiaRt())));
-		e.setRealStones(nullSafe(product.getRealStone()));
-		e.setFitting(nullSafe(product.getFitting()));
-
-		estimate_nogst = nullSafe(e.getGold().add(e.getLabour()).add(e.getStones()).add(e.getBeads()).add(e.getPearls())
-				.add(e.getSsPearls()).add(e.getVilandi()).add(e.getMozo()).add(e.getRealStones()).add(e.getFitting())
-				.add(e.getDiamonds()).add(e.getOtherStones()));
-	//	System.out.println(estimate_nogst);
-		estimate_gst = nullSafe(
-				estimate_nogst.multiply(rateWrapper.gst).divide(new BigDecimal("100"), RoundingMode.HALF_UP));
-	//	System.out.println(estimate_gst);
-		e.setGst(estimate_gst);
-
-		total = nullSafe(estimate_nogst.add(estimate_gst));
-//		System.out.println(total);
-		e.setTotal(total);
-		return e.getTotal() != null ? e.getTotal() : BigDecimal.valueOf(0);
 	}
 
 	@PutMapping(value = "/updateProduct/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
@@ -597,7 +623,14 @@ public class ProductController {
 			@RequestParam(value = "karat", required = false) BigDecimal karat,
 			@RequestParam(value = "labour", required = false) BigDecimal labour,
 			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll) {
-		System.out.println("controller");
+
+		if (id == null || id.isEmpty()) {
+			throw new ProductUpdateException("Product ID cannot be null or empty.");
+		}
+
+		if (categoryId == null) {
+			throw new ProductUpdateException("Category ID is required.");
+		}
 		Product updatedProduct = new Product();
 		// String design ="";
 		if (categoryId == 1) {
@@ -731,18 +764,18 @@ public class ProductController {
 		}
 
 		Product updated = productService.updateProduct(id, updatedProduct, imageFile);
-		if (updated != null) {
-			return ResponseEntity.ok(updated);
-		} else {
-			return ResponseEntity.notFound().build();
+
+		if (updated == null) {
+			throw new ProductUpdateException("Failed to update product. Product not found with ID: " + id);
 		}
+		return ResponseEntity.ok(updated);
 	}
 
 	@GetMapping("/getEstimate/{productId}")
 	public ResponseEntity<Map<String, Object>> getEstimate(@PathVariable Long productId) {
 		Product product = productService.findProductFromId(productId)
-				.orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
-		 RateWrapper rateWrapper = new RateWrapper();
+				.orElseThrow(() -> new ProductNotFoundException("product not not found for id " + productId));
+		RateWrapper rateWrapper = new RateWrapper();
 		List<Rate> rates = productService.getAllRates();
 		rateWrapper.resetRates();
 		for (Rate rate : rates) {
@@ -768,7 +801,6 @@ public class ProductController {
 		response.put("object1", product);
 		response.put("object2", e);
 		response.put("object3", rates);
-	//	System.out.println("reutn estimate");
 		return ResponseEntity.ok(response);
 
 	}
@@ -782,25 +814,39 @@ public class ProductController {
 			}
 		}
 
-		return null; // Return null if no match is found
+		throw new KaratRateNotFoundException(productKarat);
 	}
 
 	@GetMapping("/prices")
 	public ResponseEntity<List<Rate>> getAllRates() {
 		List<Rate> rates = productService.getAllRates();
+		if (rates.isEmpty()) {
+			throw new NoRatesAvailableException("No rates available at the moment.");
+		}
 		return ResponseEntity.ok(rates);
 	}
 
 	@PostMapping("/updatePrices")
 	public ResponseEntity<String> updatePrices(@RequestBody Map<String, BigDecimal> prices) {
+		if (prices == null || prices.isEmpty()) {
+			throw new InvalidPriceUpdateException("Price update request is empty or invalid.");
+		}
 		String response = productService.updatePrices(prices);
+
+		if (response == null || response.isBlank()) {
+			throw new InvalidPriceUpdateException("Failed to update prices. Please try again.");
+		}
 		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/rates")
 	@ResponseBody
 	public List<Rate> getRates() {
-		return productService.findAll();
+		List<Rate> rates = productService.findAll();
+		if (rates.isEmpty()) {
+			throw new NoRatesAvailableException("No rates available at the moment.");
+		}
+		return rates;
 	}
 
 	@GetMapping("/getReport/{categoryId}")
@@ -810,10 +856,20 @@ public class ProductController {
 			@RequestParam(value = "page", defaultValue = "0") int page,
 			@RequestParam(value = "size", defaultValue = "10") int size) {
 
-		List<Product> products = productService.getFilteredProducts(categoryId, startDate, endDate, page, size);
+		if (startDate.isAfter(endDate)) {
+			throw new InvalidDateRangeException("Start date cannot be after end date.");
+		}
+		ZonedDateTime startDateTime = startDate.atZone(ZoneId.of("Asia/Kolkata"));
+		ZonedDateTime endDateTime = endDate.atZone(ZoneId.of("Asia/Kolkata"));
+		startDate = startDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata")).toLocalDateTime();
+		endDate = endDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata")).toLocalDateTime();
 
+		List<Product> products = productService.getFilteredProducts(categoryId, startDate, endDate, page, size);
+		if (products.isEmpty()) {
+			throw new CategoryNotFoundException("No products found for category ID: " + categoryId);
+		}
 		List<Rate> rates = productService.getAllRates();
-		 RateWrapper rateWrapper = new RateWrapper();
+		RateWrapper rateWrapper = new RateWrapper();
 		// Fetch rates for calculations
 
 		for (Rate rate : rates) {
@@ -837,7 +893,6 @@ public class ProductController {
 			BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
 			product.setPrice(calculatedPrice);
 		});
-
 		return products.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(products);
 	}
 
@@ -845,11 +900,10 @@ public class ProductController {
 	public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file,
 			@RequestParam("category") String category) {
 		try {
-		//	System.out.println("here");
 			productService.importProductsFromExcel(file, category);
 			return ResponseEntity.ok("Data imported successfully");
 		} catch (Exception e) {
-			return ResponseEntity.status(500).body("Failed to import data: " + e.getMessage());
+			throw new FileUploadException("Failed to import data: " + e.getMessage(), e);
 		}
 	}
 
@@ -860,10 +914,9 @@ public class ProductController {
 	@GetMapping("/all")
 	public ResponseEntity<List<UserTemp>> getAllUsers() {
 		List<UserTemp> users = userService.getAllUsers();
-//		for (UserTemp user : users) {
-//			// System.out.println(user.getUsername());
-//		}
-		// model.addAttribute("users", users);
+		if (users.isEmpty()) {
+			throw new UserNotFoundException("No users found in the system.");
+		}
 		return ResponseEntity.ok(users);
 	}
 
@@ -873,8 +926,7 @@ public class ProductController {
 			userService.updatePermissions(updates);
 			return ResponseEntity.ok("Permissions updated successfully!");
 		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("Failed to update permissions: " + e.getMessage());
+			throw new PermissionUpdateException("Failed to update permissions: " + e.getMessage(), e);
 		}
 	}
 
@@ -884,8 +936,7 @@ public class ProductController {
 			userService.deleteUser(id);
 			return ResponseEntity.ok("User deleted successfully.");
 		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("Error deleting user: " + e.getMessage());
+			throw new UserDeletionException("Error deleting user: " + e.getMessage(), e);
 		}
 	}
 

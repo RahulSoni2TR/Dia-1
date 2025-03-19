@@ -67,7 +67,7 @@ public class SecurityConfig {
             .and()
             .authorizeHttpRequests()
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**", "/files/**").permitAll()
-                .requestMatchers("/login", "/register", "/logout", "*.css").permitAll() 
+                .requestMatchers("/login", "/register", "/logout", "*.css","/get-security-question","/reset-password","/verify-security-answer","/reset-ns-password").permitAll() 
                 .requestMatchers("/add-product", "/modify-product", "/remove-product", "/set-price").hasRole("ADMIN")
                 .requestMatchers("/view-product").authenticated()
                 .anyRequest().authenticated()

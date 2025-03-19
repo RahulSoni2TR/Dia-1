@@ -131,3 +131,30 @@ h1 {
     .header .logout-btn:hover {
       background-color: #ff3333;
     }
+    
+    .delete-btn {
+    background-color: #ff4d4d; /* Red color */
+    color: white; /* White text */
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.delete-btn:hover {
+    background-color: #cc0000; /* Darker red on hover */
+    transform: scale(1.05); /* Slightly increase size */
+}
+
+.delete-btn:active {
+    background-color: #a80000; /* Even darker red on click */
+    transform: scale(0.95); /* Slightly shrink on click */
+}
+
+.delete-btn:focus {
+    outline: 2px solid #ff9999; /* Light red outline on focus */
+}
+    
