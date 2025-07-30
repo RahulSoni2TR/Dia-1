@@ -3,8 +3,10 @@ package com.example.webapp.controller;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +69,7 @@ import com.example.webapp.exceptions.SessionHandlingException;
 import com.example.webapp.exceptions.UserDeletionException;
 import com.example.webapp.exceptions.UserNotFoundException;
 import com.example.webapp.models.Estimate;
+import com.example.webapp.models.Orders;
 import com.example.webapp.models.Product;
 import com.example.webapp.models.ProductPage;
 import com.example.webapp.service.ProductService;
@@ -164,6 +168,7 @@ public class ProductController {
 			@RequestParam(value = "price", required = false) BigDecimal price,
 			@RequestParam("stockQuantity") Integer stockQuantity, @RequestParam("categoryId") Integer categoryId,
 			@RequestParam("imageUrl") MultipartFile imageFile,
+			@RequestParam(value = "orderId", required = false) String orderId,
 
 			// Category-specific fields
 			@RequestParam(value = "net", required = false) BigDecimal net,
@@ -250,6 +255,7 @@ public class ProductController {
 			product.setRemarks(remarks);
 			product.setKarat(karat);
 
+//			product.setOrderRef(existingOrderOpt.get());
 			// Set category-specific fields based on categoryId
 			if (categoryId == 1) { // Diamond Rings
 				product.setNet(net);
@@ -331,9 +337,34 @@ public class ProductController {
 				product.setLabourAll(jadtarLabourAll);
 			}
 
+			Orders order;
+			Optional<Orders> existingOrderOpt = productService.findByOrderId(orderId);
+			System.out.println("order id is "+orderId);
+			if (existingOrderOpt.isPresent()) {
+			    // User selected from existing list
+			    order = existingOrderOpt.get();
+			    if (order.isAssigned()) {
+			        throw new IllegalArgumentException("Order ID already assigned");
+			    }
+			    order.setAssigned(true);
+			    order.setAssignedProduct(product);
+			    product.setOrders(order);
+			}
+			 else {
+				    // User gave a custom ID
+				    order = new Orders();
+				    System.out.println("new order id is "+orderId);
+				    order.setOrderId(orderId);
+				    order.setCategoryId(product.getCategoryId());
+				    order.setAssigned(true);
+				    order.setAssignedProduct(product);
+				    product.setOrders(order);
+				}
 			// Add the product using the service
 			productService.addProduct(product);
 
+			
+			//	productService.saveOrders(order);
 			Map<String, Object> response = new HashMap<>();
 			response.put("message", "Product added successfully!");
 			response.put("success", true);
@@ -343,6 +374,16 @@ public class ProductController {
 			throw new AddProductException("Error occurred while adding product: " + productName, e);
 		}
 	}
+	
+	@GetMapping("/available-order-ids")
+	public ResponseEntity<List<String>> getAvailableOrderIds(@RequestParam(value = "categoryId", required = false) Long categoryId) {
+	    List<Orders> orders = productService.findByCategoryIdAndIsAssignedFalse(categoryId);
+	    List<String> availableOrderIds = orders.stream()
+	                                           .map(Orders::getOrderId)
+	                                           .collect(Collectors.toList());
+	    return ResponseEntity.ok(availableOrderIds);
+	}
+
 
 	/*
 	 * local image store private String saveImageFile(MultipartFile imageFile) { try
@@ -453,7 +494,15 @@ public class ProductController {
 			sort = Sort.by(Sort.Order.asc("createDateTime")); // Ascending for Old Products
 		} else if ("recent".equals(sortBy)) {
 			sort = Sort.by(Sort.Order.desc("createDateTime")); // Descending for Most Recent
+		} else if ("nameAsc".equals(sortBy)) {
+		    sort = Sort.by(Sort.Order.asc("item")); // A to Z
+		} else if ("nameDesc".equals(sortBy)) {
+		    sort = Sort.by(Sort.Order.desc("item")); // Z to A
 		}
+		else if ("none".equals(sortBy) || sortBy == null || sortBy.isEmpty()) {
+		    sort = Sort.unsorted();
+		}
+		
 		if (category == null) {
 			products = productService.findWithoutCategory(category, PageRequest.of(page, size, sort), searchTerm);
 		} else {
@@ -555,6 +604,7 @@ public class ProductController {
 	@PutMapping(value = "/updateProduct/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
 	public ResponseEntity<Product> updateProduct(@PathVariable String id,
 			@RequestParam(value = "productName", required = false) String productName,
+			@RequestParam(value = "productOrderid", required = false) String productOrderid,
 			@RequestParam(value = "productPrice", required = false) BigDecimal productPrice,
 			@RequestParam(value = "productRemarks", required = false) String productRemarks,
 			@RequestParam(value = "productImageUrl", required = false) String productImageUrl,
@@ -622,7 +672,8 @@ public class ProductController {
 			@RequestParam("image") MultipartFile imageFile,
 			@RequestParam(value = "karat", required = false) BigDecimal karat,
 			@RequestParam(value = "labour", required = false) BigDecimal labour,
-			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll) {
+			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll
+			) {
 
 		if (id == null || id.isEmpty()) {
 			throw new ProductUpdateException("Product ID cannot be null or empty.");
@@ -631,6 +682,8 @@ public class ProductController {
 		if (categoryId == null) {
 			throw new ProductUpdateException("Category ID is required.");
 		}
+		System.out.println("order id is "+productOrderid);
+		//System.out.println("existing order id is "+existingOrderIds);
 		Product updatedProduct = new Product();
 		// String design ="";
 		if (categoryId == 1) {
@@ -763,7 +816,7 @@ public class ProductController {
 			// design=designNoJadtar;
 		}
 
-		Product updated = productService.updateProduct(id, updatedProduct, imageFile);
+		Product updated = productService.updateProduct(id, updatedProduct, imageFile,productOrderid);
 
 		if (updated == null) {
 			throw new ProductUpdateException("Failed to update product. Product not found with ID: " + id);
@@ -850,7 +903,7 @@ public class ProductController {
 	}
 
 	@GetMapping("/getReport/{categoryId}")
-	public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable("categoryId") Long categoryId,
+	public ResponseEntity<Page<Product>> getProductsByCategory(@PathVariable("categoryId") Long categoryId,
 			@RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startDate,
 			@RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endDate,
 			@RequestParam(value = "page", defaultValue = "0") int page,
@@ -864,7 +917,7 @@ public class ProductController {
 		startDate = startDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata")).toLocalDateTime();
 		endDate = endDateTime.withZoneSameInstant(ZoneId.of("Asia/Kolkata")).toLocalDateTime();
 
-		List<Product> products = productService.getFilteredProducts(categoryId, startDate, endDate, page, size);
+		Page<Product> products = productService.getFilteredProducts(categoryId, startDate, endDate, page, size);
 		if (products.isEmpty()) {
 			throw new CategoryNotFoundException("No products found for category ID: " + categoryId);
 		}
@@ -895,6 +948,45 @@ public class ProductController {
 		});
 		return products.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(products);
 	}
+	
+	@GetMapping("/getReportAll/{categoryId}")
+	public ResponseEntity<List<Product>> getAllProductsByCategory(
+	        @PathVariable("categoryId") Long categoryId) {
+
+	    List<Product> allProducts = productService.getAllProductsByCategory(categoryId);
+
+	    if (allProducts.isEmpty()) {
+	        throw new CategoryNotFoundException("No products found for category ID: " + categoryId);
+	    }
+
+	    List<Rate> rates = productService.getAllRates();
+	    RateWrapper rateWrapper = new RateWrapper();
+	    for (Rate rate : rates) {
+	        switch (rate.getCommodity().toLowerCase()) {
+	            case "gold":
+	                rateWrapper.goldPrice = rate.getPrice();
+	                break;
+	            case "diamond":
+	                rateWrapper.diamondPrice = rate.getPrice();
+	                break;
+	            case "gst":
+	                rateWrapper.gst = rate.getPrice();
+	                break;
+	            case "silver":
+	                rateWrapper.silver = rate.getPrice();
+	                break;
+	        }
+	    }
+
+	    Estimate e = new Estimate();
+	    allProducts.forEach(product -> {
+	        BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
+	        product.setPrice(calculatedPrice);
+	    });
+
+	    return ResponseEntity.ok(allProducts);
+	}
+
 
 	@PostMapping("/uploadFile")
 	public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file,
@@ -938,6 +1030,19 @@ public class ProductController {
 		} catch (Exception e) {
 			throw new UserDeletionException("Error deleting user: " + e.getMessage(), e);
 		}
+	}
+	
+	@GetMapping("/proxy-image")
+	public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
+	    try (InputStream in = new URL(url).openStream()) {
+	        byte[] imageBytes = in.readAllBytes();
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.IMAGE_JPEG);
+	        headers.add("Access-Control-Allow-Origin", "*");
+	        return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+	    }
 	}
 
 }

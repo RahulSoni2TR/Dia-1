@@ -120,205 +120,278 @@
 let estimate;
 let product;
 let rate;
-    document.addEventListener("DOMContentLoaded", function() {
-    	const productId = sessionStorage.getItem('productId');
-        // Replace `1` with the actual product ID you want to fetch.
-        fetch(`/getEstimate/${productId}`)
-            .then(response => response.json())
-            .then(data => {
-                product = data.object1;
-                estimate = data.object2;
-                rate = data.object3;
-                console.log(rate);
-                const productKarat = product.karat;
-                const formattedKarat = productKarat !== null ? productKarat.toFixed(2) : "0.00";
-                const goldRate = rate.find(item => item.commodity === formattedKarat)?.price || 0;
-                const adjustedgoldRate= goldRate/10;
-                // Populate table cells based on the `estimate` fields
-                 const titleElement = document.querySelector('h1');
-            	titleElement.textContent = `Estimate for ${product.item}`;
-                document.getElementById("gold-qty").textContent = product.net ?? 0;
-                document.getElementById("gold-rate").textContent = `₹ ${adjustedgoldRate ?? 0}`;
-                document.getElementById("gold-amt").textContent = `₹ ${estimate.gold ?? 0}`;
-                document.getElementById("labour-qty").textContent = product.net ?? 0;
-                document.getElementById("labour-rate").textContent = `₹ ${product.labour ?? 0}`;
-                document.getElementById("labour-amt").textContent = `₹ ${estimate.labour ?? 0}`;
-                document.getElementById("vilandi-qty").textContent = product.vilandiCt ?? 0;
-                document.getElementById("vilandi-rate").textContent = `₹ ${product.vRate ?? 0}`;
-                document.getElementById("vilandi-amt").textContent = `₹ ${estimate.vilandi ?? 0}`;
-                document.getElementById("stone-qty").textContent = product.stones ?? 0;
-                document.getElementById("stone-rate").textContent = `₹ ${product.stRate ?? 0}`;
-                document.getElementById("stone-amt").textContent = `₹ ${estimate.stones ?? 0}`;
-                document.getElementById("beads-qty").textContent = product.beadsCt ?? 0;
-                document.getElementById("beads-rate").textContent = `₹ ${product.bdRate ?? 0}`;
-                document.getElementById("beads-amt").textContent = `₹ ${estimate.beads ?? 0}`;
-                document.getElementById("pearls-qty").textContent = product.pearlsGm ?? 0;
-                document.getElementById("pearls-rate").textContent = `₹ ${product.prlRate ?? 0}`;
-                document.getElementById("pearls-amt").textContent = `₹ ${estimate.pearls ?? 0}`;
-                document.getElementById("sspearls-qty").textContent = product.ssPearlCt ?? 0;
-                document.getElementById("sspearls-rate").textContent = `₹ ${product.ssRate ?? 0}`;
-                document.getElementById("sspearls-amt").textContent = `₹ ${estimate.ssPearls ?? 0}`;
-                document.getElementById("mozo-qty").textContent = `₹ ${product.mozonite ?? 0}`;
-                document.getElementById("mozo-rate").textContent = `₹ ${product.mRate ?? 0}`;
-                document.getElementById("mozo-amt").textContent = `₹ ${estimate.mozo ?? 0}`;
-                document.getElementById("diamonds-qty").textContent = `₹ ${product.diamondsCt ?? 0}`;
-                document.getElementById("diamonds-rate").textContent = `₹ ${product.diaRt ?? 0}`;
-            	document.getElementById("diamonds-amt").textContent = `₹ ${estimate.diamonds ?? 0}`;
-                document.getElementById("ostones-qty").textContent = `₹ ${product.otherStonesCt ?? 0}`;
-                document.getElementById("ostones-rate").textContent = `₹ ${product.otherStonesRt ?? 0}`;
-            	document.getElementById("ostones-amt").textContent = `₹ ${estimate.otherStones ?? 0}`;
-                document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
-                document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
-           document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
-                document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
-                
-                const categoryId = product.categoryId;
-                console.log("Category ID:", categoryId);
-                function showHideRows(categoryId) {
-                    const rowsToHide = {
-                        1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row","header_row"],
-                        2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row","header_row"],
-                        3: ["gold_row", "labour_row", "gst_row", "total_row","header_row"],
-                        4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row","header_row"],
-                        5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row","header_row"],
-                        6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row","header_row"]
-                    };
 
-                    // Hide all rows first
-                    const allRows = document.querySelectorAll('tbody tr');
-                    allRows.forEach(row => row.style.display = 'none');
-                    
-                    const thead = document.querySelector('thead');
-                    if (thead) thead.style.display = 'table-header-group';
+document.addEventListener("DOMContentLoaded", function() {
+    const productId = sessionStorage.getItem('productId');
+    // Replace `1` with the actual product ID you want to fetch.
+    fetch(`/getEstimate/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            product = data.object1;
+            estimate = data.object2;
+            rate = data.object3;
+            console.log(rate);
 
-                    // Show rows for the selected category
-                    const rowsToDisplay = rowsToHide[categoryId];
+            const productKarat = product.karat;
+            const formattedKarat = productKarat !== null ? productKarat.toFixed(2) : "0.00";
+            const goldRate = rate.find(item => item.commodity === formattedKarat)?.price || 0;
+            const adjustedgoldRate = goldRate / 10;
+
+            // Populate table cells based on the `estimate` fields
+            const titleElement = document.querySelector('h1');
+            titleElement.textContent = `Estimate for ${product.item}`;
+
+            document.getElementById("gold-qty").textContent = product.net ?? 0;
+            document.getElementById("gold-rate").textContent = `₹ ${adjustedgoldRate ?? 0}`;
+            document.getElementById("gold-amt").textContent = `₹ ${estimate.gold ?? 0}`;
+
+            document.getElementById("labour-qty").textContent = product.net ?? 0;
+            document.getElementById("labour-rate").textContent = `₹ ${product.labour ?? 0}`;
+            document.getElementById("labour-amt").textContent = `₹ ${estimate.labour ?? 0}`;
+
+            document.getElementById("vilandi-qty").textContent = product.vilandiCt ?? 0;
+            document.getElementById("vilandi-rate").textContent = `₹ ${product.vRate ?? 0}`;
+            document.getElementById("vilandi-amt").textContent = `₹ ${estimate.vilandi ?? 0}`;
+
+            document.getElementById("stone-qty").textContent = product.stones ?? 0;
+            document.getElementById("stone-rate").textContent = `₹ ${product.stRate ?? 0}`;
+            document.getElementById("stone-amt").textContent = `₹ ${estimate.stones ?? 0}`;
+
+            document.getElementById("beads-qty").textContent = product.beadsCt ?? 0;
+            document.getElementById("beads-rate").textContent = `₹ ${product.bdRate ?? 0}`;
+            document.getElementById("beads-amt").textContent = `₹ ${estimate.beads ?? 0}`;
+
+            document.getElementById("pearls-qty").textContent = product.pearlsGm ?? 0;
+            document.getElementById("pearls-rate").textContent = `₹ ${product.prlRate ?? 0}`;
+            document.getElementById("pearls-amt").textContent = `₹ ${estimate.pearls ?? 0}`;
+
+            document.getElementById("sspearls-qty").textContent = product.ssPearlCt ?? 0;
+            document.getElementById("sspearls-rate").textContent = `₹ ${product.ssRate ?? 0}`;
+            document.getElementById("sspearls-amt").textContent = `₹ ${estimate.ssPearls ?? 0}`;
+
+            document.getElementById("mozo-qty").textContent = `₹ ${product.mozonite ?? 0}`;
+            document.getElementById("mozo-rate").textContent = `₹ ${product.mRate ?? 0}`;
+            document.getElementById("mozo-amt").textContent = `₹ ${estimate.mozo ?? 0}`;
+
+            document.getElementById("diamonds-qty").textContent = `₹ ${product.diamondsCt ?? 0}`;
+            document.getElementById("diamonds-rate").textContent = `₹ ${product.diaRt ?? 0}`;
+            document.getElementById("diamonds-amt").textContent = `₹ ${estimate.diamonds ?? 0}`;
+
+            document.getElementById("ostones-qty").textContent = `₹ ${product.otherStonesCt ?? 0}`;
+            document.getElementById("ostones-rate").textContent = `₹ ${product.otherStonesRt ?? 0}`;
+            document.getElementById("ostones-amt").textContent = `₹ ${estimate.otherStones ?? 0}`;
+
+            document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
+            document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
+            document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
+            document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
+
+            const categoryId = product.categoryId;
+            console.log("Category ID:", categoryId);
+
+            function showHideRows(categoryId) {
+                const rowsToHide = {
+                    1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row", "header_row"],
+                    2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row", "header_row"],
+                    3: ["gold_row", "labour_row", "gst_row", "total_row", "header_row"],
+                    4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row", "header_row"],
+                    5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row", "header_row"],
+                    6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row", "header_row"]
+                };
+
+                // Hide all rows first
+                const allRows = document.querySelectorAll('tbody tr');
+                allRows.forEach(row => row.style.display = 'none');
+
+                const thead = document.querySelector('thead');
+                if (thead) thead.style.display = 'table-header-group';
+
+                // Show rows for the selected category
+                const rowsToDisplay = rowsToHide[categoryId];
+                if (rowsToDisplay) {
                     rowsToDisplay.forEach(rowId => {
                         const row = document.getElementById(rowId);
                         if (row) row.style.display = 'table-row';
                     });
                 }
+            }
 
-                // Call the function to show the appropriate rows
-                showHideRows(categoryId);
-            })
-            .catch(error => console.error('Error fetching estimate:', error));
-    });
-    
-    document.getElementById("download-pdf").addEventListener("click", function () {
-        // Extract the title and table content
-        const title = document.querySelector("h1").textContent;
-        const table = document.querySelector(".estimate-table");
+            // Call the function to show the appropriate rows
+            showHideRows(categoryId);
 
-        // Create table data for pdfMake
-        const headers = [];
-        const rows = [];
+            // Hide rows where any of Qty, Rate, or Amount is exactly 0 (ignore empty or missing)
+            const tbodyRows = document.querySelectorAll('.estimate-table tbody tr');
+            tbodyRows.forEach(row => {
+                if(row.id === 'header_row' || row.classList.contains('total-row')) return;
 
-        // Add headers (thead content)
-        const headerCells = table.querySelectorAll("thead th");
-        headerCells.forEach((cell) => headers.push({ text: cell.textContent, bold: true, alignment: 'center', fillColor: '#f2f2f2' }));
+                const qtyText = row.children[1]?.textContent.trim() || "";
+                const rateText = row.children[2]?.textContent.trim() || "";
+                const amtText = row.children[3]?.textContent.trim() || "";
 
-        // Add rows (tbody content)
-        const tableRows = table.querySelectorAll("tbody tr");
-        tableRows.forEach((row, index) => {
-            const rowData = [];
-            row.querySelectorAll("td").forEach((cell) => {
-                rowData.push({ 
-                    text: cell.textContent, 
-                    alignment: 'center', 
-                    fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9' // Alternate row colors
+                const qty = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
+                const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
+                const amt = parseFloat(amtText.replace(/[^\d.-]/g, ''));
+
+                if (qty === 0 || rate === 0 || amt === 0) {
+                    row.style.display = "none";
+                } else {
+                    row.style.display = "table-row";
+                }
+            });
+        })
+        .catch(error => console.error('Error fetching estimate:', error));
+});
+
+document.getElementById("download-pdf").addEventListener("click", function () {
+    if (!product || !estimate) {
+        alert("Data not loaded yet, please wait.");
+        return;
+    }
+
+    // Extract the title and table content
+    const title = document.querySelector("h1").textContent;
+    const table = document.querySelector(".estimate-table");
+
+    // Create table data for pdfMake
+    const headers = [];
+    const rows = [];
+
+    // Add headers (thead content)
+    const headerCells = table.querySelectorAll("thead th");
+    headerCells.forEach((cell) => headers.push({
+        text: cell.textContent,
+        bold: true,
+        alignment: 'center',
+        fillColor: '#f2f2f2'
+    }));
+
+    // Add rows (tbody content), filtering out rows where Qty, Rate or Amount is exactly 0
+    const tableRows = table.querySelectorAll("tbody tr");
+    tableRows.forEach((row, index) => {
+        if(row.id === 'header_row' || row.classList.contains('total-row')) {
+            // Always include header and total rows
+            const totalRowData = [];
+            row.querySelectorAll("td").forEach(cell => {
+                totalRowData.push({
+                    text: cell.textContent,
+                    alignment: 'center',
+                    fillColor: '#f2f2f2'
                 });
             });
-            rows.push(rowData);
+            rows.push(totalRowData);
+            return;
+        }
+
+        const qtyText = row.children[1]?.textContent.trim() || "";
+        const rateText = row.children[2]?.textContent.trim() || "";
+        const amtText = row.children[3]?.textContent.trim() || "";
+
+        const qty = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
+        const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
+        const amt = parseFloat(amtText.replace(/[^\d.-]/g, ''));
+
+        if (qty === 0 || rate === 0 || amt === 0) {
+            // Skip zero rows
+            return;
+        }
+
+        const rowData = [];
+        row.querySelectorAll("td").forEach((cell) => {
+            rowData.push({
+                text: cell.textContent,
+                alignment: 'center',
+                fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9' // Alternate row colors
+            });
         });
-
-        // Define PDF content
-        const docDefinition = {
-            content: [
-                // Header Section
-                {
-                    columns: [
-                        { 
-                            text: 'Your Company Name', 
-                            bold: true, 
-                            fontSize: 18, 
-                            alignment: 'left', 
-                            margin: [0, 0, 0, 10] 
-                        },
-                        { 
-                            text: `Estimate of ${product.item}`, 
-                            bold: true, 
-                            fontSize: 22, 
-                            alignment: 'right', 
-                            margin: [0, 0, 0, 10] 
-                        }
-                    ]
-                },
-                {
-                    text: `Prepared for: Customer Name\nDate: ${new Date().toLocaleDateString()}`,
-                    margin: [0, 0, 0, 20]
-                },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: ['40%', '20%', '20%', '20%'], // Adjust column widths as needed
-                        body: [headers, ...rows],
-                    },
-                    layout: {
-                        hLineWidth: function () { return 0.5; },
-                        vLineWidth: function () { return 0.5; },
-                        hLineColor: function () { return '#cccccc'; }, // Subtle border colors
-                        vLineColor: function () { return '#cccccc'; },
-                        paddingLeft: function () { return 8; }, // Padding for better readability
-                        paddingRight: function () { return 8; },
-                        paddingTop: function () { return 5; },
-                        paddingBottom: function () { return 5; },
-                    },
-                },
-                // Summary Section
-                {
-                    text: 'Summary',
-                    bold: true,
-                    fontSize: 16,
-                    margin: [0, 20, 0, 10]
-                },
-                {
-                    table: {
-                        widths: ['70%', '30%'],
-                        body: [
-                            [
-                                { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
-                                { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
-                            ],
-                            [
-                                { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0] },
-                                { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9' }
-                            ],
-                            [
-                                { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
-                                { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
-                            ]
-                        ]
-                    },
-                    layout: 'noBorders'
-                }
-            ],
-            styles: {
-                header: { fontSize: 18, bold: true },
-                subheader: { fontSize: 14, bold: true },
-            },
-            defaultStyle: {
-                font: 'Roboto', // Roboto is supported by pdfMake by default
-            },
-        };
-
-        // Generate and download PDF
-        const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
-        pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+        rows.push(rowData);
     });
 
+    // Define PDF content
+    const docDefinition = {
+        content: [
+            // Header Section
+            {
+                columns: [
+                    {
+                        text: 'Your Company Name',
+                        bold: true,
+                        fontSize: 18,
+                        alignment: 'left',
+                        margin: [0, 0, 0, 10]
+                    },
+                    {
+                        text: `Estimate of ${product.item}`,
+                        bold: true,
+                        fontSize: 22,
+                        alignment: 'right',
+                        margin: [0, 0, 0, 10]
+                    }
+                ]
+            },
+            {
+                text: `Prepared for: Customer Name\nDate: ${new Date().toLocaleDateString()}`,
+                margin: [0, 0, 0, 20]
+            },
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['40%', '20%', '20%', '20%'], // Adjust as needed
+                    body: [headers, ...rows],
+                },
+                layout: {
+                    hLineWidth: function () { return 0.5; },
+                    vLineWidth: function () { return 0.5; },
+                    hLineColor: function () { return '#cccccc'; },
+                    vLineColor: function () { return '#cccccc'; },
+                    paddingLeft: function () { return 8; },
+                    paddingRight: function () { return 8; },
+                    paddingTop: function () { return 5; },
+                    paddingBottom: function () { return 5; },
+                },
+            },
+            // Summary Section
+            {
+                text: 'Summary',
+                bold: true,
+                fontSize: 16,
+                margin: [0, 20, 0, 10]
+            },
+            {
+                table: {
+                    widths: ['70%', '30%'],
+                    body: [
+                        [
+                            { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
+                            { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                        ],
+                        [
+                            { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0] },
+                            { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9' }
+                        ],
+                        [
+                            { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
+                            { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                        ]
+                    ]
+                },
+                layout: 'noBorders'
+            }
+        ],
+        styles: {
+            header: { fontSize: 18, bold: true },
+            subheader: { fontSize: 14, bold: true },
+        },
+        defaultStyle: {
+            font: 'Roboto',
+        },
+    };
 
+    // Generate and download PDF
+    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+    pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+});
 </script>
+
 
 </body>
 </html>

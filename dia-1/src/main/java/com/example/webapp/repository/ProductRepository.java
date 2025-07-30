@@ -17,13 +17,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Additional query methods can be defined here
 	List<Product> findByCategoryId(Long categoryId);
 	Page<Product> findByCategoryId(Integer category, Pageable pageable);
-	Optional<Product> findByDesignNo(String productId);
+	Optional<Product> findByDesignNo(String designNo);
 	void deleteByDesignNo(String productId);
 	  boolean existsByDesignNo(String designNo);
 	
 	@Query("SELECT p FROM Product p " +
 		       "WHERE p.categoryId  = :categoryId AND p.createDateTime BETWEEN :startDate AND :endDate")
-		List<Product> findProductsByCategoryAndDateRange(
+	Page<Product> findProductsByCategoryAndDateRange(
 		        @Param("categoryId") Long categoryId,
 		        @Param("startDate") LocalDateTime startDate,
 		        @Param("endDate") LocalDateTime endDate,

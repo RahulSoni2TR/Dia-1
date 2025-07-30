@@ -37,8 +37,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.example.webapp.exceptions.ProductUpdateException;
+import com.example.webapp.models.Orders;
 import com.example.webapp.models.Product;
 import com.example.webapp.models.Rate;
+import com.example.webapp.repository.OrderRepository;
 import com.example.webapp.repository.ProductRepository;
 import com.example.webapp.repository.RateRepository;
 
@@ -52,6 +55,10 @@ public class ProductService {
 
 	@Autowired
 	private RateRepository rateRepository;
+	
+
+	@Autowired
+	private OrderRepository orderRepository;
 
 	@Autowired
 	private AmazonS3 s3Client;
@@ -79,8 +86,27 @@ public class ProductService {
 
 	@Transactional
 	public void removeProduct(String productId) {
-		productRepository.deleteByDesignNo(productId);
+	    Optional<Product> productToDeleteOpt = productRepository.findByDesignNo(productId);
+
+	    if (productToDeleteOpt.isPresent()) {
+	        Product product = productToDeleteOpt.get();
+	        Orders order = product.getOrders();
+
+	        if (order != null) {
+	            // Break bidirectional link
+	            product.setOrders(null);             // Break reference in Product
+	            order.setAssigned(false);            // Update flag
+	            order.setAssignedProduct(null);      // Break reverse link in Order
+	        }
+
+	        // Save only Order, to persist changes
+	        orderRepository.save(order);
+
+	        // Now that order is detached, Hibernate won't try to cascade delete/insert it
+	        productRepository.delete(product);
+	    }
 	}
+
 
 	public String modifyProduct(int a, String s, String b, String n) {
 		return "p";
@@ -101,11 +127,16 @@ public class ProductService {
 	public Optional<Product> findProductFromId(Long productId) {
 		return productRepository.findById(productId);
 	}
+	
+	public Optional<Orders> findByOrderId(String 	orderId){
+		return orderRepository.findByOrderId(orderId);
+	}
+	
+	public void saveOrders(Orders order){
+		 orderRepository.save(order);
+	}
 
-	public Product updateProduct(String productId, Product updatedProduct, MultipartFile imageFile) {
-		// System.out.println("inside service");
-		// System.out.println("design no is "+productId);
-		// System.out.println("new design no is "+updatedProduct.getDesignNo());
+	public Product updateProduct(String productId, Product updatedProduct, MultipartFile imageFile,String newOrderId) {
 		Optional<Product> existingProductOpt = productRepository.findByDesignNo(productId);
 		Optional<Product> alProduct = productRepository.findByDesignNo(updatedProduct.getDesignNo());
 		if (alProduct.isPresent()) {
@@ -127,6 +158,42 @@ public class ProductService {
 				// If no new image is uploaded, keep the existing image URL
 				existingProduct.setImageUrl(existingProduct.getImageUrl());
 			}
+			
+			
+			 // 3. Handle order ID reassignment
+		    Orders oldOrder = existingProduct.getOrders();
+
+		    // Check if the order ID has changed
+		    if (oldOrder == null || !oldOrder.getOrderId().equals(newOrderId)) {
+		        // a) Unassign old order
+		        if (oldOrder != null) {
+		            oldOrder.setAssigned(false);
+		            oldOrder.setAssignedProduct(null);
+		            orderRepository.save(oldOrder);
+		        }
+
+		        // b) Handle new order
+		        Orders newOrder = orderRepository.findByOrderId(newOrderId).orElseGet(() -> {
+	                Orders o = new Orders();
+	                o.setOrderId(newOrderId);
+	                o.setCategoryId(updatedProduct.getCategoryId());
+	                return o;
+	            });
+
+
+		        // Prevent re-assigning if already taken
+		        if (newOrder.isAssigned() && (newOrder.getAssignedProduct() == null ||
+		                !newOrder.getAssignedProduct().getProductId().equals(existingProduct.getProductId()))) {
+		            throw new ProductUpdateException("New Order ID is already assigned to another product.");
+		        }
+
+		        newOrder.setAssigned(true);
+		        newOrder.setAssignedProduct(existingProduct);
+		        orderRepository.save(newOrder);
+
+		        // Update product's orderRef
+		        existingProduct.setOrders(newOrder);
+		    }
 
 			if (updatedProduct.getCategoryId() == 1) {
 				existingProduct.setItem(updatedProduct.getItem());
@@ -328,13 +395,18 @@ public class ProductService {
 		return rateRepository.findAll();
 	}
 
-	public List<Product> getFilteredProducts(Long categoryId, LocalDateTime startDate, LocalDateTime endDate, int page,
+	public Page<Product> getFilteredProducts(Long categoryId, LocalDateTime startDate, LocalDateTime endDate, int page,
 			int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		// System.out.println(startDate);
 		// System.out.println(endDate);
 		return productRepository.findProductsByCategoryAndDateRange(categoryId, startDate, endDate, pageable);
 	}
+	
+	public List<Product> getAllProductsByCategory(Long categoryId) {
+	    return productRepository.findByCategoryId(categoryId);
+	}
+
 
 	public void importProductsFromExcel(MultipartFile file, String categoryName) throws Exception {
 		System.out.println("inside import product");
@@ -399,18 +471,57 @@ public class ProductService {
 							// Generate a random design number if none is provided
 							designNo = generateRandomDesignNo();
 						}
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(1);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(1);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(1);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(1);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
+
+						
+//						product.setOrderRef(order);
 						product.setCategoryId(parseInt(categoryName));
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setDesignNo(designNo);
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setPcs(parseInt(getCellValue(currentRow.getCell(4))));
-						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setRemarks(getCellValue(currentRow.getCell(6)));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setPcs(parseInt(getCellValue(currentRow.getCell(5))));
+						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setRemarks(getCellValue(currentRow.getCell(7)));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+					//	order.setAssignedProduct(product);
 						System.out.println("product detail " + product);
 						products.add(product);
 					} catch (Exception e) {
@@ -447,26 +558,65 @@ public class ProductService {
 							// Generate a random design number if none is provided
 							designNo = generateRandomDesignNo();
 						}
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(2);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(2);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(2);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(2);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
 
+						
+//						product.setOrderRef(order);
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setOtherStonesCt(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-						product.setRemarks(getCellValue(currentRow.getCell(10)));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(11))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(12))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(13))));
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setOtherStonesCt(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+						product.setRemarks(getCellValue(currentRow.getCell(11)));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(12))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(13))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(14))));
 
 						System.out.println("product detail " + product);
+					//	order.setAssignedProduct(product);
 						products.add(product);
+
 					} catch (Exception e) {
 						System.err.println("Error parsing row number " + rowNumber + ": " + e.getMessage());
 						e.printStackTrace(); // Log stack trace for debugging
@@ -501,18 +651,55 @@ public class ProductService {
 							// Generate a random design number if none is provided
 							designNo = generateRandomDesignNo();
 						}
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(3);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(3);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(3);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(3);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
 
+					//	order.setAssignedProduct(product);
+//						product.setOrderRef(order);
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setRemarks(getCellValue(currentRow.getCell(7)));
-
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setRemarks(getCellValue(currentRow.getCell(8)));
+				//		order.setAssignedProduct(product);
 						System.out.println("product detail " + product);
 						products.add(product);
 					} catch (Exception e) {
@@ -549,20 +736,56 @@ public class ProductService {
 							// Generate a random design number if none is provided
 							designNo = generateRandomDesignNo();
 						}
-
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(4);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(4);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(4);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(4);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
+						
+					//	product.setOrders(order);
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setPcs(parseInt(getCellValue(currentRow.getCell(4))));
-						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setRemarks(getCellValue(currentRow.getCell(6)));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setPcs(parseInt(getCellValue(currentRow.getCell(5))));
+						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setRemarks(getCellValue(currentRow.getCell(7)));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+				//		order.setAssignedProduct(product);
 						System.out.println("product detail " + product);
 						products.add(product);
 					} catch (Exception e) {
@@ -605,31 +828,66 @@ public class ProductService {
 							System.out.println("inside design validation else");
 							designNo = generateRandomDesignNo();
 						}
-
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(5);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(5);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(5);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(5);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setvRate(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(10))));
-						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(11))));
-						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(12))));
-						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(13))));
-						product.setRealStone(parseBigDecimal(getCellValue(currentRow.getCell(14))));
-						product.setFitting(parseBigDecimal(getCellValue(currentRow.getCell(15))));
-						product.setMozonite(parseBigDecimal(getCellValue(currentRow.getCell(16))));
-						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(17))));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(18))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(19))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(20))));
-						product.setRemarks(getCellValue(currentRow.getCell(21)));
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setvRate(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(11))));
+						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(12))));
+						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(13))));
+						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(14))));
+						product.setRealStone(parseBigDecimal(getCellValue(currentRow.getCell(15))));
+						product.setFitting(parseBigDecimal(getCellValue(currentRow.getCell(16))));
+						product.setMozonite(parseBigDecimal(getCellValue(currentRow.getCell(17))));
+						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(18))));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(19))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(20))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(21))));
+						product.setRemarks(getCellValue(currentRow.getCell(22)));
+				//		order.setAssignedProduct(product);
 
 						System.out.println("product detail " + product);
 						products.add(product);
@@ -669,31 +927,66 @@ public class ProductService {
 							// Generate a random design number if none is provided
 							designNo = generateRandomDesignNo();
 						}
-
+						String orderId = getCellValue(currentRow.getCell(2));
+						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
+						Orders order;
+						if (orderOpt.isPresent()) {
+						    Orders existingOrder = orderOpt.get();
+						    
+						    if (existingOrder.isAssigned()) {
+						        // Existing order is already assigned, generate a new unique one
+						        String newOrderId = generateUniqueOrderIdForCategory(6);
+						        
+						        order = new Orders();
+						        order.setOrderId(newOrderId);
+						        order.setCategoryId(6);
+						        order.setAssigned(true);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						       
+						    } else {
+						        // Existing order is not assigned, reuse it
+						        order = existingOrder;
+						        order.setAssigned(true);
+						        order.setCategoryId(6);
+						        order.setAssignedProduct(product);
+						        product.setOrders(order);
+						        
+						    }
+						} else {
+						    // Create a fresh order with the provided ID
+						    order = new Orders();
+						    order.setOrderId(orderId);
+						    order.setCategoryId(6);
+						    order.setAssigned(true);
+						    order.setAssignedProduct(product);
+						    product.setOrders(order);
+						}
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
-						product.setItem(getCellValue(currentRow.getCell(2)));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(3))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setStRate(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(10))));
-						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(11))));
-						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(12))));
-						product.setRealStone(parseBigDecimal(getCellValue(currentRow.getCell(13))));
-						product.setFitting(parseBigDecimal(getCellValue(currentRow.getCell(14))));
-						product.setMozonite(parseBigDecimal(getCellValue(currentRow.getCell(15))));
-						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(16))));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(17))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(18))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(19))));
-						product.setRemarks(getCellValue(currentRow.getCell(20)));
+						product.setItem(getCellValue(currentRow.getCell(3)));
+						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(4))));
+						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setStRate(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(11))));
+						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(12))));
+						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(13))));
+						product.setRealStone(parseBigDecimal(getCellValue(currentRow.getCell(14))));
+						product.setFitting(parseBigDecimal(getCellValue(currentRow.getCell(15))));
+						product.setMozonite(parseBigDecimal(getCellValue(currentRow.getCell(16))));
+						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(17))));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(18))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(19))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(20))));
+						product.setRemarks(getCellValue(currentRow.getCell(21)));
 						System.out.println("product detail " + product);
+				//		order.setAssignedProduct(product);
 						products.add(product);
 					} catch (Exception e) {
 						System.err.println("Error parsing row number " + rowNumber + ": " + e.getMessage());
@@ -789,5 +1082,34 @@ public class ProductService {
 	private String generateRandomDesignNo() {
 		return "DESIGN-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 1000);
 	}
+
+	
+	public List<Orders> findByCategoryIdAndIsAssignedFalse(Long categoryId){
+		
+		return orderRepository.findByCategoryIdAndIsAssignedFalse(categoryId);
+	}
+	
+	public String generateUniqueOrderIdForCategory(Integer categoryId) {
+	    String prefix = "";
+
+	    switch (categoryId) {
+	        case 1: prefix = "dia"; break;
+	        case 2: prefix = "ope"; break;
+	        case 3: prefix = "cha"; break;
+	        case 4: prefix = "ear"; break;
+	        case 5: prefix = "vil"; break;
+	        case 6: prefix = "jad"; break;
+	        default: prefix = "ord"; break;
+	    }
+
+	    String newOrderId;
+	    do {
+	        int randomNum = (int)(Math.random() * 10000); // adjust range if needed
+	        newOrderId = prefix + randomNum;
+	    } while (orderRepository.existsByOrderId(newOrderId));
+
+	    return newOrderId;
+	}
+
 
 }

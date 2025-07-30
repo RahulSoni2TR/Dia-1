@@ -31,6 +31,28 @@
             <div id="productDetails" class="product-details" style="display: none;">
                 <label for="productName">Product Name:</label>
                 <input type="text" id="productName" name="productName" required>
+                
+<label>Existing Order Id:</label>
+
+<input type="text" id="oldOrderId" name="oldOrderId" step="any" disabled>
+<label>Set New Order Id:</label>
+
+<div style="display: flex; gap: 1rem; align-items: center;">
+    <label>
+        <input type="radio" name="orderIdOption" value="existing" checked onchange="toggleOrderIdInput()"> Select Existing
+    </label>
+    <label>
+        <input type="radio" name="orderIdOption" value="new" onchange="toggleOrderIdInput()"> Enter New
+    </label>
+</div>
+
+<!-- Dropdown for selecting existing order ID -->
+<select id="existingOrderIds" style="margin-top: 8px; width: 200px;"></select>
+
+<!-- Textbox for new order ID -->
+<input type="text" id="newOrderId" placeholder="Enter New Order ID" style="display:none; margin-top: 8px;" />
+<input type="hidden" id="finalOrderId" name="productOrderid">
+
 
                 <label for="productPrice">Price:</label>
                 <input type="text" id="productPrice" name="productPrice" step="any">
@@ -219,7 +241,15 @@
     </div>
     <script>
     function loadProductDetails() {
-        const productId = document.getElementById('productId').value;
+    	let productId;
+
+    	if (sessionStorage.getItem("returnToViewPage") === "true") {
+    	    console.log('session here');
+    	    productId = sessionStorage.getItem("modifyDesignNo");
+    	} else {
+    		console.log('here');
+    	    productId = document.getElementById('productId').value;
+    	}
 
         fetch(`/loadProduct/${productId}`)
             .then(response => {
@@ -230,7 +260,7 @@
             })
             .then(product => {
                 document.getElementById('productName').value = product.item;
-            //    document.getElementById('productPrice').value = product.price !== undefined ? product.price?.toFixed(2) : '';
+                document.getElementById('oldOrderId').value = product.orders ? product.orders.orderId || '' : '';
                 document.getElementById('productPrice').value = product.price?.toFixed(2) || '';
                 document.getElementById('productRemarks').value = product.remarks;
                 document.getElementById('productNet').value = product.net;
@@ -243,6 +273,8 @@
                 const categoryId = product.categoryId;
                 document.getElementById('categoryId').value = categoryId;
                 updateCategoryFields();
+                loadAvailableOrderIds(product.categoryId);
+
 
                 // Populate category-specific fields based on category
                 if (categoryId === 1) { // Diamond Rings
@@ -311,6 +343,21 @@
             });
     }
 
+    document.addEventListener("DOMContentLoaded", function () {
+    	 const cameFromView = sessionStorage.getItem("returnToViewPage") === "true";
+    	    const productIdInput = document.getElementById("productId");
+
+    	    if (cameFromView) {
+    	        const designNo = sessionStorage.getItem("modifyDesignNo");
+
+    	        if (designNo && productIdInput) {
+    	            productIdInput.value = designNo; // ✅ Set the input field
+    	            loadProductDetails();           // ✅ Automatically load product
+    	        }
+    	    }
+    });
+    
+    
         function updateImagePreview() {
             const imageUrl = document.getElementById('productImageUrl').value;
             const imagePreview = document.getElementById('imagePreview');
@@ -389,10 +436,22 @@
             $("#modalTitle").text(""); // Clear the title
             $("#modalMessage").text(""); // Clear the message
         });
+        
+      
+
 
         
         function submitForm(event) {
             event.preventDefault(); // Prevent default form submission
+ 
+                const selectedOption = document.querySelector('input[name="orderIdOption"]:checked').value;
+                const finalOrderInput = document.getElementById("finalOrderId");
+
+                if (selectedOption === 'existing') {
+                    finalOrderInput.value = document.getElementById("existingOrderIds").value;
+                } else {
+                    finalOrderInput.value = document.getElementById("newOrderId").value;
+                }
 
             const form = document.getElementById('productForm');
             const formData = new FormData(form);
@@ -415,7 +474,13 @@
                     // Attach redirect logic to the OK button
                     $(".close-btn").off("click").on("click", function () {
                         $("#notificationModal").fadeOut(() => {
-                            window.location.href = '/modify-product'; // Redirect after closing the modal
+                            if (sessionStorage.getItem("returnToViewPage") === "true") {
+                                sessionStorage.removeItem("returnToViewPage");
+                                sessionStorage.removeItem("modifyDesignNo");
+                                window.location.href = "/view-product";
+                            } else {
+                                window.location.href = "/modify-product";
+                            }
                         });
                     });
                 },
@@ -430,6 +495,39 @@
                     });
                 }
             });
+        }
+
+        
+        function toggleOrderIdInput() {
+            const selectedOption = document.querySelector('input[name="orderIdOption"]:checked').value;
+            const newOrderInput = document.getElementById('newOrderId');
+            const existingDropdown = document.getElementById('existingOrderIds');
+
+            if (selectedOption === 'existing') {
+                newOrderInput.style.display = 'none';
+                existingDropdown.style.display = 'inline-block';
+            } else {
+                newOrderInput.style.display = 'inline-block';
+                existingDropdown.style.display = 'none';
+            }
+        }
+
+        // Call this on page load to fetch unassigned order IDs
+        function loadAvailableOrderIds(categoryId) {            
+            $.ajax({
+           	 url: '/available-order-ids?categoryId=' + categoryId,
+               method: 'GET',
+               success: function (orderIds) {
+                   const $select = $('#existingOrderIds');
+                   $select.empty().append('<option value="">Select from available</option>');
+                   orderIds.forEach(function (id) {
+                       $select.append(`<option value="${id}">${id}</option>`);
+                   });
+               },
+               error: function () {
+                   alert("Failed to load available order IDs.");
+               }
+           });
         }
 
 

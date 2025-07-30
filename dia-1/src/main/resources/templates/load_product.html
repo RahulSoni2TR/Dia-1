@@ -59,7 +59,7 @@
                         <div class="product-details">
                             <h2>${renderText(product.item)}</h2>
                             <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
-                            <p><strong>Design No:</strong> ${renderText(product.designNo)}</p>
+                            <p><strong>Design No:</strong> ${renderText(product.orders ? product.orders.orderId : 'N/A')}/${renderText(product.designNo)}</p>
                             <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
                             <h3>Additional Details:</h3>
                     `;

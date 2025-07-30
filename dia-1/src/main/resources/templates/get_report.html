@@ -12,6 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  
   
 </head>
 <body>
@@ -50,6 +52,8 @@
     <button onclick="loadFilteredProducts()">Submit</button>
   </div>
 
+<div id="messageContainer" style="color: red; font-size: 18px; text-align:center; margin-top: 10px;"></div>
+
     <!-- Product Table -->
 <!-- Product Table -->
 <div id="productTableContainer" style="display:none;">
@@ -61,10 +65,35 @@
       <tbody></tbody>
     </table>
   </div>
+  
+
+  
+<div class="button-container" style="justify-content: center;">
+  <button id="generatePDFButton" onclick="generatePDF()">Generate PDF</button>
+  <button id="exportExcelButton" onclick="exportToExcel()">Export to Excel</button>
+</div>
+
+
+
+
+</div>
+<div id="paginationControls" class="pagination-container" style="margin-top: 10px; display: none;">
   <div class="button-container">
-    <button id="loadMoreButton" onclick="loadMoreProducts()">Load More</button>
-    <button id="generatePDFButton" onclick="generatePDF()">Generate PDF</button>
+    <button id="prevPageButton" onclick="changePage(-1)" disabled>Previous</button>
+    <span id="pageInfo" style="align-self: center;">Page 1</span>
+    <button id="nextPageButton" onclick="changePage(1)" disabled>Next</button>
   </div>
+</div>
+<div class="button-container" id="categoryButtonsContainer" style="display:none; justify-content: center;">
+  <button id="generateFullPDF" onclick="generateFullPDF()">Download All</button>
+  <button id="exportFullExcel" onclick="exportFullExcel()">Export All</button>
+</div>
+  <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 10px;">
+  <span>⏳ Generating report, please wait...</span>
+</div>
+<div id="fieldsCheckboxContainer" style="display:none; margin-top:10px;">
+  <label>Select Fields to Display:</label>
+  <div id="fieldsCheckboxes" style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; width: 300px; background: #fff;"></div>
 </div>
 
   
@@ -81,21 +110,87 @@
   <!-- Add to your existing HTML -->
 <script>
 
-  let currentPage = 0;
-  const productsPerPage = 10;
-  let loadedProducts = [];
-  let selectedCategory = "";
+let currentPage = 0;
+const productsPerPage = 10;
+let totalPages = 0;
+let loadedProducts = [];
+let selectedCategory = "";
+let startDateStr = "";
+let endDateStr = "";
+window.onload = () => {
+	  toggleCategoryButtons();
+	};
 
   // Category field mappings
   const categoryFields = {
-    1: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
-    2: ["S.No", "Design No", "Product Name","Karat", "Net", "Gross", "Vilandi", "Vilandi Rate", "Diamonds (Ct)","Diamond Price", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "Other Stones", "Labour Charges", "Remarks", "Create Date", "Update Date"],
-    3: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Labour Charges", "Remarks", "Create Date", "Update Date"],
-    4: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
-    5: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Vilandi", "Vilandi Rate", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Remarks"],
-    6: ["S.No", "Design No", "Product Name","Karat", "Price", "Net", "Gross", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls Weight (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Mozonite", "Mozonite Rate", "Remarks"]
+    1: ["S.No", "Design No","Product Image", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    2: ["S.No", "Design No","Product Image", "Product Name","Karat", "Net", "Gross", "Vilandi", "Vilandi Rate", "Diamonds (Ct)","Diamond Price", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "Other Stones", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    3: ["S.No", "Design No","Product Image", "Product Name","Karat", "Price", "Net", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    4: ["S.No", "Design No","Product Image", "Product Name","Karat", "Price", "Net", "Pieces", "Diamonds (Ct)","Diamond Price", "Labour Charges", "Remarks", "Create Date", "Update Date"],
+    5: ["S.No", "Design No","Product Image", "Product Name","Karat", "Price", "Net", "Vilandi", "Vilandi Rate", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Remarks", "Create Date", "Update Date"],
+    6: ["S.No", "Design No","Product Image", "Product Name","Karat", "Price", "Net", "Gross", "Stones", "Stones Rate", "Beads (Ct.)", "Beads Rate", "Pearls Weight (gm)", "Pearls Rate", "SS Pearls (Ct.)", "SS Pearls Rate", "Real Stones (Ct.)", "Labour Charges", "Fitting", "Mozonite", "Mozonite Rate", "Remarks", "Create Date", "Update Date"]
   };
 
+  const fieldsCheckboxContainer = document.getElementById("fieldsCheckboxContainer");
+  const fieldsCheckboxes = document.getElementById("fieldsCheckboxes");
+
+  document.getElementById('categorySelect').addEventListener('change', () => {
+    const selectedCat = document.getElementById('categorySelect').value;
+
+    if (selectedCat && categoryFields[selectedCat]) {
+      // Show the fields checkbox container
+      fieldsCheckboxContainer.style.display = 'block';
+
+      // Clear previous checkboxes
+      fieldsCheckboxes.innerHTML = "";
+
+      // For each field in the category, add a checkbox (checked by default)
+      categoryFields[selectedCat].forEach(field => {
+        const checkboxId = `fieldCheckbox_${field.replace(/\s+/g, '_')}`;
+
+        const checkboxWrapper = document.createElement('div');
+        checkboxWrapper.style.marginBottom = "4px";
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = checkboxId;
+        checkbox.value = field;
+        checkbox.checked = true; // default selected
+
+        const label = document.createElement('label');
+        label.htmlFor = checkboxId;
+        label.style.marginLeft = "6px";
+        label.textContent = field;
+
+        checkboxWrapper.appendChild(checkbox);
+        checkboxWrapper.appendChild(label);
+        fieldsCheckboxes.appendChild(checkboxWrapper);
+      });
+
+    } else {
+      // Hide checkbox container if no category selected
+      fieldsCheckboxContainer.style.display = 'none';
+      fieldsCheckboxes.innerHTML = "";
+    }
+  });
+
+  function toggleCategoryButtons() {
+	  const categorySelected = document.getElementById('categorySelect').value !== "";
+	  const categoryButtons = document.getElementById('categoryButtonsContainer');
+	  if (categorySelected) {
+	    categoryButtons.style.display = 'flex';   // flex to preserve button container layout
+	  } else {
+	    categoryButtons.style.display = 'none';
+	  }
+	}
+
+	// Call this on category select change event
+	document.getElementById('categorySelect').addEventListener('change', () => {
+	  toggleCategoryButtons();
+	});
+
+  
+  
   flatpickr("#startDate", {
       enableTime: true,
       dateFormat: "Y-m-d H:i",
@@ -123,251 +218,705 @@
     }
 
   
-  function loadFilteredProducts() {
+    function loadFilteredProducts(page = 0) {
+    	  document.getElementById('messageContainer').innerHTML = "";
+
+    	  const categoryId = document.getElementById('categorySelect').value;
+    	  const startDate = document.getElementById('startDate').value;
+    	  const endDate = document.getElementById('endDate').value;
+
+    	  
+    	  fieldsCheckboxes.addEventListener('change', () => {
+    		  if (loadedProducts.length > 0) {
+    		    renderTableHeaders();
+    		    renderTableRows();
+    		  }
+    		});
+    	  if (!categoryId) {
+    	    alert("Please select a category.");
+    	    return;
+    	  }
+
+    	  if (!startDate || !endDate) {
+    	    alert("Please select both start and end dates.");
+    	    return;
+    	  }
+
+    	  selectedCategory = categoryId;
+    	  startDateStr = convertToIST(new Date(startDate));
+    	  endDateStr = convertToIST(new Date(endDate));
+
+    	  fetch(`/getReport/${categoryId}?startDate=${startDateStr}&endDate=${endDateStr}&page=${page}&size=${productsPerPage}`)
+    	    .then(async response => {
+    	      if (!response.ok) {
+    	        const errorText = await response.text();
+    	        throw new Error("No Products found in selected Date Range" || "No products found.");
+    	      }
+    	      return response.json();
+    	    })
+    	    .then(data => {
+    	      if (!data.content || data.content.length === 0) {
+    	        document.getElementById('messageContainer').innerHTML = "❌ No products found.";
+    	        document.getElementById('productTableContainer').style.display = 'none';
+    	        return;
+    	      }
+
+    	      loadedProducts = data.content;
+    	      totalPages = data.totalPages;
+    	      currentPage = data.number;
+
+    	      renderTableHeaders();
+    	      renderTableRows();
+
+    	      document.getElementById('productTableContainer').style.display = 'block';
+    	      updatePaginationControls();
+    	    })
+    	    .catch(error => {
+    	      document.getElementById('messageContainer').innerHTML = error.message || "An error occurred.";
+    	      document.getElementById('productTableContainer').style.display = 'none';
+    	    });
+    	}
+
+    function renderTableHeaders() {
+    	  // Get selected fields checkboxes values
+    	  const selectedFields = Array.from(fieldsCheckboxes.querySelectorAll('input[type="checkbox"]:checked'))
+    	                              .map(cb => cb.value);
+
+    	  const headers = categoryFields[selectedCategory];
+    	  const tableHeaders = document.getElementById("tableHeaders");
+    	  tableHeaders.innerHTML = "";
+
+    	  // Render only those headers which are selected
+    	  headers.forEach(header => {
+    	    if (selectedFields.includes(header)) {
+    	      const th = document.createElement("th");
+    	      th.textContent = header;
+    	      tableHeaders.appendChild(th);
+    	    }
+    	  });
+    	}
+
+
+    function renderTableRows() {
+    	  const tableBody = document.getElementById('productTable').getElementsByTagName('tbody')[0];
+    	  tableBody.innerHTML = "";
+
+    	  // Get selected fields
+    	  const selectedFields = Array.from(fieldsCheckboxes.querySelectorAll('input[type="checkbox"]:checked'))
+    	                              .map(cb => cb.value);
+
+    	  const start = currentPage * productsPerPage;
+    	  loadedProducts.forEach((product, index) => {
+    	    const row = tableBody.insertRow();
+
+    	    selectedFields.forEach((field, idx) => {
+    	      const cell = row.insertCell(idx);
+    	      cell.classList.add('small-text');
+
+    	      // Existing switch-case logic for fields remains same, just use 'field' instead of iterating all
+    	      switch (field) {
+    	        case "S.No":
+    	          cell.textContent = start + index + 1;
+    	          break;
+    	        case "Design No":
+    	          cell.textContent = product.designNo || "N/A";
+    	          break;
+    	        case "Product Image":
+    	          if (product.imageUrl) {
+    	            const img = document.createElement('img');
+    	            img.src = product.imageUrl;
+    	            img.alt = "Product Image";
+    	            img.style.width = '60px';
+    	            img.style.height = '60px';
+    	            cell.appendChild(img);
+    	          } else {
+    	            cell.textContent = "N/A";
+    	          }
+    	          break;
+    	        case "Product Name":
+    	          cell.textContent = product.item || "N/A";
+    	          break;
+    	        case "Karat":
+    	          cell.textContent = product.karat || "N/A";
+    	          break;
+    	        case "Price":
+    	          cell.textContent = `₹ ${product.price || "N/A"}`;
+    	          break;
+    	        case "Net":
+    	          cell.textContent = product.net || "N/A";
+    	          break;
+    	        case "Gross":
+    	          cell.textContent = product.gross || "N/A";
+    	          break;
+    	        case "Vilandi":
+    	          cell.textContent = product.vilandiCt || "N/A";
+    	          break;
+    	        case "Vilandi Rate":
+    	          cell.textContent = `₹ ${product.vRate || "N/A"}`;
+    	          break;
+    	        case "Diamonds (Ct)":
+    	          cell.textContent = product.diamondsCt || "N/A";
+    	          break;
+    	        case "Diamond Price":
+    	          cell.textContent = `₹ ${product.diaRt || "N/A"}`;
+    	          break;
+    	        case "Beads (Ct.)":
+    	          cell.textContent = product.beadsCt || "N/A";
+    	          break;
+    	        case "Beads Rate":
+    	          cell.textContent = `₹ ${product.bdRate || "N/A"}`;
+    	          break;
+    	        case "Pearls (gm)":
+    	        case "Pearls Weight (gm)":
+    	          cell.textContent = product.pearlsGm || "N/A";
+    	          break;
+    	        case "Pearls Rate":
+    	          cell.textContent = `₹ ${product.prlRate || "N/A"}`;
+    	          break;
+    	        case "Other Stones":
+    	          cell.textContent = product.otherStonesCt || "N/A";
+    	          break;
+    	        case "SS Pearls (Ct.)":
+    	          cell.textContent = product.ssPearlCt || "N/A";
+    	          break;
+    	        case "SS Pearls Rate":
+    	          cell.textContent = `₹ ${product.ssRate || "N/A"}`;
+    	          break;
+    	        case "Real Stones (Ct.)":
+    	          cell.textContent = `₹ ${product.realStone || "N/A"}`;
+    	          break;
+    	        case "Fitting":
+    	          cell.textContent = `₹ ${product.fitting || "N/A"}`;
+    	          break;
+    	        case "Mozonite":
+    	          cell.textContent = product.mozonite || "N/A";
+    	          break;
+    	        case "Mozonite Rate":
+    	          cell.textContent = `₹ ${product.mRate || "N/A"}`;
+    	          break;
+    	        case "Labour Charges":
+    	          cell.textContent = product.labour ? `₹ ${product.labour}` : product.labourAll ? `₹ ${product.labourAll}` : "N/A";
+    	          break;
+    	        case "Remarks":
+    	          cell.textContent = product.remarks || "N/A";
+    	          break;
+    	        case "Stones":
+    	          cell.textContent = product.stones || "N/A";
+    	          break;
+    	        case "Stones Rate":
+    	          cell.textContent = `₹ ${product.stRate || "N/A"}`;
+    	          break;
+    	        case "Create Date":
+    	          cell.textContent = product.createDateTime || "N/A";
+    	          break;
+    	        case "Update Date":
+    	          cell.textContent = product.updateDateTime || "N/A";
+    	          break;
+    	        default:
+    	          cell.textContent = "N/A";
+    	      }
+    	    });
+    	  });
+    	}
+
+    function getSelectedFields() {
+    	  return Array.from(fieldsCheckboxes.querySelectorAll('input[type="checkbox"]:checked'))
+    	              .map(cb => cb.value);
+    	}
+
+  function changePage(direction) {
+	  const newPage = currentPage + direction;
+	  if (newPage >= 0 && newPage < totalPages) {
+	    loadFilteredProducts(newPage);
+	  }
+	}
+
+  function updatePaginationControls() {
+	  const paginationContainer = document.getElementById('paginationControls');
+
+	  if (totalPages > 1) {
+	    paginationContainer.style.display = 'block';
+	    document.getElementById('prevPageButton').disabled = currentPage === 0;
+	    document.getElementById('nextPageButton').disabled = currentPage >= totalPages - 1;
+	    document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+	  } else {
+	    paginationContainer.style.display = 'none';
+	  }
+	}
+  
+  async function generatePDF() {
+	  const table = document.getElementById('productTable');
+	  const headers = Array.from(table.rows[0].cells).map(cell => ({
+	    text: cell.textContent,
+	    style: 'tableHeader',
+	  }));
+
+	  const rows = [];
+
+	  for (let i = 1; i < table.rows.length; i++) {
+	    const row = Array.from(table.rows[i].cells);
+	    const rowData = [];
+
+	    for (let j = 0; j < row.length; j++) {
+	      const cell = row[j];
+
+	      if (headers[j].text === "Product Image" && cell.querySelector("img")) {
+	        try {
+	          const imageUrl = cell.querySelector("img").src;
+	          const base64Img = await imageToBase64(imageUrl);
+	          rowData.push({
+	            image: base64Img,
+	            fit: [60, 60] // Adjust size
+	          });
+	        } catch (e) {
+	          rowData.push({ text: "Image Error", style: "tableCell" });
+	        }
+	      } else {
+	        rowData.push({ text: cell.textContent, style: "tableCell" });
+	      }
+	    }
+
+	    rows.push(rowData);
+	  }
+	   const widths = headers.map(header => {
+	    	  if (header.text === "Product Image") {
+	    	    return 70; // fixed width enough for 60x60 images + padding
+	    	  }
+	    	  return 'auto'; // automatically size other columns based on content
+	    	});
+	  const docDefinition = {
+	    pageSize: 'A0',
+	    pageOrientation: 'landscape',
+	    content: [
+	      { text: 'Product Report', style: 'title' },
+	      {
+	    	  table: {
+	    		  headerRows: 1,
+	    		  widths: widths,
+	    		  body: [headers, ...rows]
+	    		},
+	    		layout: {
+	    		  hLineWidth: () => 1,
+	    		  vLineWidth: () => 1,
+	    		  hLineColor: () => '#cccccc',
+	    		  vLineColor: () => '#cccccc',
+	    		  paddingLeft: () => 4,
+	    		  paddingRight: () => 4,
+	    		  paddingTop: () => 2,
+	    		  paddingBottom: () => 2,
+	    		},
+
+	      }
+	    ],
+	    styles: {
+	      title: {
+	        fontSize: 18,
+	        bold: true,
+	        margin: [0, 0, 0, 10],
+	      },
+	      tableHeader: {
+	        bold: true,
+	        fillColor: '#f2f2f2',
+	        alignment: 'center',
+	      },
+	      tableCell: {
+	        margin: [2, 2, 2, 2],
+	      },
+	    }
+	  };
+
+	  const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+	  pdfMake.createPdf(docDefinition).download(`Report_${timestamp}.pdf`);
+	}
+
+
+  function imageToBase64(url) {
+	  return new Promise((resolve, reject) => {
+	    const img = new Image();
+	    img.crossOrigin = "anonymous";
+
+	    img.onload = function () {
+	      const canvas = document.createElement("canvas");
+	      canvas.width = this.naturalWidth;
+	      canvas.height = this.naturalHeight;
+	      canvas.getContext("2d").drawImage(this, 0, 0);
+	      resolve(canvas.toDataURL("image/jpeg")); // or "image/png"
+	    };
+
+	    img.onerror = function (err) {
+	      console.error("Failed to load image for PDF:", err);
+	      reject(err);
+	    };
+
+	    // 🔥 Use proxy to bypass S3 CORS
+	    img.src = `/proxy-image?url=${encodeURIComponent(url)}`;
+	  });
+	}
+  
+  function exportToExcel() {
+	  const table = document.getElementById("productTable");
+	  const headers = Array.from(table.rows[0].cells).map(cell => cell.textContent);
+
+	  const imageColIndex = headers.findIndex(h => h.toLowerCase().includes("product image"));
+	  const filteredHeaders = headers.filter((_, i) => i !== imageColIndex);
+	  const rows = [filteredHeaders];
+
+	  for (let i = 1; i < table.rows.length; i++) {
+	    const cells = Array.from(table.rows[i].cells);
+	    const rowData = cells
+	      .filter((_, i) => i !== imageColIndex)
+	      .map(cell => cell.textContent.trim());
+	    rows.push(rowData);
+	  }
+
+	  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+	  const workbook = XLSX.utils.book_new();
+	  XLSX.utils.book_append_sheet(workbook, worksheet, "Product Report");
+
+	  XLSX.writeFile(workbook, `Product_Report_${Date.now()}.xlsx`);
+	}
+
+  
+//Fetch ALL products for a category (no date filter)
+  async function fetchAllProducts() {
     const categoryId = document.getElementById('categorySelect').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
 
     if (!categoryId) {
       alert("Please select a category.");
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      alert("Please select both start and end dates.");
-      return;
+      return [];
     }
 
     selectedCategory = categoryId;
-
-    const formattedStartDate = convertToIST(new Date(startDate));
-    const formattedEndDate = convertToIST(new Date(endDate));
     
-    loadedProducts = [];
-    currentPage = 0; // Reset pagination
-    document.getElementById('productTable').getElementsByTagName('tbody')[0].innerHTML = ""; // Clear old table rows
-
-
-    fetch(`/getReport/${categoryId}?startDate=${formattedStartDate}&endDate=${formattedEndDate}`)
- .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    return response.text(); // Read as text first
-  })
-  .then(text => {
-    const data = text ? JSON.parse(text) : []; // Handle empty response
-
-    console.log("Fetched Data:", data); // Debugging
-    	  if(!data || data.length === 0)
-    	  {
-    		  console.log('if');
-              productTableContainer.innerHTML = "<p style='color:red; font-size:18px;'>No products found.</p>";
-              productTableContainer.style.display = 'block';
-              return;
-          }
-      	else{ 
-    	
-    	loadedProducts = data;
-        renderTableHeaders();
-        displayProducts();
-        document.getElementById('productTableContainer').style.display = 'block';
+    try {
+      const response = await fetch(`/getReportAll/${categoryId}`);
+      if (!response.ok) {
+        alert("No products found.");
+        return [];
       }
-      })
-      .catch(error => console.error("Error loading products:", error));
-  }
 
-  function renderTableHeaders() {
-    const headers = categoryFields[selectedCategory];
-    const tableHeaders = document.getElementById("tableHeaders");
-    tableHeaders.innerHTML = "";
-
-    headers.forEach(header => {
-      const th = document.createElement("th");
-      th.textContent = header;
-      tableHeaders.appendChild(th);
-    });
-  }
-
-  function displayProducts() {
-    const tableBody = document.getElementById('productTable').getElementsByTagName('tbody')[0];
-    const start = currentPage * productsPerPage;
-    const end = start + productsPerPage;
-    const productsToShow = loadedProducts.slice(start, end);
-
-    productsToShow.forEach((product, index) => {
-      const row = tableBody.insertRow();
-      const fields = categoryFields[selectedCategory];
-
-      fields.forEach((field, idx) => {
-        const cell = row.insertCell(idx);
-        cell.classList.add('small-text');
-        switch (field) {
-          case "S.No":
-            cell.textContent = start + index + 1;
-            break;
-          case "Design No":
-            cell.textContent = product.designNo || "N/A";
-            console.log(product);
-            break;
-          case "Product Name":
-            cell.textContent = product.item || "N/A";
-            break;
-          case "Karat":
-              cell.textContent = product.karat || "N/A";
-              break;
-          case "Price":
-            cell.textContent =`₹ ${product.price || "N/A"}`;
-            break;
-          case "Net":
-            cell.textContent = product.net || "N/A";
-            break;
-          case "Gross":
-            cell.textContent = product.gross || "N/A";
-            break;
-          case "Vilandi":
-            cell.textContent = product.vilandiCt || "N/A";
-            break;
-          case "Vilandi Rate":
-            cell.textContent = `₹ ${product.vRate || "N/A"}`;
-            break;
-          case "Diamonds (Ct)":
-            cell.textContent = product.diamondsCt || "N/A";
-            break;
-          case "Diamond Price":
-              cell.textContent = `₹ ${product.diaRt || "N/A"}`;
-              break;
-          case "Beads (Ct.)":
-            cell.textContent = product.beadsCt || "N/A";
-            break;
-          case "Beads Rate":
-            cell.textContent = `₹ ${product.bdRate || "N/A"}`;
-            break;
-          case "Pearls (gm)":
-          case "Pearls Weight (gm)":
-            cell.textContent = product.pearlsGm || "N/A";
-            break;
-          case "Pearls Rate":
-            cell.textContent = `₹ ${product.prlRate || "N/A"}`;
-            break;
-          case "Other Stones":
-            cell.textContent = product.otherStonesCt || "N/A";
-            break;
-          case "SS Pearls (Ct.)":
-            cell.textContent = product.ssPearlCt || "N/A";
-            break;
-          case "SS Pearls Rate":
-            cell.textContent = `₹ ${product.ssRate || "N/A"}`;
-            break;
-          case "Real Stones (Ct.)":
-            cell.textContent = `₹ ${product.realStone || "N/A"}`;
-            break;
-          case "Fitting":
-            cell.textContent = `₹ ${product.fitting || "N/A"}`;
-            break;
-          case "Mozonite":
-            cell.textContent = product.mozonite || "N/A";
-            break;
-          case "Mozonite Rate":
-            cell.textContent = `₹ ${product.mRate || "N/A"}`;
-            break;
-          case "Labour Charges":
-        	cell.textContent = product.labour ? `₹ ${product.labour}` : product.labourAll ? `₹ ${product.labourAll}` : "N/A";
-        	break;
-          case "Remarks":
-            cell.textContent = product.remarks || "N/A";
-            break;
-          case "Stones":
-              cell.textContent = product.stones || "N/A";
-              break;
-          case "Stones Rate":
-              cell.textContent = `₹ ${product.stRate || "N/A"}`;
-              break;
-          case "Create Date":
-            cell.textContent = product.createDateTime || "N/A";
-            break;
-          case "Update Date":
-            cell.textContent = product.updateDateTime || "N/A";
-            break;
-          default:
-            cell.textContent = "N/A";
-        }
-      });
-    });
-
-    currentPage++;
-    if (currentPage * productsPerPage >= loadedProducts.length) {
-      document.getElementById('loadMoreButton').style.display = 'none';
-    } else {
-      document.getElementById('loadMoreButton').style.display = 'inline-block';
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching all products:", error);
+      alert("Failed to fetch all products.");
+      return [];
     }
-  }
-
-  function loadMoreProducts() {
-    displayProducts();
   }
   
-  function generatePDF() {
-	    // Table setup
-	    const table = document.getElementById('productTable');
-
-	    // Extract headers
-	    const headers = Array.from(table.rows[0].cells).map(cell => ({
-	        text: cell.textContent,
-	        style: 'tableHeader',
-	    }));
-
-	    // Extract rows
-	    const rows = Array.from(table.rows).slice(1).map(row =>
-	        Array.from(row.cells).map(cell => ({
-	            text: cell.textContent,
-	            style: 'tableCell',
-	        }))
-	    );
-
-	    // Define the PDF document
-	    const docDefinition = {
-	        pageSize: 'A2', // Page size (A3)
-	        pageOrientation: 'landscape', // Landscape orientation
-	        content: [
-	            { text: 'Product Report', style: 'title' },
-	            { text: 'Category: Vilandi', style: 'subtitle', margin: [0, 10, 0, 20] },
-	            {
-	                table: {
-	                    headerRows: 1,
-	                    widths: Array(headers.length).fill('*'), // Auto width for columns
-	                    body: [headers, ...rows], // Combine headers and rows
-	                },
-	                layout: 'lightHorizontalLines', // Use a predefined table layout
-	            },
-	        ],
-	        styles: {
-	            title: {
-	                fontSize: 18,
-	                bold: true,
-	                margin: [0, 0, 0, 10], // Bottom margin
-	            },
-	            subtitle: {
-	                fontSize: 14,
-	                italics: true,
-	                color: '#666666',
-	            },
-	            tableHeader: {
-	                bold: true,
-	                fillColor: '#f2f2f2',
-	                color: '#000000',
-	                alignment: 'center',
-	            },
-	            tableCell: {
-	                margin: [2, 2, 2, 2],
-	            },
-	        },
-	    };
-
-	    // Generate and download the PDF
-        const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
-        pdfMake.createPdf(docDefinition).download(`Report_${timestamp}.pdf`);
+  function showLoading() {
+	  document.getElementById("loadingSpinner").style.display = "block";
 	}
+
+	function hideLoading() {
+	  document.getElementById("loadingSpinner").style.display = "none";
+	}
+
+
+	async function generateFullPDF() {
+		  showLoading();
+		  const products = await fetchAllProducts();
+		  if (!products.length) {
+		    hideLoading();
+		    return;
+		  }
+
+		  try {
+		    const selectedFields = getSelectedFields();
+		    const pdfHeaders = selectedFields.map(h => ({ text: h, style: 'tableHeader' }));
+		    const rows = [];
+
+		    for (let i = 0; i < products.length; i++) {
+		      const product = products[i];
+		      const rowData = [];
+
+		      for (const header of selectedFields) {
+		        let value = "N/A";
+
+		        switch (header) {
+		          case "S.No":
+		            value = i + 1;
+		            break;
+		          case "Design No":
+		            value = product.designNo;
+		            break;
+		          case "Product Name":
+		            value = product.item;
+		            break;
+		          case "Product Image":
+		            if (product.imageUrl) {
+		              try {
+		                const base64 = await imageToBase64(product.imageUrl);
+		                rowData.push({ image: base64, fit: [60, 60] });
+		                continue;
+		              } catch {
+		                value = "Image Error";
+		              }
+		            }
+		            break;
+		          // ... (rest of your switch cases per field)
+		          case "Karat":
+		            value = product.karat;
+		            break;
+		          case "Price":
+		            value = `₹ ${product.price}`;
+		            break;
+		          case "Net":
+		            value = product.net;
+		            break;
+		          case "Gross":
+		            value = product.gross;
+		            break;
+		          case "Diamonds (Ct)":
+		            value = product.diamondsCt;
+		            break;
+		          case "Diamond Price":
+		            value = `₹ ${product.diaRt}`;
+		            break;
+		          case "Vilandi":
+		            value = product.vilandiCt;
+		            break;
+		          case "Vilandi Rate":
+		            value = `₹ ${product.vRate}`;
+		            break;
+		          case "Beads (Ct.)":
+		            value = product.beadsCt;
+		            break;
+		          case "Beads Rate":
+		            value = `₹ ${product.bdRate}`;
+		            break;
+		          case "Pearls (gm)":
+		          case "Pearls Weight (gm)":
+		            value = product.pearlsGm;
+		            break;
+		          case "Pearls Rate":
+		            value = `₹ ${product.prlRate}`;
+		            break;
+		          case "Other Stones":
+		            value = product.otherStonesCt;
+		            break;
+		          case "Stones":
+		            value = product.stones;
+		            break;
+		          case "Stones Rate":
+		            value = `₹ ${product.stRate}`;
+		            break;
+		          case "SS Pearls (Ct.)":
+		            value = product.ssPearlCt;
+		            break;
+		          case "SS Pearls Rate":
+		            value = `₹ ${product.ssRate}`;
+		            break;
+		          case "Real Stones (Ct.)":
+		            value = `₹ ${product.realStone}`;
+		            break;
+		          case "Fitting":
+		            value = `₹ ${product.fitting}`;
+		            break;
+		          case "Mozonite":
+		            value = product.mozonite;
+		            break;
+		          case "Mozonite Rate":
+		            value = `₹ ${product.mRate}`;
+		            break;
+		          case "Labour Charges":
+		            value = product.labour ? `₹ ${product.labour}` : product.labourAll ? `₹ ${product.labourAll}` : "N/A";
+		            break;
+		          case "Remarks":
+		            value = product.remarks;
+		            break;
+		          case "Create Date":
+		            value = product.createDateTime;
+		            break;
+		          case "Update Date":
+		            value = product.updateDateTime;
+		            break;
+		          default:
+		            value = "N/A";
+		        }
+
+		        rowData.push({ text: value || "N/A", style: "tableCell" });
+		      }
+
+		      rows.push(rowData);
+		    }
+
+		    const widths = pdfHeaders.map(header => {
+		    	  if (header.text === "Product Image") {
+		    	    return 70; // fixed width enough for 60x60 images + padding
+		    	  }
+		    	  return 'auto'; // automatically size other columns based on content
+		    	});
+
+		    const docDefinition = {
+		      pageSize: 'A0',
+		      pageOrientation: 'landscape',
+		      content: [
+		        { text: 'Full Product Report', style: 'title' },
+		        {
+		        	table: {
+			    		  headerRows: 1,
+			    		  widths: widths,
+			    		  body: [headers, ...rows]
+			    		},
+			    		layout: {
+			    		  hLineWidth: () => 1,
+			    		  vLineWidth: () => 1,
+			    		  hLineColor: () => '#cccccc',
+			    		  vLineColor: () => '#cccccc',
+			    		  paddingLeft: () => 4,
+			    		  paddingRight: () => 4,
+			    		  paddingTop: () => 2,
+			    		  paddingBottom: () => 2,
+			    		},
+
+		        }
+		      ],
+		      styles: {
+		        title: { fontSize: 18, bold: true, margin: [0, 0, 0, 10] },
+		        tableHeader: { bold: true, fillColor: '#f2f2f2', alignment: 'center' },
+		        tableCell: { margin: [2, 2, 2, 2] }
+		      }
+		    };
+
+		    pdfMake.createPdf(docDefinition).download(`Full_Report_${Date.now()}.pdf`);
+		  } catch (error) {
+		    alert("Error generating PDF: " + error.message);
+		  } finally {
+		    hideLoading();
+		  }
+		}
+
+	async function exportFullExcel() {
+		  showLoading();
+
+		  const products = await fetchAllProducts();
+		  if (!products.length) {
+		    hideLoading();
+		    return;
+		  }
+
+		  try {
+		    const selectedFields = getSelectedFields();
+		    const imageColIndex = selectedFields.findIndex(h => h.toLowerCase().includes("product image"));
+		    const filteredHeaders = selectedFields.filter((_, i) => i !== imageColIndex);
+
+		    const rows = [filteredHeaders];
+
+		    products.forEach((product, i) => {
+		      const row = [];
+
+		      for (let j = 0; j < selectedFields.length; j++) {
+		        if (j === imageColIndex) continue; // skip image in Excel
+
+		        let value = "N/A";
+		        const header = selectedFields[j];
+
+		        switch (header) {
+		          case "S.No":
+		            value = i + 1;
+		            break;
+		          case "Design No":
+		            value = product.designNo;
+		            break;
+		          case "Product Name":
+		            value = product.item;
+		            break;
+		          case "Karat":
+		            value = product.karat;
+		            break;
+		          case "Price":
+		            value = product.price;
+		            break;
+		          case "Net":
+		            value = product.net;
+		            break;
+		          case "Gross":
+		            value = product.gross;
+		            break;
+		          case "Vilandi":
+		            value = product.vilandiCt;
+		            break;
+		          case "Vilandi Rate":
+		            value = product.vRate;
+		            break;
+		          case "Diamonds (Ct)":
+		            value = product.diamondsCt;
+		            break;
+		          case "Diamond Price":
+		            value = product.diaRt;
+		            break;
+		          case "Beads (Ct.)":
+		            value = product.beadsCt;
+		            break;
+		          case "Beads Rate":
+		            value = product.bdRate;
+		            break;
+		          case "Pearls (gm)":
+		          case "Pearls Weight (gm)":
+		            value = product.pearlsGm;
+		            break;
+		          case "Pearls Rate":
+		            value = product.prlRate;
+		            break;
+		          case "Stones":
+		            value = product.stones;
+		            break;
+		          case "Stones Rate":
+		            value = product.stRate;
+		            break;
+		          case "SS Pearls (Ct.)":
+		            value = product.ssPearlCt;
+		            break;
+		          case "SS Pearls Rate":
+		            value = product.ssRate;
+		            break;
+		          case "Real Stones (Ct.)":
+		            value = product.realStone;
+		            break;
+		          case "Fitting":
+		            value = product.fitting;
+		            break;
+		          case "Mozonite":
+		            value = product.mozonite;
+		            break;
+		          case "Mozonite Rate":
+		            value = product.mRate;
+		            break;
+		          case "Labour Charges":
+		            value = product.labour ? product.labour : product.labourAll;
+		            break;
+		          case "Remarks":
+		            value = product.remarks;
+		            break;
+		          case "Create Date":
+		            value = product.createDateTime;
+		            break;
+		          case "Update Date":
+		            value = product.updateDateTime;
+		            break;
+		          default:
+		            value = "N/A";
+		        }
+
+		        row.push(value || "N/A");
+		      }
+
+		      rows.push(row);
+		    });
+
+		    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+		    const workbook = XLSX.utils.book_new();
+		    XLSX.utils.book_append_sheet(workbook, worksheet, "Full Product Report");
+
+		    XLSX.writeFile(workbook, `Full_Product_Report_${Date.now()}.xlsx`);
+		  } catch (error) {
+		    alert("Error generating Excel: " + error.message);
+		  } finally {
+		    hideLoading();
+		  }
+		}
+
+
 
 </script>
 

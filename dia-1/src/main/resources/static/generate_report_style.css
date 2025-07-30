@@ -76,6 +76,7 @@ body {
   border-radius: 5px;
 }
 
+/* Submit Button */
 .submit-container {
   width: 100%;
   text-align: center;
@@ -132,9 +133,11 @@ tbody td {
   padding: 10px;
 }
 
+/* Button Container */
 .button-container {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
+  gap: 20px; /* Adds spacing between buttons */
   margin: 20px 0;
 }
 
@@ -185,7 +188,7 @@ tbody td {
 }
 
 .small-text {
-    font-size: 12px; /* Adjust the size as needed */
+  font-size: 12px;
 }
 
 /* Responsive Design */
@@ -201,9 +204,6 @@ tbody td {
 
   .button-container {
     flex-direction: column;
-  }
-
-  .button-container button {
-    margin-bottom: 10px;
+    gap: 15px; /* Vertical spacing between buttons on mobile */
   }
 }

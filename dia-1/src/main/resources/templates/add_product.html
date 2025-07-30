@@ -62,7 +62,38 @@
                 const categoryId = $(this).val();
                 $('#dynamicFields').empty(); // Clear existing fields
 
+                
+                if (categoryId) {
+                    // First append the Order ID dropdown and input
+                    $('#dynamicFields').append(`
+                        <label for="availableOrderId">Available Order IDs:</label>
+                        <select id="availableOrderId" name="availableOrderId">
+                            <option value="">Select from available</option>
+                        </select>
+
+                        <label for="customOrderId">Or Enter Custom Order ID:</label>
+                        <input type="text" id="customOrderId" name="customOrderId" placeholder="Enter new Order ID">
+                    `);
+
+                    // Then make AJAX call to fetch available Order IDs
+                    $.ajax({
+                    	 url: '/available-order-ids?categoryId=' + categoryId,
+                        method: 'GET',
+                        success: function (orderIds) {
+                            const $select = $('#availableOrderId');
+                            $select.empty().append('<option value="">Select from available</option>');
+                            orderIds.forEach(function (id) {
+                                $select.append(`<option value="${id}">${id}</option>`);
+                            });
+                        },
+                        error: function () {
+                            alert("Failed to load available order IDs.");
+                        }
+                    });
+                }
+
                 if (categoryId == "1") { // Diamond Rings
+                		
                     $('#dynamicFields').append(`
                     		<label for="designNoDR">Design No:</label>  
                             <input type="text" id="designNoDR" name="designNoDR" step="any" required>   
@@ -97,6 +128,7 @@
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "2") { // Open Setting
+
                     $('#dynamicFields').append(`
                     		
                             <label for="designNoOS">Design No:</label>   
@@ -164,6 +196,7 @@
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "3") { // Chains
+
                     $('#dynamicFields').append(`
                         <label for="designNo">Design No:</label>   
                         <input type="text" id="designNo" name="designNo" step="any" required>    
@@ -180,6 +213,7 @@
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "4") { // Diamond Earrings
+                	
                     $('#dynamicFields').append(`
                     	<label for="designNoEarring">Design No:</label>    
                         <input type="text" id="designNoEarring" name="designNoEarring" step="any" required>   
@@ -213,6 +247,8 @@
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "5") { // Vilandi
+
+                	
                     $('#dynamicFields').append(`
                         <label for="designNoVilandi">Design No:</label>    
                         <input type="text" id="designNoVilandi" name="designNoVilandi" step="any" required>   
@@ -292,6 +328,7 @@
                         <input type="text" id="remarks" name="remarks">
                     `);
                 } else if (categoryId == "6") { // Jadtar Register
+
                     $('#dynamicFields').append(`
                             <label for="designNoJadtar">Design No:</label>   
                             <input type="text" id="designNoJadtar" name="designNoJadtar" step="any" required>   
@@ -495,6 +532,19 @@
                     formData.set('imageUrl', 'default'); // Replace with your default image URL
                 }
 
+                
+                const selectedOrderId = $('#availableOrderId').val();
+                const customOrderId = $('#customOrderId').val().trim();
+                if (selectedOrderId) {
+                    formData.append('orderId', selectedOrderId);
+                } else if (customOrderId) {
+                	console.log(customOrderId);
+                    formData.append('orderId', customOrderId);
+                } else {
+                    showModal("Validation Error", "Please select or enter an Order ID.", false);
+                    return;
+                }
+                
                 // Send AJAX request
                 $.ajax({
                     url: '/add', // Change this to your actual URL
@@ -511,6 +561,50 @@
                     	 showModal("Error", "An error occurred while adding the product.", false);                    }
                 });
             });
+            
+         // Disable the other input when one is used
+            $(document).on('input change', '#availableOrderId', function () {
+                const selected = $(this).val();
+                if (selected) {
+                    $('#customOrderId').prop('disabled', true);
+                } else {
+                    $('#customOrderId').prop('disabled', false);
+                }
+            });
+
+            $(document).on('input', '#customOrderId', function () {
+                const entered = $(this).val().trim();
+                if (entered) {
+                    $('#availableOrderId').prop('disabled', true);
+                } else {
+                    $('#availableOrderId').prop('disabled', false);
+                }
+            });
+
+/*             // Load order IDs based on selected category
+            $(document).on('click', '#loadOrdersBtn', function () {
+                const categoryId = $('#categoryId').val();
+                if (!categoryId) {
+                    alert("Please select a category first.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/available-order-ids?categoryId=' + categoryId,
+                    method: 'GET',
+                    success: function (orderIds) {
+                        const $select = $('#availableOrderId');
+                        $select.empty().append('<option value="">Select from available</option>');
+                        orderIds.forEach(function (id) {
+                            $select.append(`<option value="${id}">${id}</option>`);
+                        });
+                    },
+                    error: function () {
+                        alert("Failed to load available order IDs.");
+                    }
+                });
+            }); */
+
         });
     </script>
 </body>
