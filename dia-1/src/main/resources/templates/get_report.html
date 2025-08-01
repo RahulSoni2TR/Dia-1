@@ -27,7 +27,7 @@
       </a>
     </div>
   </header>
-
+<div class="container">
 <div class="filter">
   <label for="categorySelect">Select Category:</label>
   <select id="categorySelect">
@@ -88,6 +88,22 @@
   <button id="generateFullPDF" onclick="generateFullPDF()">Download All</button>
   <button id="exportFullExcel" onclick="exportFullExcel()">Export All</button>
 </div>
+<div style="margin-bottom: 15px; text-align: center;">
+  <label for="report-page-size-select" style="font-weight: bold; margin-right: 8px;">
+    Select Page Size:
+  </label>
+  <select id="report-page-size-select">
+    <option value="A0">A0</option>
+    <option value="A1">A1</option>
+    <option value="A2">A2</option>
+    <option value="A3">A3</option>
+    <option value="A4" selected>A4</option>
+    <option value="A5">A5</option>
+    <option value="A6">A6</option>
+    <option value="Letter">Letter</option>
+  </select>
+</div>
+
   <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 10px;">
   <span>⏳ Generating report, please wait...</span>
 </div>
@@ -101,7 +117,7 @@
   <div class="back-button-container">
     <button class="back-button" onclick="window.history.back()">← Back</button>
   </div>
-
+</div>
   <!-- Footer -->
   <footer class="footer">
     <p>&copy; 2024 Product Management System. All rights reserved.</p>
@@ -445,6 +461,8 @@ window.onload = () => {
 	}
   
   async function generatePDF() {
+	  const pageSize = document.getElementById("report-page-size-select").value;
+
 	  const table = document.getElementById('productTable');
 	  const headers = Array.from(table.rows[0].cells).map(cell => ({
 	    text: cell.textContent,
@@ -485,7 +503,7 @@ window.onload = () => {
 	    	  return 'auto'; // automatically size other columns based on content
 	    	});
 	  const docDefinition = {
-	    pageSize: 'A0',
+	    pageSize: pageSize,
 	    pageOrientation: 'landscape',
 	    content: [
 	      { text: 'Product Report', style: 'title' },
@@ -493,7 +511,8 @@ window.onload = () => {
 	    	  table: {
 	    		  headerRows: 1,
 	    		  widths: widths,
-	    		  body: [headers, ...rows]
+	    		  body: [headers, ...rows],
+	    		  dontBreakRows: true
 	    		},
 	    		layout: {
 	    		  hLineWidth: () => 1,
@@ -619,7 +638,7 @@ window.onload = () => {
 		    hideLoading();
 		    return;
 		  }
-
+		  const pageSize = document.getElementById("report-page-size-select").value;
 		  try {
 		    const selectedFields = getSelectedFields();
 		    const pdfHeaders = selectedFields.map(h => ({ text: h, style: 'tableHeader' }));
@@ -748,7 +767,7 @@ window.onload = () => {
 		    	});
 
 		    const docDefinition = {
-		      pageSize: 'A0',
+		      pageSize: pageSize,
 		      pageOrientation: 'landscape',
 		      content: [
 		        { text: 'Full Product Report', style: 'title' },
@@ -756,7 +775,8 @@ window.onload = () => {
 		        	table: {
 			    		  headerRows: 1,
 			    		  widths: widths,
-			    		  body: [headers, ...rows]
+			    		  body: [pdfHeaders, ...rows],
+			    		  dontBreakRows: true
 			    		},
 			    		layout: {
 			    		  hLineWidth: () => 1,

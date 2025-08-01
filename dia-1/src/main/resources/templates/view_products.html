@@ -8,6 +8,9 @@
 <body>
   <header>
     <h1>Explore Our Product Range</h1>
+    <a href="/logout" class="logout-btn">
+    Logout
+  </a>
   </header>
 
   <section class="filters">
@@ -23,6 +26,7 @@
     </select>
     <button id="filterButton">Apply</button>
     <button id="resetFilters" class="secondary">Reset</button>
+<button onclick="window.location.href='/home'" id="backBtn" class="secondary" type="button">Back</button>
     <input type="hidden" id="categoryFilter">
   </section>
 

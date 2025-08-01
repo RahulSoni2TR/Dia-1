@@ -97,6 +97,12 @@
                 <td id="fitting-rate"></td>
                 <td id="fitting-amt">1500</td>
             </tr>
+            <tr id="labourAmt_row">
+                <td class="description">Labour</td>
+                <td id="labourAmt-qty"></td>
+                <td id="labourAmt-rate"></td>
+                <td id="labourAmt-amt">18700</td>
+            </tr>
             <tr id="gst_row">
                 <td class="description">GST 3%</td>
                 <td id="gst-qty"></td>
@@ -111,6 +117,20 @@
             </tr>
         </tbody>
     </table>
+    <div style="margin-bottom: 15px;">
+    <label for="page-size-select" style="font-weight: bold; margin-right:8px;">Choose Page Size:</label>
+    <select id="page-size-select">
+        <option value="A4" selected>A4</option>
+        <option value="A5">A5</option>
+        <option value="A3">A3</option>
+        <option value="A6">A6</option>
+        <option value="A2">A2</option>
+        <option value="A1">A1</option>
+        <option value="A0">A0</option>
+        <option value="Letter">Letter</option>
+    </select>
+</div>
+    
     <button id="download-pdf" style="margin-top: 20px;">Download Estimate</button>
     <div style="margin-top: 20px; text-align: center;">
     <a href="/view-product" class="back-button">Back to View Products</a>
@@ -183,6 +203,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
             document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
+            document.getElementById("labourAmt-amt").textContent = `₹ ${product.labourAll ?? 0}`;
             document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
             document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
 
@@ -191,12 +212,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
             function showHideRows(categoryId) {
                 const rowsToHide = {
-                    1: ["gold_row", "labour_row", "diamonds_row", "os_row", "gst_row", "total_row", "header_row"],
-                    2: ["gold_row", "labour_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row", "gst_row", "fitting_row", "total_row", "header_row"],
-                    3: ["gold_row", "labour_row", "gst_row", "total_row", "header_row"],
-                    4: ["gold_row", "diamonds_row", "os_row", "labour_row", "gst_row", "total_row", "header_row"],
-                    5: ["labour_row", "gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row", "header_row"],
-                    6: ["gold_row", "labour_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "gst_row", "total_row", "header_row"]
+                    1: ["gold_row", "diamonds_row", "os_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
+                    2: ["gold_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row","labour_row","labourAmt_row", "gst_row", "fitting_row", "total_row", "header_row"],
+                    3: ["gold_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
+                    4: ["gold_row", "diamonds_row", "os_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
+                    5: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
+                    6: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"]
                 };
 
                 // Hide all rows first
@@ -248,6 +269,16 @@ document.getElementById("download-pdf").addEventListener("click", function () {
         return;
     }
 
+    const pageSize = document.getElementById("page-size-select").value;
+
+ // Decide font size based on page size
+ let tableFontSize = 12; // default
+ if (pageSize === "A5" || pageSize === "A6") {
+     tableFontSize = 7; // Use smaller font for very small page
+ } else if (pageSize === "A3" || pageSize === "A2" || pageSize === "A1" || pageSize === "A0" || pageSize === "Letter") {
+     tableFontSize = 14; // Optional: larger size for big page
+ }
+
     // Extract the title and table content
     const title = document.querySelector("h1").textContent;
     const table = document.querySelector(".estimate-table");
@@ -262,7 +293,8 @@ document.getElementById("download-pdf").addEventListener("click", function () {
         text: cell.textContent,
         bold: true,
         alignment: 'center',
-        fillColor: '#f2f2f2'
+        fillColor: '#f2f2f2',
+        fontSize: tableFontSize
     }));
 
     // Add rows (tbody content), filtering out rows where Qty, Rate or Amount is exactly 0
@@ -275,7 +307,8 @@ document.getElementById("download-pdf").addEventListener("click", function () {
                 totalRowData.push({
                     text: cell.textContent,
                     alignment: 'center',
-                    fillColor: '#f2f2f2'
+                    fillColor: '#f2f2f2',
+                    fontSize: tableFontSize
                 });
             });
             rows.push(totalRowData);
@@ -300,14 +333,17 @@ document.getElementById("download-pdf").addEventListener("click", function () {
             rowData.push({
                 text: cell.textContent,
                 alignment: 'center',
+                fontSize: tableFontSize, 
                 fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9' // Alternate row colors
             });
         });
         rows.push(rowData);
     });
+    
 
     // Define PDF content
     const docDefinition = {
+    		pageSize: pageSize,
         content: [
             // Header Section
             {
@@ -315,14 +351,14 @@ document.getElementById("download-pdf").addEventListener("click", function () {
                     {
                         text: 'Your Company Name',
                         bold: true,
-                        fontSize: 18,
+                        fontSize: tableFontSize + 4,
                         alignment: 'left',
                         margin: [0, 0, 0, 10]
                     },
                     {
                         text: `Estimate of ${product.item}`,
                         bold: true,
-                        fontSize: 22,
+                        fontSize: tableFontSize + 8,
                         alignment: 'right',
                         margin: [0, 0, 0, 10]
                     }
@@ -353,7 +389,7 @@ document.getElementById("download-pdf").addEventListener("click", function () {
             {
                 text: 'Summary',
                 bold: true,
-                fontSize: 16,
+                fontSize: tableFontSize + 2,
                 margin: [0, 20, 0, 10]
             },
             {
@@ -361,16 +397,16 @@ document.getElementById("download-pdf").addEventListener("click", function () {
                     widths: ['70%', '30%'],
                     body: [
                         [
-                            { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
-                            { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                            { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
+                            { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
                         ],
                         [
-                            { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0] },
-                            { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9' }
+                            { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
+                            { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9', fontSize: tableFontSize }
                         ],
                         [
-                            { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0] },
-                            { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2' }
+                            { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
+                            { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
                         ]
                     ]
                 },

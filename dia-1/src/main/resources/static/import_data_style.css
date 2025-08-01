@@ -3,7 +3,7 @@ body {
   font-family: 'Roboto', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f9fafc;
+   background: linear-gradient(135deg, #00a86b, #007bff);
   color: #333;
 }
 
