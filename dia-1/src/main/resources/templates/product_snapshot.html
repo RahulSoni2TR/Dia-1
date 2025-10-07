@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Snapshot</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .empty-label { color: #888; font-style: italic; }
+    .product-top { display: flex; gap: 2rem; margin-bottom: 1.5rem; }
+    .product-image img { max-width: 200px; border-radius: 12px; }
+    .product-qr img { max-width: 120px; }
+    .product-details h2 { font-size: 1.8rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .product-details p { margin-bottom: 0.5rem; }
+    .extras ul { list-style-type: disc; margin-left: 1.5rem; }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+<header class="bg-white shadow-md py-4 px-6 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">Product Snapshot</h1>
+    <button onclick="history.back()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">← Back</button>
+</header>
+
+<main class="flex-grow max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-6">
+
+    <div id="productDetailsContainer">
+        <!-- Product will render here -->
+    </div>
+
+</main>
+
+<footer class="bg-gray-100 py-4 mt-6 text-center text-sm text-gray-500">
+    &copy; 2025 MyCompany. All rights reserved.
+</footer>
+
+<script>
+function renderProduct(product) {
+    const details = {
+        1:'Diamond',2:'Open Setting',3:'Plain Gold',4:'Vilandi',5:'Jadtar',
+        6:'Jadtar Register',7:'Jadtar Halfsets',8:'Jadtar Bangles / Bracelets',
+        9:'Vilandi Halfsets',10:'Vilandi Bangles / Bracelets',11:'Diamond Bangles / Bracelets',
+        12:'Diamond Pendants / Pendant Sets',13:'Diamond Halfsets',14:'OS Halfsets',
+        15:'OS Bangles / Bracelets',16:'PG Bangles / Bracelets',17:'Only Earrings',
+        18:'Chains',19:'Diamond Earrings',20:'Diamond Rings'
+    };
+
+    const renderText = v => v ? v : '<span class="empty-label">No value</span>';
+
+    // Additional fields
+    let extrasHTML = '';
+    if (product.customFields && product.customFields !== '{}') {
+        try {
+            const extras = JSON.parse(product.customFields);
+            const keys = Object.keys(extras);
+            if (keys.length) {
+                extrasHTML += '<div class="extras"><h4 class="font-semibold">Additional Fields:</h4><ul>';
+                keys.forEach(k => extrasHTML += `<li><strong>${k}:</strong> ${extras[k]?.qty || 'N/A'}</li>`);
+                extrasHTML += '</ul></div>';
+            }
+        } catch(e) { console.error('Invalid customFields', e); }
+    }
+
+    let priceBlock = `
+        <label class="flex items-center gap-2 mt-2">
+            <input type="checkbox" id="withFieldsToggle" checked>
+            Price with additional fields
+        </label>
+        <p class="mt-1"><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
+    `;
+
+    let categoryFields = '';
+    switch(product.categoryId){
+        case 1: case 11: case 12: case 13:
+            categoryFields = `
+                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+            `;
+            break;
+        case 2: case 14: case 15:
+            categoryFields = `
+                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+            `;
+            break;
+        case 3: case 16: case 18:
+            categoryFields = `
+                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+            `;
+            break;
+        case 4: case 9: case 10:
+            categoryFields = `
+                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+                <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
+                <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
+            `;
+            break;
+        default:
+            categoryFields = `<p>Category not recognized.</p>`;
+    }
+
+    document.getElementById('productDetailsContainer').innerHTML = `
+        <div class="product-top">
+            <div class="product-image"><img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}"></div>
+            <div class="product-qr"><img src="${renderText(product.qrCodePath)}" alt="QR Code"></div>
+        </div>
+        <div class="product-details">
+            <h2>${renderText(product.item)}</h2>
+            <p><strong>Category:</strong> ${details[product.categoryId]}</p>
+            <p><strong>Sub Category:</strong> ${details[product.subCategoryId]}</p>
+            <p><strong>Design No:</strong> ${renderText(product.orders?.orderId || 'N/A')}/${renderText(product.designNo)}</p>
+            <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
+            ${priceBlock}
+            ${categoryFields}
+            ${extrasHTML}
+            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+        </div>
+    `;
+
+    // Price toggle logic
+    const toggleEl = document.getElementById('withFieldsToggle');
+    const priceEl = document.getElementById('priceValue');
+    const inrFormat = new Intl.NumberFormat('en-IN');
+    const roundNearest = v => Number.isFinite(v) ? Math.round(v) : null;
+    const renderPrice = () => {
+        const value = toggleEl?.checked ? (product.priceWithFields ?? product.price) : product.price;
+        const rounded = roundNearest(value);
+        priceEl.textContent = rounded === null ? 'No value' : inrFormat.format(rounded);
+    };
+    toggleEl?.addEventListener('change', renderPrice);
+    renderPrice();
+}
+
+const snapshotStr = sessionStorage.getItem('productFromLog');
+
+if(snapshotStr){
+    try {
+        // First parse outer string
+        const firstParse = JSON.parse(snapshotStr);
+
+        // If it's a string (double-encoded), parse again
+        const product = (typeof firstParse === "string")
+            ? JSON.parse(firstParse)
+            : firstParse;
+
+        console.log('parsed product:', product);
+        renderProduct(product);
+    } catch(e){
+        console.error('Failed to parse product snapshot:', e);
+        document.getElementById('productDetailsContainer').innerHTML = '<p>Error loading product.</p>';
+    }
+}
+
+
+</script>
+
+</body>
+</html>

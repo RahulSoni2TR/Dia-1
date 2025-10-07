@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Sales Log</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+
+<header class="bg-teal-700 shadow-md py-4">
+  <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+    <h1 class="text-2xl font-bold flex items-center gap-2 text-white">
+      <i class="fas fa-database text-teal-200"></i> Sales Log
+    </h1>
+    <button onclick="history.back()"
+            class="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg text-sm">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+  </div>
+</header>
+
+<main class="flex-grow">
+  <div class="max-w-7xl mx-auto mt-8 p-6 bg-white shadow-lg rounded-2xl">
+
+    <!-- Filters -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="flex items-center border rounded-lg overflow-hidden">
+        <input id="searchInput"
+               type="text"
+               placeholder="Search by design no, order id, or customer..."
+               class="flex-grow px-3 py-2 text-sm focus:outline-none"/>
+        <button id="searchBtn" class="bg-green-600 text-white px-4 hover:bg-green-700">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+
+      <select id="categorySelect" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400">
+        <option value="">Select Category</option>
+      </select>
+
+      <select id="subCategorySelect" class="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400">
+        <option value="">Select Subcategory</option>
+      </select>
+    </div>
+    
+        <div class="flex justify-center mb-6">
+    
+          <button id="resetFilters"
+          class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm">
+    <i class="fas fa-undo"></i> Reset Filters
+  </button>
+  </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table id="salesTable" class="min-w-full text-sm border border-gray-200 rounded-lg">
+        <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-3 text-left">#</th>
+          <th class="px-4 py-3 text-left">Image</th>
+          <th class="px-4 py-3 text-left">Product Name</th>
+          <th class="px-4 py-3 text-left">Design No</th>
+          <th class="px-4 py-3 text-left">Order ID</th>
+          <th class="px-4 py-3 text-left">Customer</th>
+                    <th class="px-4 py-3 text-left cursor-pointer sort-header" data-field="createdAt">
+    Created At <i class="fas fa-sort"></i>
+  </th>
+          <th class="px-4 py-3 text-left">Product</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100"></tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-6 text-sm text-gray-600">
+      <button id="prevPage" class="px-4 py-2 rounded-lg border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+        <i class="fas fa-chevron-left"></i> Previous
+      </button>
+      <div id="pageInfo" class="font-medium">Page 1 of 1</div>
+      <button id="nextPage" class="px-4 py-2 rounded-lg border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+        Next <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-teal-700 py-4 mt-8">
+  <div class="max-w-7xl mx-auto px-6 flex justify-between text-sm text-teal-100">
+    <span>&copy; 2025 MyCompany. All rights reserved.</span>
+    <span>Powered by Spring Boot + Thymeleaf</span>
+  </div>
+</footer>
+
+<script>
+
+let currentSortField = "createdAt";
+let currentSortDir = "desc";
+// Subcategories remain the same
+const subCategories = {
+  "Jadtar": [
+    {id: 6, name: "Jadtar Register"},
+    {id: 7, name: "Jadtar Halfsets"},
+    {id: 8, name: "Jadtar Bangles / Bracelets"},
+    {id: 17, name: "Only Earrings"}
+  ],
+  "Vilandi": [
+    {id: 9, name: "Vilandi Halfsets"},
+    {id: 10, name: "Vilandi Bangles / Bracelets"}
+  ],
+  "Diamond": [
+    {id: 20, name: "Diamond Rings"},
+    {id: 19, name: "Diamond Earrings"},
+    {id: 11, name: "Diamond Bangles / Bracelets"},
+    {id: 12, name: "Diamond Pendants / Pendant Sets"},
+    {id: 13, name: "Diamond Halfsets"}
+  ],
+  "Open Setting": [
+    {id: 14, name: "OS Halfsets"},
+    {id: 15, name: "OS Bangles / Bracelets"}
+  ],
+  "Plain Gold": [
+    {id: 18, name: "Chains"},
+    {id: 16, name: "PG Bangles / Bracelets"}
+  ]
+};
+
+// Map category names to numeric IDs
+const categoryMap = {
+  "Diamond": 1,
+  "Open Setting": 2,
+  "Plain Gold": 3,
+  "Vilandi": 4,
+  "Jadtar": 5
+};
+
+const categorySelect = document.getElementById("categorySelect");
+const subCategorySelect = document.getElementById("subCategorySelect");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const salesTableBody = document.querySelector("#salesTable tbody");
+
+const rowsPerPage = 5;
+let currentPage = 1;
+let totalPages = 1;
+
+// Populate main category dropdown
+function populateCategories() {
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    Object.keys(categoryMap).forEach(catName => {
+        const opt = document.createElement("option");
+        opt.value = catName; // still the name in select
+        opt.textContent = catName;
+        categorySelect.appendChild(opt);
+    });
+}
+
+// Populate subcategories
+function populateSubCategories() {
+    subCategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+    const selectedCategoryName = categorySelect.value;
+    if (!selectedCategoryName) return;
+    const subs = subCategories[selectedCategoryName] || [];
+    subs.forEach(sub => {
+        const opt = document.createElement("option");
+        opt.value = sub.id; // numeric ID
+        opt.textContent = sub.name;
+        subCategorySelect.appendChild(opt);
+    });
+}
+
+// Fetch sales logs
+async function fetchSalesLogs() {
+    const params = new URLSearchParams();
+    if (searchInput.value) params.append('q', searchInput.value.trim());
+    if (categorySelect.value) {
+        params.append('categoryIdStr', categoryMap[categorySelect.value]); // numeric ID
+    }
+    if (subCategorySelect.value) params.append('subCategoryIdStr', subCategorySelect.value);
+    params.append('page', currentPage-1);
+    params.append('size', rowsPerPage);
+
+    try {
+        const res = await fetch(`/api/sales-logs?${params.toString()}`);
+        const data = await res.json();
+        totalPages = data.totalPages || 1;
+        renderTable(data.content || []);
+        updatePagination();
+    } catch (err) {
+        console.error("Failed to fetch sales logs:", err);
+        salesTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Error loading data</td></tr>`;
+    }
+}
+
+document.querySelectorAll('.sort-header').forEach(header => {
+	  header.addEventListener('click', () => {
+	    const field = header.dataset.field;
+	    if (currentSortField === field) {
+	      currentSortDir = currentSortDir === "asc" ? "desc" : "asc";
+	    } else {
+	      currentSortField = field;
+	      currentSortDir = "asc";
+	    }
+	    // reset arrows
+	    document.querySelectorAll('.sort-header i').forEach(icon => icon.className = "fas fa-sort");
+	    // update current arrow
+	    const icon = header.querySelector('i');
+	    icon.className = currentSortDir === "asc" ? "fas fa-sort-up" : "fas fa-sort-down";
+
+	    currentPage = 1;
+	    fetchEnquiries();
+	  });
+	});
+// Render table
+function renderTable(logs) {
+    salesTableBody.innerHTML = '';
+    if (!logs.length) {
+        salesTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500">No records found</td></tr>`;
+        return;
+    }
+    logs.forEach((log, idx) => {
+        const tr = document.createElement('tr');
+        tr.classList.add('hover:bg-gray-50');
+
+        // Parse productSnapshot if it's a string
+        let productSnapshot = {};
+        if (typeof log.productSnapshot === "string") {
+            try { productSnapshot = JSON.parse(log.productSnapshot); } catch {}
+        } else {
+            productSnapshot = log.productSnapshot || {};
+        }
+
+	    if (!productSnapshot.price) productSnapshot.price = log.price || 0;
+	    if (!productSnapshot.priceWithFields) productSnapshot.priceWithFields = log.priceWithFields || 0;
+
+        
+        const productName = productSnapshot.item || '-';
+
+
+        tr.innerHTML = `
+            <td class="px-4 py-3">${idx+1 + (currentPage-1)*rowsPerPage}</td>
+            <td class="px-4 py-3">
+              ${log.imageUrl 
+                ? `<img src="${log.imageUrl}" class="h-12 w-12 object-cover rounded-md"/>` 
+                : '<span class="text-gray-400 italic">No image</span>'}
+            </td>
+            <td class="px-4 py-3">${productName}</td> <!-- Product Name -->
+            <td class="px-4 py-3">${log.designNo||'-'}</td>
+            <td class="px-4 py-3">${log.orderId||'-'}</td>
+            <td class="px-4 py-3">${log.customerName||'-'}</td>
+            <td class="px-4 py-3">${new Date(log.createdAt).toLocaleString()}</td>
+            <td class="px-4 py-3">
+              <button class="view-product-btn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  data-product='${encodeURIComponent(JSON.stringify(productSnapshot))}'>
+                View Product
+              </button>
+              <button class="view-estimate-btn bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-2"
+                  data-estimate='${encodeURIComponent(JSON.stringify(log.estimateSnapshot))}'>
+                View Estimate
+              </button>
+            </td>
+        `;
+        salesTableBody.appendChild(tr);
+    });
+}
+
+// Pagination
+function updatePagination() {
+    document.getElementById("pageInfo").textContent = `Page ${currentPage} of ${totalPages}`;
+    document.getElementById("prevPage").disabled = currentPage===1;
+    document.getElementById("nextPage").disabled = currentPage===totalPages;
+}
+
+// Event listeners
+categorySelect.addEventListener("change", () => {
+    currentPage = 1;
+    populateSubCategories();
+    subCategorySelect.value = "";
+    fetchSalesLogs();
+});
+subCategorySelect.addEventListener("change", () => { currentPage = 1; fetchSalesLogs(); });
+searchBtn.addEventListener("click", () => { currentPage = 1; fetchSalesLogs(); });
+searchInput.addEventListener("keyup", e => { if(e.key==='Enter'){ currentPage = 1; fetchSalesLogs(); } });
+document.getElementById("prevPage").addEventListener("click", () => { if(currentPage>1){currentPage--; fetchSalesLogs();} });
+document.getElementById("nextPage").addEventListener("click", () => { if(currentPage<totalPages){currentPage++; fetchSalesLogs();} });
+
+// View product
+document.addEventListener('click', function(e){
+  if(e.target && e.target.classList.contains('view-product-btn')){
+    let productObj = {};
+    try { productObj = JSON.parse(decodeURIComponent(e.target.dataset.product)); } catch {}
+    sessionStorage.setItem('productFromLog', JSON.stringify(productObj));
+    sessionStorage.setItem('returnToPage', window.location.href);
+    window.location.href = '/product-snapshot';
+  }
+  if(e.target && e.target.classList.contains('view-estimate-btn')){
+    let estimateObj = {};
+    try { estimateObj = JSON.parse(decodeURIComponent(e.target.dataset.estimate)); } catch {}
+    sessionStorage.setItem('estimateFromLog', JSON.stringify(estimateObj));
+    sessionStorage.setItem('returnToPage', window.location.href);
+    window.location.href = '/estimate-snapshot';
+  }
+});
+
+document.getElementById("resetFilters").addEventListener("click", () => {
+	  // Reset input fields
+	  searchInput.value = "";
+	  categorySelect.value = "";
+	  subCategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+
+	  // Reset state
+	  currentPage = 1;
+	  currentSortField = "createdAt";
+	  currentSortDir = "desc";
+
+	  // Reset sort icons
+	  document.querySelectorAll('.sort-header i').forEach(icon => icon.className = "fas fa-sort");
+
+	  // Reload all logs
+	  fetchSalesLogs();
+	});
+
+
+// Initialize
+populateCategories();
+fetchSalesLogs();
+</script>
+
+
+</body>
+</html>

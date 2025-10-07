@@ -81,7 +81,94 @@ public class Product {
     @Column(name = "remarks")
     private String remarks;
 
-    public BigDecimal getDiaRt() {
+    @Column(name= "custom_fields")
+    private String customFields;
+    
+    @Column(name = "price_with_fields", nullable = true)
+    private BigDecimal priceWithFields; 
+    
+    @Column(name = "verification_status", nullable = false)
+    private Integer verificationStatus = -1;  // Default -1
+
+    @Column(name = "verification_date")
+    private LocalDateTime verificationDate;
+    
+ public BigDecimal getPriceWithFields() {
+		return priceWithFields;
+	}
+
+	public void setPriceWithFields(BigDecimal priceWithFields) {
+		this.priceWithFields = priceWithFields;
+	}
+
+public String getCustomFields() {
+		return customFields;
+	}
+
+	public void setCustomFields(String customFields) {
+		this.customFields = customFields;
+	}
+
+
+public Integer getVerificationStatus() {
+		return verificationStatus;
+	}
+
+	public void setVerificationStatus(Integer verificationStatus) {
+		this.verificationStatus = verificationStatus;
+	}
+
+	public LocalDateTime getVerificationDate() {
+		return verificationDate;
+	}
+
+	public void setVerificationDate(LocalDateTime verificationDate) {
+		this.verificationDate = verificationDate;
+	}
+
+
+// parent category (top-level)
+ @Column(name = "parent_category_id")
+ private Long parentCategoryId;
+
+ // sub-category (child category)
+ @Column(name = "sub_category_id")
+ private Long subCategoryId;
+
+ 
+ @Column(name = "qr_code_path")
+ private String qrCodePath;
+
+ 
+ 
+ public Long getParentCategoryId() {
+	    return parentCategoryId;
+	}
+
+	public void setParentCategoryId(Long parentCategoryId) {
+	    this.parentCategoryId = parentCategoryId;
+	}
+
+	public Long getSubCategoryId() {
+	    return subCategoryId;
+	}
+
+	public void setSubCategoryId(Long subCategoryId) {
+	    this.subCategoryId = subCategoryId;
+	}
+
+    
+    
+
+    public String getQrCodePath() {
+		return qrCodePath;
+	}
+
+	public void setQrCodePath(String qrCodePath) {
+		this.qrCodePath = qrCodePath;
+	}
+
+	public BigDecimal getDiaRt() {
 		return diaRt;
 	}
 
@@ -173,7 +260,8 @@ public class Product {
         this.item = null;
         this.price = null;
         this.stockQuantity = null;
-        this.categoryId = null;
+        this.parentCategoryId = null;
+        this.subCategoryId = null;
         this.imageUrl = null;
         this.net = null;
         this.pcs = null;
@@ -191,7 +279,6 @@ public class Product {
         this.ssPearlCt = null;
         this.realStone = null;
 
-        // Reset rates and additional fields
         this.stRate = null;
         this.bdRate = null;
         this.prlRate = null;
@@ -204,7 +291,6 @@ public class Product {
         this.karat = null;
     }
 
-    
 	public void setLabour(BigDecimal labour) {
 		this.labour = labour;
 	}
@@ -500,39 +586,44 @@ public class Product {
 	    updateDateTime = ZonedDateTime.now(zoneId).toLocalDateTime();
 	}
 	
-	 @Override
-	    public String toString() {
-	        return "Product{" +
-	               "productId=" + productId +
-	               ", item='" + item + '\'' +
-	               ", price=" + price +
-	               ", stockQuantity=" + stockQuantity +
-	               ", categoryId=" + categoryId +
-	               ", imageUrl='" + imageUrl + '\'' +
-	               ", net=" + net +
-	               ", pcs=" + pcs +
-	               ", diaWeight=" + diaWeight +
-	               ", remarks='" + remarks + '\'' +
-	               ", gross=" + gross +
-	               ", vilandiCt=" + vilandiCt +
-	               ", diamondsCt=" + diamondsCt +
-	               ", beadsCt=" + beadsCt +
-	               ", pearlsGm=" + pearlsGm +
-	               ", otherStonesCt=" + otherStonesCt +
-	               ", others='" + others + '\'' +
-	               ", designNo='" + designNo + '\'' +
-	               ", stones=" + stones +
-	               ", ssPearlCt=" + ssPearlCt +
-	               ", realStone=" + realStone +
-	               ", stRate=" + stRate +
-	               ", bdRate=" + bdRate +
-	               ", prlRate=" + prlRate +
-	               ", ssRate=" + ssRate +
-	               ", fitting=" + fitting +
-	               ", mozonite=" + mozonite +
-	               ", mRate=" + mRate +
-	               ", vRate=" + vRate +
-	               '}';
-	    }
+	@Override
+	public String toString() {
+	    return "Product{" +
+	           "productId=" + productId +
+	           ", item='" + item + '\'' +
+	           ", price=" + price +
+	           ", stockQuantity=" + stockQuantity +
+	           ", parentCategoryId=" + parentCategoryId +
+	           ", subCategoryId=" + subCategoryId +
+	           ", imageUrl='" + imageUrl + '\'' +
+	           ", net=" + net +
+	           ", pcs=" + pcs +
+	           ", diaWeight=" + diaWeight +
+	           ", remarks='" + remarks + '\'' +
+	           ", gross=" + gross +
+	           ", vilandiCt=" + vilandiCt +
+	           ", diamondsCt=" + diamondsCt +
+	           ", beadsCt=" + beadsCt +
+	           ", pearlsGm=" + pearlsGm +
+	           ", otherStonesCt=" + otherStonesCt +
+	           ", others='" + others + '\'' +
+	           ", designNo='" + designNo + '\'' +
+	           ", stones=" + stones +
+	           ", ssPearlCt=" + ssPearlCt +
+	           ", realStone=" + realStone +
+	           ", stRate=" + stRate +
+	           ", bdRate=" + bdRate +
+	           ", prlRate=" + prlRate +
+	           ", ssRate=" + ssRate +
+	           ", fitting=" + fitting +
+	           ", mozonite=" + mozonite +
+	           ", mRate=" + mRate +
+	           ", vRate=" + vRate +
+	           ", labour=" + labour +
+	           ", labourAll=" + labourAll +
+	           ", pricewithfields=" + priceWithFields +
+	           '}';
+	}
+
   
 }

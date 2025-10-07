@@ -20,8 +20,28 @@ public class Estimate {
     private BigDecimal gst;
     private BigDecimal nogsttotal;
     private BigDecimal total;
+    private BigDecimal totalWithAdditionalFields;
+    private BigDecimal estimate_nogst_withfields;
+    private BigDecimal estimate_gst_withfields;
 
-    // No-argument constructor
+
+    public BigDecimal getEstimate_nogst_withfields() {
+		return estimate_nogst_withfields;
+	}
+
+	public void setEstimate_nogst_withfields(BigDecimal estimate_nogst_withfields) {
+		this.estimate_nogst_withfields = estimate_nogst_withfields;
+	}
+
+	public BigDecimal getEstimate_gst_withfields() {
+		return estimate_gst_withfields;
+	}
+
+	public void setEstimate_gst_withfields(BigDecimal estimate_gst_withfields) {
+		this.estimate_gst_withfields = estimate_gst_withfields;
+	}
+
+	// No-argument constructor
     public Estimate() {
         this.gold = BigDecimal.ZERO;
         this.labour = BigDecimal.ZERO;
@@ -36,6 +56,9 @@ public class Estimate {
         this.total = BigDecimal.ZERO;
         this.vilandi = BigDecimal.ZERO;
         this.nogsttotal = BigDecimal.ZERO;
+        this.estimate_nogst_withfields = BigDecimal.ZERO;
+        this.estimate_gst_withfields = BigDecimal.ZERO;
+        this.totalWithAdditionalFields = BigDecimal.ZERO;
     }
 
     // Parameterized constructor
@@ -59,7 +82,15 @@ public class Estimate {
 
     // Getters and Setters
 
-    public String getEstimateId() {
+    public BigDecimal getTotalWithAdditionalFields() {
+		return totalWithAdditionalFields;
+	}
+
+	public void setTotalWithAdditionalFields(BigDecimal totalWithAdditionalFields) {
+		this.totalWithAdditionalFields = totalWithAdditionalFields;
+	}
+
+	public String getEstimateId() {
         return estimateId;
     }
 

@@ -1,6 +1,7 @@
 package com.example.webapp.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -8,15 +9,17 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.webapp.models.Product;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     // Additional query methods can be defined here
 	List<Product> findByCategoryId(Long categoryId);
-	Page<Product> findByCategoryId(Integer category, Pageable pageable);
+//	Page<Product> findByCategoryId(Integer category, Pageable pageable);
 	Optional<Product> findByDesignNo(String designNo);
 	void deleteByDesignNo(String productId);
 	  boolean existsByDesignNo(String designNo);
@@ -35,17 +38,59 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.item LIKE %:searchTerm% AND p.categoryId = :categoryId")
     Page<Product> searchProductsByNameAndCategory(String searchTerm, Integer categoryId, Pageable pageable);
     
-    @Query("SELECT p FROM Product p " +
-    	       "WHERE p.item LIKE CONCAT('%', :searchTerm, '%') " +
-    	       "AND (:categoryId IS NULL OR p.categoryId = :categoryId)")
-    	Page<Product> findProductsByCategoryAndName(@Param("searchTerm") String productName,
-    	                                             @Param("categoryId") Integer categoryId, 
-    	                                             Pageable pageable);
+    Page<Product> findByCategoryIdInAndItemContainingIgnoreCase(
+            Collection<Integer> categories,
+            String searchTerm,
+            Pageable pageable
+    );
+
+    Page<Product> findBysubCategoryIdInAndItemContainingIgnoreCase(
+            Collection<Long> categories,
+            String searchTerm,
+            Pageable pageable
+    );
+
+
+
     @Query("SELECT p FROM Product p " +
     	       "WHERE (:searchTerm IS NULL OR :searchTerm = '' OR p.item LIKE :searchTerm)")
     	Page<Product> findProductsWithoutCategoryAndName(@Param("searchTerm") String searchTerm, 
     	                                                 Pageable pageable);
 
+ // Without category
+    Page<Product> findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+            String item, String empty, Pageable pageable);
 
+    Page<Product> findByDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+            String designNo, String empty, Pageable pageable);
 
+    Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+            String orderId, String empty, Pageable pageable);
+
+    // With category
+    Page<Product> findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String item, List<Integer> categoryIds, String empty, Pageable pageable);
+
+    Page<Product> findByDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String designNo, List<Integer> categoryIds, String empty, Pageable pageable);
+
+    Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String orderId, List<Integer> categoryIds, String empty, Pageable pageable);
+
+    // Subcategory
+    Page<Product> findByItemContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String item, List<Long> subCategoryIds, String empty, Pageable pageable);
+
+    Page<Product> findByDesignNoContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String designNo, List<Long> subCategoryIds, String empty, Pageable pageable);
+
+    Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String orderId, List<Long> subCategoryIds, String empty, Pageable pageable);
+
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE Product p SET p.orders = null, p.designNo = null WHERE p.designNo = :designNo")
+    int resetProductMappingByDesignNo(@Param("designNo") String designNo);
+    
 }

@@ -49,29 +49,63 @@
     </div>
 
     <script>
-	
-	function loadProductDetails() {
-            const productId = document.getElementById('productId').value;
+    
+    function loadCategoryName(categoryId) {
+        return $.ajax({
+            url: `/${categoryId}/name`,
+            type: 'GET'
+        });
+    }
 
-            $.ajax({
-                url: `/loadProduct/${productId}`,
-                type: 'GET',
-                success: function(product) {
-                    const productDetailsDiv = document.getElementById('productDetails');
-                    productDetailsDiv.innerHTML = `
-                        <p>Product Name: ${product.item}</p>
-                        <p>Price: ₹${product.price ? product.price.toFixed(2): ''}</p>
-                        <p>Stock Quantity: ${product.stockQuantity}</p>
-                        <p>Category ID: ${product.categoryId}</p>
-                        ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Product Image" />` : ''}
-                    `;
-                },
-                error: function() {
-                    const productDetailsDiv = document.getElementById('productDetails');
-                    productDetailsDiv.innerHTML = `<p style="color: red;">Product not found.</p>`;
-                }
-            });
-        }
+	
+    function loadCategoryName(categoryId, callback) {
+        $.ajax({
+            url: `/${categoryId}/name`,
+            type: 'GET',
+            success: function(name) {
+                callback(name);
+            },
+            error: function() {
+                callback('Unknown');
+            }
+        });
+    }
+
+    function loadProductDetails() {
+        const productId = document.getElementById('productId').value;
+
+        $.ajax({
+            url: `/loadProduct/${productId}`,
+            type: 'GET',
+            success: function(product) {
+                const productDetailsDiv = document.getElementById('productDetails');
+
+                // Show basic product info first
+                productDetailsDiv.innerHTML = `
+                    <p>Product Name: ${product.item}</p>
+                    <p>Price: ₹${product.price ? product.price.toFixed(2) : ''}</p>
+                    <p>Stock Quantity: ${product.stockQuantity}</p>
+                    <p>Category: Loading...</p>
+                    <p>Sub Category: Loading...</p>
+                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Product Image" />` : ''}
+                `;
+
+                // Fetch and update category name
+                loadCategoryName(product.parentCategoryId, function(categoryName) {
+                    productDetailsDiv.querySelector('p:nth-child(4)').innerText = `Category: ${categoryName}`;
+                });
+
+                // Fetch and update subcategory name
+                loadCategoryName(product.subCategoryId, function(subCategoryName) {
+                    productDetailsDiv.querySelector('p:nth-child(5)').innerText = `Sub Category: ${subCategoryName}`;
+                });
+            },
+            error: function() {
+                const productDetailsDiv = document.getElementById('productDetails');
+                productDetailsDiv.innerHTML = `<p style="color: red;">Product not found.</p>`;
+            }
+        });
+    }
 
     function showModal(title, message, isSuccess) {
         const modal = $("#notificationModal");

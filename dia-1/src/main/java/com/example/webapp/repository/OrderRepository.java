@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.webapp.models.Orders;
 import com.example.webapp.models.Product;
@@ -21,5 +24,9 @@ public interface OrderRepository extends JpaRepository<Orders, Long>{
 	Optional<Orders> findByAssignedProduct(Product assignedProductId);
 
     boolean existsByOrderId(String orderId);
+
+    @Modifying
+    @Query("UPDATE Orders o SET o.isAssigned = false, o.assignedProduct = null WHERE o.orderId = :orderId")
+    void resetOrderMapping(@Param("orderId") String orderId);
 
 }

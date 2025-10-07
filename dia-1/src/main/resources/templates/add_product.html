@@ -20,12 +20,12 @@
 			<label for="categoryId">Category:</label> <select id="categoryId"
 				name="categoryId" required>
 				<option value="">Select Category</option>
-				<option value="1">Diamond Rings</option>
+				<!-- <option value="1">Diamond Rings</option>
 				<option value="2">Open Setting</option>
 				<option value="3">Chains</option>
 				<option value="4">Diamond Earrings</option>
 				<option value="5">Vilandi</option>
-				<option value="6">Jadtar Register</option>
+				<option value="6">Jadtar Register</option> -->
 			</select> <label for="productName">Product Name:</label> <input type="text"
 				id="productName" name="productName" required> <label
 				for="karatId">Gold Karat:</label> <select id="karatId"
@@ -43,6 +43,13 @@
 
 			<!-- Dynamic Fields -->
 			<div id="dynamicFields"></div>
+
+			 <!-- Container for extra fields (custom field + rate pairs) -->
+    <div id="extraFieldsContainer" style="margin-top: 15px;">
+      <label>Additional Fields:</label>
+      <button type="button" id="addExtraFieldBtn">Add Field</button>
+      <div id="extraFieldsList"></div>
+    </div>
 
 			<input type="submit" value="Add Product">
 		</form>
@@ -67,12 +74,12 @@
                 if (categoryId) {
                     // First append the Order ID dropdown and input
                     $('#dynamicFields').append(`
-                        <label for="availableOrderId">Available Order IDs:</label>
+                    		<!--              <label for="availableOrderId">Available Order IDs:</label>
                         <select id="availableOrderId" name="availableOrderId">
                             <option value="">Select from available</option>
-                        </select>
+                        </select> -->
 
-                        <label for="customOrderId">Or Enter Custom Order ID:</label>
+                        <label for="customOrderId"> Enter Custom Order ID:</label>
                         <input type="text" id="customOrderId" name="customOrderId" placeholder="Enter new Order ID">
                     `);
 
@@ -93,11 +100,23 @@
                     });
                 }
 
-                if (categoryId == "1") { // Diamond Rings
-                		
-                    $('#dynamicFields').append(`
+                           });
+            
+            $(document).on('change', '#subCategoryId', function () {
+                const subCategoryId = $(this).val();
+                $('#subCategoryFields').remove();
+
+
+                if (!subCategoryId) return;
+                let subFieldsHtml = '';
+
+                if (subCategoryId == "11" || subCategoryId == "12" || subCategoryId == "13") { // Diamond Rings
+            		
+                	subFieldsHtml = `<div id="subCategoryFields">
                     		<label for="designNoDR">Design No:</label>  
-                            <input type="text" id="designNoDR" name="designNoDR" step="any" required>   
+                            <input type="text" id="designNoDR" name="designNoDR" step="any" required>
+                            <label for="diamondGross">Gross:</label>
+                            <input type="number" id="diamondGross" name="diamondGross" step="any" required>
                         <label for="net">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
                         <label for="pcs">Pieces:</label>
@@ -127,10 +146,10 @@
                     </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
-                    `);
-                } else if (categoryId == "2") { // Open Setting
+                        </div>`;
+                } else if (subCategoryId == "14" || subCategoryId == "15") { // Open Setting
 
-                    $('#dynamicFields').append(`
+                	subFieldsHtml = `<div id="subCategoryFields">
                     		
                             <label for="designNoOS">Design No:</label>   
                             <input type="text" id="designNoOS" name="designNoOS" step="any" required>   
@@ -185,6 +204,15 @@
                         <input type="number" id="vilandiPearlRate" name="vilandiPearlRate" step="any">
                         </div>
                     </div> 
+                    
+                    <div class="inline-fields">
+                    <label for="ssPearlCts">SS Pearls (Ct.):</label>
+                    <input type="number" id="ssPearlCts" name="ssPearlCts" step="any">
+                    <label for="osSSPearlRate">SS Pearls Rate:</label>
+                    <div class="price-vilandi">
+                    <input type="number" id="osSSPearlRate" name="osSSPearlRate" step="any">
+                </div>
+                </div>
                     <div class="inline-fields">
                     <label for="otherStonesCt">Other Stones:</label>
                     <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
@@ -195,12 +223,14 @@
                         
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
-                    `);
-                } else if (categoryId == "3") { // Chains
+                    </div>`;
+                } else if (subCategoryId == "16" || subCategoryId == "18") { // Chains
 
-                    $('#dynamicFields').append(`
+                	subFieldsHtml = `<div id="subCategoryFields">
                         <label for="designNo">Design No:</label>   
-                        <input type="text" id="designNo" name="designNo" step="any" required>    
+                        <input type="text" id="designNo" name="designNo" step="any" required> 
+                        <label for="chainGross">Gross:</label>
+                        <input type="number" id="chainGross" name="chainGross" step="any" required>
                         <label for="chainNet">Net:</label>
                         <input type="number" id="chainNet" name="chainNet" step="any" required>
                         <div class="inline-fields">
@@ -212,12 +242,14 @@
                     </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
-                    `);
-                } else if (categoryId == "4") { // Diamond Earrings
+                    </div>`;
+                } else if (subCategoryId == "19" || subCategoryId == "20") { // Diamond Earrings
                 	
-                    $('#dynamicFields').append(`
+                	subFieldsHtml = `<div id="subCategoryFields">
                     	<label for="designNoEarring">Design No:</label>    
-                        <input type="text" id="designNoEarring" name="designNoEarring" step="any" required>   
+                        <input type="text" id="designNoEarring" name="designNoEarring" step="any" required>
+                        <label for="earringGross">Gross:</label>
+                        <input type="number" id="earringGross" name="earringGross" step="any" required>
                         <label for="earringNet">Net:</label>
                         <input type="number" id="earringNet" name="earringNet" step="any" required>
                         <label for="earringPcs">Pieces:</label>
@@ -246,13 +278,15 @@
                     </div></div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
-                    `);
-                } else if (categoryId == "5") { // Vilandi
+                    </div>`;
+                } else if (subCategoryId == "9" || subCategoryId == "10") { // Vilandi
 
                 	
-                    $('#dynamicFields').append(`
+                	subFieldsHtml = `<div id="subCategoryFields">
                         <label for="designNoVilandi">Design No:</label>    
-                        <input type="text" id="designNoVilandi" name="designNoVilandi" step="any" required>   
+                        <input type="text" id="designNoVilandi" name="designNoVilandi" step="any" required>
+                        <label for="vilandiGross">Gross:</label>
+                        <input type="number" id="vilandiGross" name="vilandiGross" step="any" required>
                         <label for="vilandiNet">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
 
@@ -327,10 +361,10 @@
                         
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
-                    `);
-                } else if (categoryId == "6") { // Jadtar Register
+                    </div>`;
+                } else if (subCategoryId == "6" || subCategoryId == "7" || subCategoryId == "8" || subCategoryId == "17") { // Jadtar Register
 
-                    $('#dynamicFields').append(`
+                	subFieldsHtml = `<div id="subCategoryFields">
                             <label for="designNoJadtar">Design No:</label>   
                             <input type="text" id="designNoJadtar" name="designNoJadtar" step="any" required>   
                             <label for="jadtarGross">Gross:</label>
@@ -407,8 +441,9 @@
                             <!-- Remarks -->
                             <label for="remarks">Remarks:</label>
                             <input type="text" id="remarks" name="remarks">
-                        `);
+                        </div>`;
                     }
+                $('#dynamicFields').append(subFieldsHtml);
             });
             
             function showModal(title, message, isSuccess) {
@@ -525,6 +560,37 @@
             $('#productForm').on('submit', function(e) {
                 e.preventDefault(); // Prevent default form submission
 
+                
+             // Collect extra fields values
+                const extras = {};
+                let validExtras = true;
+                $('#extraFieldsList .extraFieldPair').each(function () {
+                	const key = $(this).find('.extraFieldName').val().trim();
+                	  const qtyStr = $(this).find('.extraFieldQty').val().trim();
+                	  const rateStr = $(this).find('.extraFieldRate').val().trim();
+                	  if (!key) {
+                		    alert("Please enter a field name for all additional fields.");
+                		    valid = false;
+                		    return false; // break each loop
+                		  }
+                		  if (!qtyStr) {
+                		    alert("Please enter quantity for all additional fields.");
+                		    valid = false;
+                		    return false;
+                		  }
+                		  if (!rateStr) {
+                		    alert("Please enter rate for all additional fields.");
+                		    valid = false;
+                		    return false;
+                		  }
+                		  extras[key] = {
+                				    qty: qtyStr,
+                				    rate: rateStr
+                				  };
+                });
+                if (!validExtras) return;
+
+                
                 // Create a FormData object to capture form data
                 const formData = new FormData(this);
                 
@@ -533,6 +599,16 @@
                     formData.set('imageUrl', 'default'); // Replace with your default image URL
                 }
 
+                if (!formData.get('stockQuantity')) {
+                    // Set a default value for the stockQuantity field
+                    formData.set('stockQuantity', '0'); // Set default to 0
+                }
+
+                
+             // Append extras JSON string if any
+                if (Object.keys(extras).length > 0) {
+                  formData.append('customFields', JSON.stringify(extras));
+                }
                 
                 const selectedOrderId = $('#availableOrderId').val();
                 const customOrderId = $('#customOrderId').val().trim();
@@ -557,9 +633,32 @@
                     	showModal("Success", "Product added successfully!", true);
                         $("#productForm")[0].reset();
                         $("#dynamicFields").empty();
+                        $('#extraFieldsList').empty();
                     },
                     error: function(xhr, status, error) {
-                    	 showModal("Error", "An error occurred while adding the product.", false);                    }
+                        let errorMsg = "An error occurred while adding the product.";
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            // If backend sent JSON with "message"
+                            errorMsg = xhr.responseJSON.message;
+                        } else if (xhr.responseText) {
+                            try {
+                                // Try parsing responseText as JSON
+                                const parsed = JSON.parse(xhr.responseText);
+                                if (parsed.message) {
+                                    errorMsg = parsed.message;
+                                } else {
+                                    errorMsg = xhr.responseText; // fallback raw text
+                                }
+                            } catch (e) {
+                                errorMsg = xhr.responseText; // not JSON, just use plain text
+                            }
+                        }
+
+                        console.error("Backend Error:", errorMsg);
+                        showModal("Error", errorMsg, false);
+                    }
+
                 });
             });
             
@@ -580,6 +679,132 @@
                 } else {
                     $('#availableOrderId').prop('disabled', false);
                 }
+            });
+
+            
+            // Add functionality for extra fields button
+            $('#addExtraFieldBtn').on('click', function () {
+              const fieldHtml = `
+                <div class="extraFieldPair">
+                  <input type="text" class="extraFieldName" placeholder="Field name" required />
+                  <input type="number" class="extraFieldQty" placeholder="Field Qty(Ct./Gm/ etc)" step="0.001" min="0" inputmode="decimal" required />
+                  <input type="number" class="extraFieldRate" placeholder="Rate" step="any" required style="width:100px;" />
+                  <button type="button" class="removeExtraFieldBtn">Remove</button>
+                </div>`;
+              $('#extraFieldsList').append(fieldHtml);
+            });
+
+            // Remove extra fields
+            $('#extraFieldsList').on('click', '.removeExtraFieldBtn', function () {
+              $(this).parent('.extraFieldPair').remove();
+            });
+            
+            $.ajax({
+                type: "GET",
+                url: "/categories",
+                success: function(data) {
+                    // Separate parent and child categories
+                    const parents = data.filter(c => c.isParent);
+                    const children = data.filter(c => !c.isParent);
+
+                    // Fill parent dropdown
+                    parents.forEach(function(parent) {
+                        $("#categoryId").append("<option value='" + parent.id + "'>" + parent.name + "</option>");
+                    });
+
+                    // Handle sub-category dropdown
+                    $('#categoryId').on('change', function() {
+                        const parentId = $(this).val();
+                        $('#subCategoryContainer').remove(); // remove old subcategory if any
+
+                        if (parentId) {
+                            // Create new subcategory select
+                            const $subSelect = $(`
+                                <div id="subCategoryContainer">
+                                    <label for="subCategoryId">Sub Category:</label>
+                                    <select id="subCategoryId" name="subCategoryId" required>
+                                        <option value="">Select Sub Category</option>
+                                    </select>
+                                </div>
+                            `);
+
+                            $("#categoryId").after($subSelect);
+
+                            // Populate with children of selected parent
+                            const filteredChildren = children.filter(c => c.parentId == parentId);
+                            filteredChildren.forEach(function(child) {
+                                $("#subCategoryId").append("<option value='" + child.id + "'>" + child.name + "</option>");
+                            });
+                        }
+                    });
+                }
+
+            });
+
+            
+            $(document).ready(function() {
+                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls','chainNet','pearlsVilandi','jadtarGross','jadtarNet'];
+                const ctFields = ['beads', 'ssPearls', 'vilandi', 'diamonds', 'otherStonesCt', 'beadsCt', 'ssPearlCt', 'vilandiCt', 'diamondsCt', 'otherStonesCt', 'jadtarBeads', 'jadtarSSPearl', 'jadtarRealStone', 'diamondsCt', 'beadsVilandi', 'ssPearlCt', 'ssPearls', 'ssPearlCt','diaWeight','diaSt','realStone','jadtarStones','vilandiStones'];
+
+                function limitDecimals(value, maxDecimals) {
+                    if (!value) return value;
+                    const parts = value.split('.');
+                    if (parts.length === 1) return value; // no decimals
+                    return parts[0] + '.' + parts[1].substring(0, maxDecimals);
+                }
+
+                function attachDecimalLimit(fieldIds, maxDecimals) {
+                    fieldIds.forEach(function(id) {
+                        $(document).on('input', '#' + id, function() {
+                            const val = $(this).val();
+                            const limited = limitDecimals(val, maxDecimals);
+                            if (val !== limited) {
+                                $(this).val(limited);
+                            }
+                        });
+                    });
+                }
+
+                attachDecimalLimit(gmFields, 3);
+                attachDecimalLimit(ctFields, 2);
+            });
+
+            
+            function formatDecimalFields() {
+                // List of gm fields requiring 3 decimals
+                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls'];
+                // List of ct fields requiring 2 decimals
+                const ctFields = ['beads', 'ssPearls', 'vilandi', 'diamonds', 'otherStonesCt', 'beadsCt', 'ssPearlCt', 'vilandiCt', 'diamondsCt', 'otherStonesCt', 'jadtarBeads', 'jadtarSSPearl', 'jadtarRealStone', 'diamondsCt', 'beadsVilandi', 'ssPearlCt', 'ssPearls', 'ssPearlCt'];
+
+                // Helper to format number with fixed decimals and append zeros if necessary
+                function formatWithZeros(value, decimals) {
+                    if (value === '') return '';
+                    let num = parseFloat(value);
+                    if (isNaN(num)) return value; // if not a valid number, do not alter
+                    return num.toFixed(decimals);
+                }
+
+                // Format gm fields to 3 decimals
+                gmFields.forEach(function(fieldId) {
+                    const input = document.getElementById(fieldId);
+                    if (input && input.value !== '') {
+                        input.value = formatWithZeros(input.value, 3);
+                    }
+                });
+
+                // Format ct fields to 2 decimals
+                ctFields.forEach(function(fieldId) {
+                    const input = document.getElementById(fieldId);
+                    if (input && input.value !== '') {
+                        input.value = formatWithZeros(input.value, 2);
+                    }
+                });
+            }
+
+            // Run formatting before form submits
+            $('#productForm').on('submit', function(e) {
+                formatDecimalFields();
+                // existing code continues...
             });
 
 /*             // Load order IDs based on selected category
@@ -607,6 +832,8 @@
             }); */
 
         });
+        
+        
     </script>
 </body>
 </html>

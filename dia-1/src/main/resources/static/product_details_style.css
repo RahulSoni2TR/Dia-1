@@ -59,15 +59,17 @@ main {
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    /* Create three columns: image, details, and a narrow fixed column for QR code on the extreme right */
+    grid-template-columns: 1fr 2fr auto;
     gap: 20px;
     background-color: #fff;
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    align-items: start; /* Align grid items at the top */
 }
-
 .product-image {
+    grid-column: 1;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -83,14 +85,8 @@ main {
     object-fit: cover;
 }
 
-.product-details h2 {
-    color: #007bff;
-    margin-bottom: 15px;
-}
-
-.product-details p {
-    margin: 10px 0;
-    font-size: 16px;
+.product-details {
+    grid-column: 2;
 }
 
 .empty-label {
@@ -105,4 +101,43 @@ main {
     margin-top: 20px;
     font-size: 14px;
     color: #555;
+}
+
+ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+ul li {
+  margin-bottom: 0.3em;
+  font-weight: normal;
+  color: #333;
+}
+
+.product-qr {
+    grid-column: 3;
+    display: flex;
+    justify-content: center; /* center horizontally */
+    align-items: center;     /* center vertically */
+    padding: 0;
+    align-self: center;      /* center in grid cell vertically */
+}
+
+.qr-code {
+    width: 140px;
+    height: 140px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+    margin-top: 16px;  /* Adds space above the QR code */
+}
+
+.verified {
+  color: green;
+  font-weight: bold;
+}
+.unverified {
+  color: red;
+  font-weight: bold;
 }

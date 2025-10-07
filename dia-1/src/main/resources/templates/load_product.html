@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Product Details</title>
-    <link rel="stylesheet" href="product_details_style.css">
+   <link rel="stylesheet" th:href="@{/product_details_style.css}" />
 </head>
 <body>
     <header class="header">
@@ -14,7 +14,7 @@
     </header>
 
     <main>
-        <a href="/view-product" class="back-button">← Back to Product List</a>
+        <a href="javascript:void(0)" class="back-button" onclick="history.back()">← Back to Product List</a>
         <div class="container" id="productDetailsContainer">
             <!-- Product details will be populated here -->
         </div>
@@ -26,125 +26,272 @@
 
     <script>
         function loadProductDetails() {
-            const productId = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
+        	let product = null;
+        	 if (typeof productFromModel !== "undefined" && productFromModel !== null) {
+        		 console.log(productFromModel)
+                 // Case 1: Product is directly provided in the model (via QR flow)
+                 renderProduct(productFromModel);
+             } else {
+            const designNo = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
 
-            if (!productId) {
+            if (!designNo) {
                 document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
                 return;
             }
 
-            fetch(`/loadProductDetail/${productId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(product => {
-                    const details = {
-                        1: 'Diamond Rings',
-                        2: 'Open Setting',
-                        3: 'Chains',
-                        4: 'Diamond Earrings',
-                        5: 'Vilandi',
-                        6: 'Jadtar Register'
-                    };
-
-                    const renderText = value => value ? value : '<span class="empty-label">No value</span>';
-
-                    let productDetailsHTML = `
-                        <div class="product-image">
-                            <img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}">
-                        </div>
-                        <div class="product-details">
-                            <h2>${renderText(product.item)}</h2>
-                            <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
-                            <p><strong>Design No:</strong> ${renderText(product.orders ? product.orders.orderId : 'N/A')}/${renderText(product.designNo)}</p>
-                            <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
-                            <h3>Additional Details:</h3>
-                    `;
-
-                      switch (product.categoryId) {
-                    case 1:
-                        productDetailsHTML += `
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                            <p><strong>Diamonds:</strong> ${renderText(product.diaWeight)} Carat</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    case 2:
-                        productDetailsHTML += `
-                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} Carat</p>
-                            <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} Carat</p>
-                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
-                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
-                            <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} Carat</p>
-                            <p><strong>Others:</strong> ${renderText(product.others)}</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    case 3:
-                        productDetailsHTML += `
-                        	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    case 4:
-                        productDetailsHTML += `
-                        	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                            <p><strong>Diamonds:</strong> ${renderText(product.diaWeight)} Carat</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    case 5:
-                        productDetailsHTML += `
-                        	<!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)}</p>
-                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
-                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
-                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
-                            <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} Carat</p>
-                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)} Carat</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    case 6:
-                        productDetailsHTML += `
-                           <!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
-                            <p><strong>Net:</strong> ${renderText(product.net)} Gm</p>
-                            <p><strong>Stones:</strong> ${renderText(product.stones)} Carat</p>
-                            <p><strong>Beads:</strong> ${renderText(product.beadsCt)} Carat</p>
-                            <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
-                            <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} Carat</p>
-                            <p><strong>Real Stone:</strong> ${renderText(product.realStone)} Carat</p>
-                            <p><strong>Mozonite:</strong> ${renderText(product.mozonite)}</p>
-                            <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                        `;
-                        break;
-                    default:
-                        productDetailsHTML += '<p>Category not recognized.</p>';
+            fetch(`/loadProductDetail/${designNo}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                    // Add other categories as needed
-                    productDetailsHTML += '</div>';
+                return response.json();
+            })
+            .then(product => renderProduct(product))
+            .catch(err => {
+                console.error('Error fetching product details:', err);
+                document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
+            });
+    }
+}
+        
+        let currentProduct = null; // declare global at top of script
 
-                    document.getElementById('productDetailsContainer').innerHTML = productDetailsHTML;
-                })
-                .catch(err => {
-                    console.error('Error fetching product details:', err);
-                    document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
+        
+                function renderProduct(product){
+                	if (!product) {
+                        document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
+                        return;
+                    }
+                	currentProduct = product
+                    const details = {
+                            1: 'Diamond',
+                            2: 'Open Setting',
+                            3: 'Plain Gold',
+                            4: 'Vilandi',
+                            5: 'Jadtar',
+                            	6:	'Jadtar Register',
+                            	7:	'Jadtar Halfsets',
+                            	8:	'Jadtar Bangles / Bracelets',
+                            	9:	'Vilandi Halfsets',
+                            	10:	'Vilandi Bangles / Bracelets',
+                            	11:	'Diamond Bangles / Bracelets',
+                            	12:	'Diamond Pendants / Pendant Sets',
+                            	13:	'Diamond Halfsets',
+                            	14:	'OS Halfsets',
+                            	15:	'OS Bangles / Bracelets',
+                            	16:	'PG Bangles / Bracelets',
+                            	17:	'Only Earrings',
+                            	18:	'Chains',
+                            	19:	'Diamond Earrings',
+                            	20:	'Diamond Rings'
+                        };
+
+                        const renderText = value => value ? value : '<span class="empty-label">No value</span>';
+
+                        let productDetailsHTML = `
+                            <div class="product-top">
+                                <div class="product-image">
+                                    <img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}"></div>
+                                    <div class="product-qr"> <img class="qr-code" src="${renderText(product.qrCodePath)}" alt="QR Code" />
+                                    </div>
+                                </div>
+                               
+                                <div class="product-details">
+                                    <h2>${renderText(product.item)}</h2>
+                                    <p id="verificationStatus"></p>
+                                <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
+                                <p><strong>Sub Category:</strong> ${details[product.subCategoryId] || 'Unknown'}</p>
+                                <p><strong>Design No:</strong> ${renderText(product.orders ? product.orders.orderId : 'N/A')}/${renderText(product.designNo)}</p>
+                                <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
+                                <p>
+                                <label>
+                                    <input type="checkbox" id="withFieldsToggle" checked>
+                                    Price with additional fields
+                                </label>
+                            </p>
+                            <p><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
+                                <h3>Additional Details:</h3>
+                        `;
+                        
+                        let hasExtras = false;
+    let extrasHTML = '';
+
+    if (product.customFields && product.customFields !== '{}') {
+        try {
+            const extras = JSON.parse(product.customFields);
+            const keys = Object.keys(extras);
+            if (keys.length > 0) {
+                hasExtras = true;
+                extrasHTML += '<h4>Additional Fields:</h4><ul>';
+                keys.forEach(key => {
+                    const qty = extras[key]?.qty || 'N/A';
+                    extrasHTML += `<li><strong>${key}</strong>: ${qty}</li>`;
                 });
+                extrasHTML += '</ul>';
+            }
+        } catch (e) {
+            console.error('Failed to parse customFields:', e);
         }
+    }
+/* 
+    if (hasExtras) {
+        productDetailsHTML += extrasHTML;
+    } */
+
+    const extrasBlock = hasExtras ? extrasHTML : '';
+                          switch (product.categoryId) {
+                        case 1:
+                        case 11:
+                        case 12:
+                        case 13:
+                            productDetailsHTML += `
+                            	<p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+                                ${extrasBlock}
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break;
+                        case 2:
+                        case 14:
+                        case 15:
+                            productDetailsHTML += `
+                                <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+                               <!--  <p><strong>Others:</strong> ${renderText(product.others)}</p> -->
+                                ${extrasBlock}
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break;
+                        case 3:
+                        case 16:
+                        case 18:
+                            productDetailsHTML += `
+                            	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                            	<p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                ${extrasBlock}
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break;
+                        /* case 4:
+                            productDetailsHTML += `
+                            	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break; */
+                        case 4:
+                        case 9:
+                        case 10:
+                            productDetailsHTML += `
+                            	<!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+                                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
+                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+                                <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
+                                <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
+                                ${extrasBlock}
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break;
+                        case 5:
+                        case 6:
+                        case 7:
+                        case 8:
+                        case 17:
+                            productDetailsHTML += `
+                               <!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
+                                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
+                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                                <p><strong>Stones:</strong> ${renderText(product.stones)} ct</p>
+                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+                                <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
+                                <p><strong>Mozonite:</strong> ${renderText(product.mozonite)}</p>
+                                <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
+                                ${extrasBlock}
+                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+                            `;
+                            break;
+                        default:
+                            productDetailsHTML += '<p>Category not recognized.</p>';
+                    }
+                        // Add other categories as needed
+                        productDetailsHTML += '</div>';
+                        
+
+                        document.getElementById('productDetailsContainer').innerHTML = productDetailsHTML;
+                        refreshVerificationStatus(product.productId);
+
+                        function refreshVerificationStatus(productId) {
+                            const isVerified = product.verificationStatus === 1;
+
+
+                            const statusEl = document.getElementById('verificationStatus');
+                            if (statusEl) {
+                                statusEl.innerHTML = isVerified
+                                    ? `<span class="verified">✔ Verified</span>`
+                                    : `<span class="unverified">✘ Unverified</span>`;
+                            }
+                        }
+
+                     // Wire up checkbox and dynamic price rendering
+                        const toggleEl = document.getElementById('withFieldsToggle');
+                        const priceValueEl = document.getElementById('priceValue');
+
+                        function currentPrice(useWithFields) {
+                            // Use priceWithFields when requested; fall back to price if null/undefined
+                            return useWithFields ? (product.priceWithFields ?? product.price) : product.price;
+                        }
+
+                     // Replace your existing renderPrice() with this version
+                        function renderPrice() {
+                          const value = currentPrice(toggleEl ? toggleEl.checked : false); // priceWithFields or price
+                          const rounded = roundNearestInt(value); // nearest integer rounding (.5 rounds up) [web:21][web:76]
+                          // If rounded is null (non-finite), show a placeholder; otherwise, format for INR grouping
+                          priceValueEl.textContent = rounded === null ? 'No value' : inrInteger.format(rounded); // grouping via Intl [web:30]
+                        }
+
+                     // Add these helpers above renderPrice (inside the same <script> block)
+                        function roundNearestInt(v) {
+                          const n = Number(v);
+                          return Number.isFinite(n) ? Math.round(n) : null; // 1.4→1, 1.5→2 [web:21][web:76]
+                        }
+
+                        const inrInteger = new Intl.NumberFormat('en-IN'); // 12,34,567 style [web:30]
+
+
+                        if (toggleEl) {
+                            toggleEl.addEventListener('change', renderPrice);
+                        }
+                        // Initial render
+                        renderPrice();
+                }
+                
 
         loadProductDetails();
-    </script>
+    </script>    
+    
+<script th:inline="javascript">
+  const productFromModel = JSON.parse(/*[[${productJson}]]*/ '{}');
+  renderProduct(productFromModel);
+</script>
 </body>
 </html>

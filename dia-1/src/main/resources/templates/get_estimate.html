@@ -6,15 +6,17 @@
     <title>Estimate Page</title>
     <link rel="stylesheet" href="get_estimate_style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
 </head>
 <body>
 <div class="top-right-nav">
-        <a href="/logout" class="logout-btn">Logout</a>
-    </div>
+    <a href="/logout" class="logout-btn">Logout</a>
+</div>
+
 <div class="container">
     <h1>Please update the product name</h1>
+    <h4>Please update the Design No</h4>
+
     <table class="estimate-table">
         <thead>
             <tr id="header_row">
@@ -26,11 +28,11 @@
         </thead>
         <tbody>
             <tr id="gold_row">
-    <td class="description">Gold</td>
-    <td id="gold-qty">17.000</td>
-    <td id="gold-rate"></td>
-    <td id="gold-amt">115175</td>
-</tr>
+                <td class="description">Gold</td>
+                <td id="gold-qty">17.000</td>
+                <td id="gold-rate"></td>
+                <td id="gold-amt">115175</td>
+            </tr>
             <tr id="labour_row">
                 <td class="description">Labour</td>
                 <td id="labour-qty">17.000</td>
@@ -57,25 +59,25 @@
             </tr>
             <tr id="sspearls_row">
                 <td class="description">SS Pearls</td>
-               <td id="sspearls-qty">0</td>
+                <td id="sspearls-qty">0</td>
                 <td id="sspearls-rate">0</td>
                 <td id="sspearls-amt">0</td>
             </tr>
-                        <tr id="diamonds_row">
+            <tr id="diamonds_row">
                 <td class="description">Diamonds</td>
-               <td id="diamonds-qty">0</td>
+                <td id="diamonds-qty">0</td>
                 <td id="diamonds-rate">0</td>
                 <td id="diamonds-amt">0</td>
             </tr>
             <tr id="os_row">
                 <td class="description">Other Stones</td>
-               <td id="ostones-qty">0</td>
+                <td id="ostones-qty">0</td>
                 <td id="ostones-rate">0</td>
                 <td id="ostones-amt">0</td>
             </tr>
             <tr id="vilandi_row">
                 <td class="description">Vilandi</td>
-               <td id="vilandi-qty">0</td>
+                <td id="vilandi-qty">0</td>
                 <td id="vilandi-rate">0</td>
                 <td id="vilandi-amt">0</td>
             </tr>
@@ -117,25 +119,74 @@
             </tr>
         </tbody>
     </table>
-    <div style="margin-bottom: 15px;">
-    <label for="page-size-select" style="font-weight: bold; margin-right:8px;">Choose Page Size:</label>
-    <select id="page-size-select">
-        <option value="A4" selected>A4</option>
-        <option value="A5">A5</option>
-        <option value="A3">A3</option>
-        <option value="A6">A6</option>
-        <option value="A2">A2</option>
-        <option value="A1">A1</option>
-        <option value="A0">A0</option>
-        <option value="Letter">Letter</option>
-    </select>
-</div>
+
+
+    <div style="margin-top: 15px;">
+    	<label for="fontSizeSelector" style="font-weight: bold; margin-right:8px;">Table Font Size:</label>
+<select id="fontSizeSelector">
+  <option value="8">8</option>
+  <option value="10">10</option>
+  <option value="12">12</option>
+  <option value="14" selected>14</option>
+  <option value="16">16</option>
+  <option value="18">18</option>
+    <option value="20">20</option>
+  <option value="22">22</option>
+</select>
     
-    <button id="download-pdf" style="margin-top: 20px;">Download Estimate</button>
+        <label for="page-size-select" style="font-weight: bold; margin-right:8px;">Choose Page Size:</label>
+        <select id="page-size-select">
+            <option value="A4" selected>A4</option>
+            <option value="A5">A5</option>
+            <option value="A3">A3</option>
+            <option value="A6">A6</option>
+            <option value="A2">A2</option>
+            <option value="A1">A1</option>
+            <option value="A0">A0</option>
+            <option value="Letter">Letter</option>
+        </select>
+    </div>
+
+    <div style="margin-top: 15px;">
+        <label for="customer-name-input" style="font-weight: bold; margin-right:8px;">Customer Name:</label>
+        <input type="text" id="customer-name-input" placeholder="Enter customer name" style="width: 200px;" />
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button id="download-pdf">Download Estimate</button>
+        <button id="print-pdf">Print Estimate</button>
+    </div>
+
     <div style="margin-top: 20px; text-align: center;">
-    <a href="/view-product" class="back-button">Back to View Products</a>
+        <a href="/view-product" class="back-button">Back to View Products</a>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 20px;">
+            <input type="checkbox" id="toggleIncludeAddons" checked />
+            <span style="font-weight: 600;">Include Additional Fields in Estimate</span>
+        </label>
+    </div>
 </div>
+
+<!-- Modal for download options -->
+<div id="downloadModal" class="modal">
+  <div class="modal-content">
+    <h3>Download Options</h3>
+    <label>
+      <input type="checkbox" id="chk-enquiry" /> Log Enquiry
+    </label>
+    <label>
+      <input type="checkbox" id="chk-sale" /> Mark as Sold
+    </label>
+    <div style="margin-top:15px;">
+      <button id="confirm-download">Confirm</button>
+      <button id="cancel-download">Cancel</button>
+    </div>
+  </div>
 </div>
+
+
 <script>
 let estimate;
 let product;
@@ -143,91 +194,132 @@ let rate;
 
 document.addEventListener("DOMContentLoaded", function() {
     const productId = sessionStorage.getItem('productId');
-    // Replace `1` with the actual product ID you want to fetch.
+    const checkbox = document.getElementById('toggleIncludeAddons');
+
     fetch(`/getEstimate/${productId}`)
         .then(response => response.json())
         .then(data => {
             product = data.object1;
             estimate = data.object2;
             rate = data.object3;
-            console.log(rate);
 
             const productKarat = product.karat;
             const formattedKarat = productKarat !== null ? productKarat.toFixed(2) : "0.00";
             const goldRate = rate.find(item => item.commodity === formattedKarat)?.price || 0;
             const adjustedgoldRate = goldRate / 10;
 
-            // Populate table cells based on the `estimate` fields
             const titleElement = document.querySelector('h1');
             titleElement.textContent = `Estimate for ${product.item}`;
 
-            document.getElementById("gold-qty").textContent = product.net ?? 0;
-            document.getElementById("gold-rate").textContent = `₹ ${adjustedgoldRate ?? 0}`;
-            document.getElementById("gold-amt").textContent = `₹ ${estimate.gold ?? 0}`;
+            const subElement = document.querySelector('h4');
+            subElement.textContent = `Design No: ${(product.orders ? product.orders.orderId : 'N/A')}/${product.designNo}`;
 
-            document.getElementById("labour-qty").textContent = product.net ?? 0;
-            document.getElementById("labour-rate").textContent = `₹ ${product.labour ?? 0}`;
-            document.getElementById("labour-amt").textContent = `₹ ${estimate.labour ?? 0}`;
+            document.getElementById("gold-qty").textContent = (product.net ?? 0)+ " ct";
+            document.getElementById("gold-rate").textContent = ` ${adjustedgoldRate ?? 0}`;
+            document.getElementById("gold-amt").textContent = ` ${estimate.gold ?? 0}`;
 
-            document.getElementById("vilandi-qty").textContent = product.vilandiCt ?? 0;
-            document.getElementById("vilandi-rate").textContent = `₹ ${product.vRate ?? 0}`;
-            document.getElementById("vilandi-amt").textContent = `₹ ${estimate.vilandi ?? 0}`;
+            document.getElementById("labour-qty").textContent = (product.net ?? 0)+ " gm";
+            document.getElementById("labour-rate").textContent = ` ${product.labour ?? 0}`;
+            document.getElementById("labour-amt").textContent = ` ${estimate.labour ?? 0}`;
+
+            document.getElementById("vilandi-qty").textContent = (product.vilandiCt ?? 0)+ " ct";
+            document.getElementById("vilandi-rate").textContent = ` ${product.vRate ?? 0}`;
+            document.getElementById("vilandi-amt").textContent = ` ${estimate.vilandi ?? 0}`;
 
             document.getElementById("stone-qty").textContent = product.stones ?? 0;
-            document.getElementById("stone-rate").textContent = `₹ ${product.stRate ?? 0}`;
-            document.getElementById("stone-amt").textContent = `₹ ${estimate.stones ?? 0}`;
+            document.getElementById("stone-rate").textContent = ` ${product.stRate ?? 0}`;
+            document.getElementById("stone-amt").textContent = ` ${estimate.stones ?? 0}`;
 
-            document.getElementById("beads-qty").textContent = product.beadsCt ?? 0;
-            document.getElementById("beads-rate").textContent = `₹ ${product.bdRate ?? 0}`;
-            document.getElementById("beads-amt").textContent = `₹ ${estimate.beads ?? 0}`;
+            document.getElementById("beads-qty").textContent = (product.beadsCt ?? 0)+ " ct";
+            document.getElementById("beads-rate").textContent = ` ${product.bdRate ?? 0}`;
+            document.getElementById("beads-amt").textContent = ` ${estimate.beads ?? 0}`;
 
-            document.getElementById("pearls-qty").textContent = product.pearlsGm ?? 0;
-            document.getElementById("pearls-rate").textContent = `₹ ${product.prlRate ?? 0}`;
-            document.getElementById("pearls-amt").textContent = `₹ ${estimate.pearls ?? 0}`;
+            document.getElementById("pearls-qty").textContent = (product.pearlsGm ?? 0)+ " gm";
+            document.getElementById("pearls-rate").textContent = ` ${product.prlRate ?? 0}`;
+            document.getElementById("pearls-amt").textContent = ` ${estimate.pearls ?? 0}`;
 
-            document.getElementById("sspearls-qty").textContent = product.ssPearlCt ?? 0;
-            document.getElementById("sspearls-rate").textContent = `₹ ${product.ssRate ?? 0}`;
-            document.getElementById("sspearls-amt").textContent = `₹ ${estimate.ssPearls ?? 0}`;
+            document.getElementById("sspearls-qty").textContent = (product.ssPearlCt ?? 0)+ " ct";
+            document.getElementById("sspearls-rate").textContent = ` ${product.ssRate ?? 0}`;
+            document.getElementById("sspearls-amt").textContent = ` ${estimate.ssPearls ?? 0}`;
 
-            document.getElementById("mozo-qty").textContent = `₹ ${product.mozonite ?? 0}`;
-            document.getElementById("mozo-rate").textContent = `₹ ${product.mRate ?? 0}`;
-            document.getElementById("mozo-amt").textContent = `₹ ${estimate.mozo ?? 0}`;
+            document.getElementById("mozo-qty").textContent = ` ${product.mozonite ?? 0}`;
+            document.getElementById("mozo-rate").textContent = ` ${product.mRate ?? 0}`;
+            document.getElementById("mozo-amt").textContent = ` ${estimate.mozo ?? 0}`;
 
-            document.getElementById("diamonds-qty").textContent = `₹ ${product.diamondsCt ?? 0}`;
-            document.getElementById("diamonds-rate").textContent = `₹ ${product.diaRt ?? 0}`;
-            document.getElementById("diamonds-amt").textContent = `₹ ${estimate.diamonds ?? 0}`;
+            document.getElementById("diamonds-qty").textContent = ` ${product.diamondsCt ?? 0}`+ " ct";
+            document.getElementById("diamonds-rate").textContent = ` ${product.diaRt ?? 0}`;
+            document.getElementById("diamonds-amt").textContent = ` ${estimate.diamonds ?? 0}`;
 
-            document.getElementById("ostones-qty").textContent = `₹ ${product.otherStonesCt ?? 0}`;
-            document.getElementById("ostones-rate").textContent = `₹ ${product.otherStonesRt ?? 0}`;
-            document.getElementById("ostones-amt").textContent = `₹ ${estimate.otherStones ?? 0}`;
+            document.getElementById("ostones-qty").textContent = ` ${product.otherStonesCt ?? 0}`+ " ct";
+            document.getElementById("ostones-rate").textContent = ` ${product.otherStonesRt ?? 0}`;
+            document.getElementById("ostones-amt").textContent = ` ${estimate.otherStones ?? 0}`;
 
-            document.getElementById("realSt-amt").textContent = `₹ ${product.realStone ?? 0}`;
-            document.getElementById("fitting-amt").textContent = `₹ ${estimate.fitting ?? 0}`;
-            document.getElementById("labourAmt-amt").textContent = `₹ ${product.labourAll ?? 0}`;
-            document.getElementById("gst-amt").textContent = `₹ ${estimate.gst ?? 0}`;
+            document.getElementById("realSt-amt").textContent = ` ${product.realStone ?? 0}`;
+            document.getElementById("fitting-amt").textContent = ` ${estimate.fitting ?? 0}`;
+            document.getElementById("labourAmt-amt").textContent = ` ${product.labourAll ?? 0}`;
+            document.getElementById("gst-amt").textContent = ` ${estimate.gst ?? 0}`;
             document.getElementById("total-amt").textContent = `₹ ${estimate.total ?? 0}`;
 
             const categoryId = product.categoryId;
-            console.log("Category ID:", categoryId);
+
+            const tbody = document.querySelector('.estimate-table tbody');
+            let customFields = {};
+            if (product && product.customFields) {
+                try {
+                    customFields = JSON.parse(product.customFields);
+                } catch(e) {
+                    console.error('Failed to parse customFields:', e);
+                }
+            }
+
+            tbody.querySelectorAll('tr[data-addon]').forEach(tr => tr.remove());
+
+            if (customFields && Object.keys(customFields).length > 0) {
+                Object.entries(customFields).forEach(([name, val]) => {
+                    let qtyNum = parseFloat(val.qty || "0");
+                    let rateNum = parseFloat(val.rate || "0");
+                    let amount = qtyNum * rateNum;
+
+                    if (qtyNum > 0 && rateNum > 0 && amount > 0) {
+                        const tr = document.createElement('tr');
+                        tr.setAttribute('data-addon', 'true');
+
+                        tr.innerHTML = `
+                            <td class="description">${name}</td>
+                            <td>${qtyNum}</td>
+                            <td>${rateNum}</td>
+                            <td>${Math.round(amount)}</td>
+                        `;
+                        const gstRow = document.getElementById('gst_row');
+                        if (gstRow) {
+                            tbody.insertBefore(tr, gstRow);
+                        } else {
+                            const totalRow = document.getElementById('total_row');
+                            if (totalRow) {
+                                tbody.insertBefore(tr, totalRow);
+                            } else {
+                                tbody.appendChild(tr);
+                            }
+                        }
+                    }
+                });
+            }
 
             function showHideRows(categoryId) {
                 const rowsToHide = {
                     1: ["gold_row", "diamonds_row", "os_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
-                    2: ["gold_row", "beads_row", "pearls_row", "diamonds_row", "os_row", "vilandi_row","labour_row","labourAmt_row", "gst_row", "fitting_row", "total_row", "header_row"],
+                    2: ["gold_row", "beads_row", "pearls_row","sspearls_row", "diamonds_row", "os_row", "vilandi_row","labour_row","labourAmt_row", "gst_row", "fitting_row", "total_row", "header_row"],
                     3: ["gold_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
-                    4: ["gold_row", "diamonds_row", "os_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
-                    5: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
-                    6: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"]
+                    4: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "vilandi_row", "moz_row", "realSt_row", "fitting_row","labour_row","labourAmt_row", "gst_row", "total_row", "header_row"],
+                    5: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"]
                 };
 
-                // Hide all rows first
                 const allRows = document.querySelectorAll('tbody tr');
                 allRows.forEach(row => row.style.display = 'none');
 
                 const thead = document.querySelector('thead');
                 if (thead) thead.style.display = 'table-header-group';
 
-                // Show rows for the selected category
                 const rowsToDisplay = rowsToHide[categoryId];
                 if (rowsToDisplay) {
                     rowsToDisplay.forEach(rowId => {
@@ -237,10 +329,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
 
-            // Call the function to show the appropriate rows
             showHideRows(categoryId);
 
-            // Hide rows where any of Qty, Rate, or Amount is exactly 0 (ignore empty or missing)
             const tbodyRows = document.querySelectorAll('.estimate-table tbody tr');
             tbodyRows.forEach(row => {
                 if(row.id === 'header_row' || row.classList.contains('total-row')) return;
@@ -259,175 +349,516 @@ document.addEventListener("DOMContentLoaded", function() {
                     row.style.display = "table-row";
                 }
             });
+
+            setTimeout(() => {
+                const qtyCells = document.querySelectorAll("td[id$='-qty']");
+                qtyCells.forEach(cell => {
+                    let text = cell.textContent.trim();
+                    if (text.toLowerCase().endsWith("gm") || text.toLowerCase().endsWith("ct")) {
+                        cell.textContent = formatWithPrecision(text);
+                    }
+                });
+            }, 100);
+
+            const toggleCheckbox = document.getElementById("toggleIncludeAddons");
+
+            function updateTotals() {
+                const addonRows = document.querySelectorAll("tr[data-addon]");
+                const gstRow = document.getElementById("gst_row");
+
+                if (toggleCheckbox.checked) {
+                    addonRows.forEach(row => row.style.display = "table-row");
+
+                    const total = Number(product.priceWithFields ?? estimate.totalWithAdditionalFields ?? 0);
+                    document.getElementById("total-amt").textContent = `₹ ${Math.round(total)}`;
+
+                    const gstValue = Number(estimate.estimate_gst_withfields ?? estimate.gst ?? 0);
+                    gstRow.querySelector("#gst-amt").textContent = `₹ ${Math.round(gstValue)}`;
+                    gstRow.querySelector(".description").textContent = `GST (${rate[0]?.gst || 3}%)`;
+                } else {
+                    addonRows.forEach(row => row.style.display = "none");
+
+                    const total = Number(product.price ?? estimate.total ?? 0);
+                    document.getElementById("total-amt").textContent = `₹ ${Math.round(total)}`;
+
+                    const gstValue = Number(estimate.gst ?? 0);
+                    gstRow.querySelector("#gst-amt").textContent = `₹ ${Math.round(gstValue)}`;
+                    gstRow.querySelector(".description").textContent = `GST (${rate[0]?.gst || 3}%)`;
+                }
+            }
+
+            const fontSizeSelector = document.getElementById("fontSizeSelector");
+            const table = document.querySelector(".estimate-table");
+
+            function updateTableFontSize(size) {
+                // apply font size only to text inside table
+                table.querySelectorAll("th, td").forEach(cell => {
+                    cell.style.fontSize = size + "px";
+                    cell.style.lineHeight = "1.2"; // keeps row height consistent
+                });
+            }
+
+            // Initialize with default selected value
+            updateTableFontSize(fontSizeSelector.value);
+
+            // Update on change
+            fontSizeSelector.addEventListener("change", function () {
+                updateTableFontSize(this.value);
+            });
+            
+            updateTotals();
+            toggleCheckbox.addEventListener("change", updateTotals);
         })
         .catch(error => console.error('Error fetching estimate:', error));
 });
 
-document.getElementById("download-pdf").addEventListener("click", function () {
+function buildDocDefinition() {
+	  // 1 mm = 2.83464567 pt
+	  const mmToPt = (mm) => Math.round(mm * 2.83464567);
+
+	  // Read page size from the existing dropdown
+	  const selectedSize = document.getElementById("page-size-select")?.value || "A4";
+
+	  // Optional orientation select (fallback to portrait if not present)
+	  const selectedOrientation =
+	    document.getElementById("page-orientation-select")?.value || "portrait";
+
+	  // Uniform 12mm margins on all sides (approx. 34pt)
+	  const pageMargins = [mmToPt(12), mmToPt(12), mmToPt(12), mmToPt(12)];
+
+	  // Font size scaling based on page size (same logic as before)
+	  let tableFontSize = 12;
+	  if (selectedSize === "A5" || selectedSize === "A6") {
+	    tableFontSize = 7;
+	  } else if (["A3","A2","A1","A0","Letter"].includes(selectedSize)) {
+	    tableFontSize = 14;
+	  }
+
+	  // Build table headers and rows from the current HTML table, skipping zero rows
+	  const table = document.querySelector(".estimate-table");
+	  const headers = [];
+	  const rows = [];
+
+	  table.querySelectorAll("thead th").forEach((cell) => headers.push({
+	    text: cell.textContent,
+	    bold: true,
+	    alignment: 'center',
+	    fillColor: '#f2f2f2',
+	    fontSize: tableFontSize
+	  }));
+
+	  const tableRows = table.querySelectorAll("tbody tr");
+	  tableRows.forEach((row, index) => {
+	    if (row.id === 'header_row' || row.classList.contains('total-row')) {
+	      const totalRowData = [];
+	      row.querySelectorAll("td").forEach(cell => {
+	        totalRowData.push({
+	          text: cell.textContent,
+	          alignment: 'center',
+	          bold: true,   
+	          fillColor: '#f2f2f2',
+	          fontSize: tableFontSize
+	        });
+	      });
+	      rows.push(totalRowData);
+	      return;
+	    }
+
+	    const qtyText = row.children[1]?.textContent.trim() || "";
+	    const rateText = row.children[2]?.textContent.trim() || "";
+	    const amtText  = row.children[3]?.textContent.trim() || "";
+
+	    const qty  = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
+	    const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
+	    const amt  = parseFloat(amtText.replace(/[^\d.-]/g, ''));
+
+	    if (qty === 0 || rate === 0 || amt === 0) return;
+
+	    const rowData = [];
+	    row.querySelectorAll("td").forEach((cell) => {
+	      rowData.push({
+	        text: cell.textContent,
+	        alignment: 'center',
+	        fontSize: tableFontSize,
+	        fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9'
+	      });
+	    });
+	    rows.push(rowData);
+	  });
+
+	  const customerName = document.getElementById('customer-name-input')?.value.trim() || 'Customer Name';
+	  const toggleCheckbox = document.getElementById("toggleIncludeAddons");
+
+	  const selectedTotal = toggleCheckbox?.checked
+	    ? Math.round(product?.priceWithFields ?? estimate?.totalWithAdditionalFields ?? estimate?.total ?? 0)
+	    : Math.round(product?.price ?? estimate?.total ?? 0);
+
+	  const selectedNogst = toggleCheckbox?.checked
+	    ? Math.round(estimate?.estimate_nogst_withfields ?? estimate?.nogsttotal ?? 0)
+	    : Math.round(estimate?.nogsttotal ?? 0);
+
+	  const selectedgst = toggleCheckbox?.checked
+	    ? Math.round(estimate?.estimate_gst_withfields ?? estimate?.gst ?? 0)
+	    : Math.round(estimate?.gst ?? 0);
+
+	  return {
+	    // These three ensure the PDF carries the same print‑critical settings
+	    pageSize: selectedSize,                 // e.g., 'A4' | 'A5' | 'Letter'
+	    pageOrientation: selectedOrientation,   // 'portrait' | 'landscape'
+	    pageMargins: pageMargins,               // [left, top, right, bottom] in points
+
+	    content: [
+	      {
+	        columns: [
+	          {
+	            text: [
+	              {
+	                text: `Estimate for ${product?.item ?? ''}\n`,
+	                bold: true,
+	                fontSize: tableFontSize + 4
+	              },
+	              {
+	                text: `Design No: ${(product?.orders ? product.orders.orderId : 'N/A')}/${product?.designNo ?? ''}`,
+	                bold: true,
+	                fontSize: tableFontSize + 2
+	              }
+	            ],
+	            alignment: 'center',
+	            margin: [0, 0, 0, 10]
+	          }
+	        ]
+	      },
+	      {
+	      columns: [
+	          {
+	            text: [
+	            	   {
+	         	    	  text: '\n', // just a newline
+	         	    	  margin: [0, 0, 0, 10] // adjust spacing as needed
+	         	    	},
+	      {
+	        text: `Prepared for: ${customerName}\nDate: ${new Date().toLocaleDateString()}`,
+	        margin: [0, 0, 0, 20],
+	        fontSize: tableFontSize + 2
+	      }
+	          ]
+	          }
+	          ]
+	      },
+	      {
+	    	  text: '\n', // just a newline
+	    	  margin: [0, 0, 0, 10] // adjust spacing as needed
+	    	},
+	      {
+	        table: {
+	          headerRows: 1,
+	          widths: ['30%', '20%', '20%', '30%'],
+	          body: [headers, ...rows],
+	        },
+	        layout: {
+	          hLineWidth: () => 0.5,
+	          vLineWidth: () => 0.5,
+	          hLineColor: () => '#cccccc',
+	          vLineColor: () => '#cccccc',
+	          paddingLeft: () => 8,
+	          paddingRight: () => 8,
+	          paddingTop: () => 5,
+	          paddingBottom: () => 5,
+	        },
+	      },
+/* 	      {
+	        text: 'Summary',
+	        bold: true,
+	        fontSize: tableFontSize + 2,
+	        alignment: 'right',
+	        margin: [0, 20, 0, 10]
+	      },
+	      {
+	        table: {
+	          widths: ['70%', '30%'],
+	          body: [
+	            [
+	              { text: 'Total Amount', bold: true, alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
+	              { text: `₹ ${selectedNogst.toFixed(2)}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
+	            ],
+	            [
+	              { text: 'GST (3%)', alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
+	              { text: `₹ ${selectedgst.toFixed(2)}`, alignment: 'right', fillColor: '#f9f9f9', fontSize: tableFontSize }
+	            ],
+	            [
+	              { text: 'Grand Total', bold: true, alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
+	              { text: `₹ ${selectedTotal.toFixed(2)}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
+	            ]
+	          ]
+	        },
+	        layout: 'noBorders'
+	      } */
+	    ],
+	    defaultStyle: { font: 'Roboto' }
+	  };
+	}
+
+/* -------- End shared builder -------- */
+
+const downloadBtn = document.getElementById("download-pdf");
+const modal = document.getElementById("downloadModal");
+const confirmBtn = document.getElementById("confirm-download");
+const cancelBtn = document.getElementById("cancel-download");
+
+downloadBtn.addEventListener("click", () => {
+  if (!product || !estimate) {
+    alert("Data not loaded yet, please wait.");
+    return;
+  }
+  modal.style.display = "flex";
+});
+
+cancelBtn.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+
+confirmBtn.addEventListener("click", async () => {
+  modal.style.display = "none";
+
+  const logEnquiry = document.getElementById("chk-enquiry").checked;
+  const markSale = document.getElementById("chk-sale").checked;
+  const customerName = document.getElementById("customer-name-input").value.trim();
+  
+  if (!product || !estimate) {
+	    alert("Data not loaded yet, please wait.");
+	    return;
+	  }
+  const snapshot = buildEstimateSnapshot();
+
+  // Backend calls
+  if (logEnquiry) {
+    await fetch("/logEnquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product.productId,
+        designNo: product.designNo,
+        customerName,
+        imageUrl: product.imageUrl,
+     // explicit price variants
+        price: snapshot.price,
+        priceWithFields: snapshot.priceWithFields,
+
+        // complete estimate snapshot
+        estimateSnapshot: snapshot
+      })
+    });
+  }
+
+  if (markSale) {
+    await fetch("/logSale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product.productId,
+        designNo: product.designNo,
+        orderId: product.orders ? product.orders.orderId : null,
+        customerName,
+        imageUrl: product.imageUrl,
+        // explicit price variants
+        price: snapshot.price,
+        priceWithFields: snapshot.priceWithFields,
+
+        // complete estimate snapshot
+        estimateSnapshot: snapshot
+      })
+    });
+  }
+
+  // Download PDF
+  const docDefinition = buildDocDefinition();
+  const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+  pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+});
+
+document.getElementById("print-pdf").addEventListener("click", function () {
     if (!product || !estimate) {
         alert("Data not loaded yet, please wait.");
         return;
     }
+    const docDefinition = buildDocDefinition();
 
-    const pageSize = document.getElementById("page-size-select").value;
-
- // Decide font size based on page size
- let tableFontSize = 12; // default
- if (pageSize === "A5" || pageSize === "A6") {
-     tableFontSize = 7; // Use smaller font for very small page
- } else if (pageSize === "A3" || pageSize === "A2" || pageSize === "A1" || pageSize === "A0" || pageSize === "Letter") {
-     tableFontSize = 14; // Optional: larger size for big page
- }
-
-    // Extract the title and table content
-    const title = document.querySelector("h1").textContent;
-    const table = document.querySelector(".estimate-table");
-
-    // Create table data for pdfMake
-    const headers = [];
-    const rows = [];
-
-    // Add headers (thead content)
-    const headerCells = table.querySelectorAll("thead th");
-    headerCells.forEach((cell) => headers.push({
-        text: cell.textContent,
-        bold: true,
-        alignment: 'center',
-        fillColor: '#f2f2f2',
-        fontSize: tableFontSize
-    }));
-
-    // Add rows (tbody content), filtering out rows where Qty, Rate or Amount is exactly 0
-    const tableRows = table.querySelectorAll("tbody tr");
-    tableRows.forEach((row, index) => {
-        if(row.id === 'header_row' || row.classList.contains('total-row')) {
-            // Always include header and total rows
-            const totalRowData = [];
-            row.querySelectorAll("td").forEach(cell => {
-                totalRowData.push({
-                    text: cell.textContent,
-                    alignment: 'center',
-                    fillColor: '#f2f2f2',
-                    fontSize: tableFontSize
-                });
-            });
-            rows.push(totalRowData);
-            return;
-        }
-
-        const qtyText = row.children[1]?.textContent.trim() || "";
-        const rateText = row.children[2]?.textContent.trim() || "";
-        const amtText = row.children[3]?.textContent.trim() || "";
-
-        const qty = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
-        const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
-        const amt = parseFloat(amtText.replace(/[^\d.-]/g, ''));
-
-        if (qty === 0 || rate === 0 || amt === 0) {
-            // Skip zero rows
-            return;
-        }
-
-        const rowData = [];
-        row.querySelectorAll("td").forEach((cell) => {
-            rowData.push({
-                text: cell.textContent,
-                alignment: 'center',
-                fontSize: tableFontSize, 
-                fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9' // Alternate row colors
-            });
-        });
-        rows.push(rowData);
-    });
-    
-
-    // Define PDF content
-    const docDefinition = {
-    		pageSize: pageSize,
-        content: [
-            // Header Section
-            {
-                columns: [
-                    {
-                        text: 'Your Company Name',
-                        bold: true,
-                        fontSize: tableFontSize + 4,
-                        alignment: 'left',
-                        margin: [0, 0, 0, 10]
-                    },
-                    {
-                        text: `Estimate of ${product.item}`,
-                        bold: true,
-                        fontSize: tableFontSize + 8,
-                        alignment: 'right',
-                        margin: [0, 0, 0, 10]
-                    }
-                ]
-            },
-            {
-                text: `Prepared for: Customer Name\nDate: ${new Date().toLocaleDateString()}`,
-                margin: [0, 0, 0, 20]
-            },
-            {
-                table: {
-                    headerRows: 1,
-                    widths: ['40%', '20%', '20%', '20%'], // Adjust as needed
-                    body: [headers, ...rows],
-                },
-                layout: {
-                    hLineWidth: function () { return 0.5; },
-                    vLineWidth: function () { return 0.5; },
-                    hLineColor: function () { return '#cccccc'; },
-                    vLineColor: function () { return '#cccccc'; },
-                    paddingLeft: function () { return 8; },
-                    paddingRight: function () { return 8; },
-                    paddingTop: function () { return 5; },
-                    paddingBottom: function () { return 5; },
-                },
-            },
-            // Summary Section
-            {
-                text: 'Summary',
-                bold: true,
-                fontSize: tableFontSize + 2,
-                margin: [0, 20, 0, 10]
-            },
-            {
-                table: {
-                    widths: ['70%', '30%'],
-                    body: [
-                        [
-                            { text: 'Total Amount', bold: true, alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
-                            { text: `₹ ${estimate.nogsttotal.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
-                        ],
-                        [
-                            { text: 'GST (3%)', alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
-                            { text: `₹ ${estimate.gst ?? 0}`, alignment: 'right', fillColor: '#f9f9f9', fontSize: tableFontSize }
-                        ],
-                        [
-                            { text: 'Grand Total', bold: true, alignment: 'right', margin: [0, 0, 10, 0],fontSize: tableFontSize },
-                            { text: `₹ ${estimate.total.toFixed(2) ?? 0}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
-                        ]
-                    ]
-                },
-                layout: 'noBorders'
-            }
-        ],
-        styles: {
-            header: { fontSize: 18, bold: true },
-            subheader: { fontSize: 14, bold: true },
-        },
-        defaultStyle: {
-            font: 'Roboto',
-        },
-    };
-
-    // Generate and download PDF
-    const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
-    pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+    // Pre-open a tab from the click event, then render+print into it
+    const win = window.open('', '_blank');
+    pdfMake.createPdf(docDefinition).print({}, win);
 });
+
+function formatWithPrecision(cellText) {
+    const match = cellText.match(/^(-?\d+(?:\.\d+)?)(\s*\w+)?$/);
+    if (!match) return cellText;
+
+    let [, numberPart, unit = ""] = match;
+    let [intPart, decPart = ""] = numberPart.split(".");
+
+    if (unit.trim().toLowerCase() === 'gm') {
+        if (decPart.length === 0) {
+            decPart = "000";
+        } else if (decPart.length < 3) {
+            decPart = decPart.padEnd(3, "0");
+        }
+    } else if (unit.trim().toLowerCase() === 'ct') {
+        if (decPart.length === 0) {
+            decPart = "00";
+        } else if (decPart.length < 2) {
+            decPart = decPart.padEnd(2, "0");
+        }
+    } else {
+        return cellText;
+    }
+
+    return `${intPart}.${decPart}${unit}`;
+}
+
+//=== Extra logic specifically to fit everything in single A6 page ===
+const originalBuildDocDefinitionA6 = buildDocDefinition;
+buildDocDefinition = function () {
+    const docDef = originalBuildDocDefinitionA6();
+
+    const selectedSize = document.getElementById("page-size-select")?.value || "A4";
+    if (selectedSize === "A6") {
+        // A6 dimensions in points: 105mm x 148mm
+        const pageHeightPt = 148 * 2.83464567;
+        const pageWidthPt = 105 * 2.83464567;
+
+        // Reduce margins for A6
+        docDef.pageMargins = [10, 10, 10, 10]; // [left, top, right, bottom]
+
+        // Count number of table rows + 2 lines for title/customer info
+        let rowCount = 2;
+        docDef.content.forEach(section => {
+            if (section.table && section.table.body) rowCount += section.table.body.length;
+        });
+
+        // Compute available height after margins
+        const availableHeight = pageHeightPt - docDef.pageMargins[1] - docDef.pageMargins[3];
+
+        // Compute max font size that fits
+        const maxFont = Math.floor(availableHeight / (rowCount * 1.2)); // tighter line spacing
+        let selectedFontSize = Math.min(maxFont, 10); // cap at 10pt for readability
+
+        // Adjust table rows
+        if (docDef.content) {
+            docDef.content.forEach(section => {
+                if (section.table && section.table.body) {
+                    section.table.body.forEach(row => {
+                        row.forEach(cell => {
+                            if (cell && typeof cell === "object") {
+                                cell.fontSize = selectedFontSize;
+                            }
+                        });
+                    });
+                    // reduce padding and minRowHeight
+                    section.layout = section.layout || {};
+                    section.layout.paddingTop = () => 2;
+                    section.layout.paddingBottom = () => 2;
+                    section.layout.minRowHeight = selectedFontSize * 1.2;
+                }
+
+                if (section.columns) {
+                    section.columns.forEach(col => {
+                        if (col.text && Array.isArray(col.text)) {
+                            col.text.forEach(txt => {
+                                if (typeof txt === "object") {
+                                    if (txt.fontSize) txt.fontSize = selectedFontSize + 2; // slightly bigger for title
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    return docDef;
+};
+
+function buildEstimateSnapshot() {
+	  // whether addons are included in the current screen
+	  const includeAddons = document.getElementById("toggleIncludeAddons")?.checked === true;
+
+	  // table rows -> capture only visible and non-zero lines
+	  const lines = [];
+	  document.querySelectorAll(".estimate-table tbody tr").forEach((row) => {
+	    if (row.id === "header_row") return;
+	    const tds = row.querySelectorAll("td");
+	    if (tds.length !== 4) return;
+
+	    const desc = tds[0].textContent.trim();
+	    const qty  = parseFloat((tds[1].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
+	    const rate = parseFloat((tds[2].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
+	    const amt  = parseFloat((tds[3].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
+
+	    if (qty === 0 || rate === 0 || amt === 0) return;
+	    lines.push({ description: desc, qty, rate, amount: amt });
+	  });
+
+	  // prices as displayed
+	  const price = Number(product?.price ?? estimate?.total ?? 0);
+	  const priceWithFields = Number(product?.priceWithFields ?? estimate?.totalWithAdditionalFields ?? price);
+	  const gst = includeAddons
+	    ? Number(estimate?.estimate_gst_withfields ?? estimate?.gst ?? 0)
+	    : Number(estimate?.gst ?? 0);
+	  const total = includeAddons ? priceWithFields : price;
+
+	  const payload = {
+	    productId: product?.productId ?? null,
+	    designNo: product?.designNo ?? null,
+	    orderId: product?.orders?.orderId ?? null,
+	    item: product?.item ?? null,
+	    categoryId: product?.categoryId ?? null,
+	    subCategoryId: product?.subCategoryId ?? null,
+
+	    // price variants explicitly
+	    price,
+	    priceWithFields,
+
+	    // breakdown currently shown
+	    includeAddons,
+	    totals: {
+	      noGst: Number(estimate?.nogsttotal ?? 0),
+	      gst,
+	      grandTotal: Number(Math.round(total)),
+	    },
+
+	    // raw estimate parts if needed for server recomputation/audit
+	    estimateParts: {
+	      gold: Number(estimate?.gold ?? 0),
+	      labour: Number(estimate?.labour ?? 0),
+	      stones: Number(estimate?.stones ?? 0),
+	      beads: Number(estimate?.beads ?? 0),
+	      pearls: Number(estimate?.pearls ?? 0),
+	      ssPearls: Number(estimate?.ssPearls ?? 0),
+	      diamonds: Number(estimate?.diamonds ?? 0),
+	      otherStones: Number(estimate?.otherStones ?? 0),
+	      vilandi: Number(estimate?.vilandi ?? 0),
+	      mozo: Number(estimate?.mozo ?? 0),
+	      fitting: Number(estimate?.fitting ?? 0),
+	      realStone: Number(product?.realStone ?? 0)
+	    },
+
+	    // rendered lines (normalized)
+	    lines,
+
+	    // image and customer context
+	    imageUrl: product?.imageUrl ?? null,
+	    customerName: document.getElementById("customer-name-input")?.value?.trim() || null,
+
+	    // rates context you already loaded (optional but useful)
+	    ratesContext: Array.isArray(rate) ? rate : null,
+
+	    // timestamp on client (server should also stamp)
+	    clientTimestamp: new Date().toISOString()
+	  };
+
+	  return payload;
+	}
+
+
 </script>
-
-
 </body>
 </html>

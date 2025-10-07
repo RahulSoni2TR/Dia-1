@@ -7,14 +7,21 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,6 +30,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,6 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,12 +53,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.example.webapp.entity.VerificationConfig;
+// import com.amazonaws.auth.AWSStaticCredentialsProvider;
+// import com.amazonaws.auth.BasicAWSCredentials;
+// import com.amazonaws.services.s3.AmazonS3;
+// import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+// import com.amazonaws.services.s3.model.CannedAccessControlList;
+// import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.example.webapp.exceptions.AddProductException;
 import com.example.webapp.exceptions.CategoryNotFoundException;
 import com.example.webapp.exceptions.FileConversionException;
@@ -68,13 +78,28 @@ import com.example.webapp.exceptions.RateNotFoundException;
 import com.example.webapp.exceptions.SessionHandlingException;
 import com.example.webapp.exceptions.UserDeletionException;
 import com.example.webapp.exceptions.UserNotFoundException;
+import com.example.webapp.models.Category;
 import com.example.webapp.models.Estimate;
+import com.example.webapp.models.FrequencyRequest;
+import com.example.webapp.models.LogRequest;
 import com.example.webapp.models.Orders;
 import com.example.webapp.models.Product;
 import com.example.webapp.models.ProductPage;
+import com.example.webapp.service.LogService;
 import com.example.webapp.service.ProductService;
 import com.example.webapp.service.UserService;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.servlet.http.HttpSession;
 
 import com.example.webapp.models.Rate;
@@ -82,6 +107,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import com.example.webapp.models.RateWrapper;
 import com.example.webapp.models.UserRoleUpdate;
 import com.example.webapp.models.UserTemp;
+import com.example.webapp.models.VerificationUpdate;
+import com.example.webapp.repository.VerificationConfigRepository;
 
 @Controller
 public class ProductController {
@@ -91,14 +118,28 @@ public class ProductController {
 
 	@Autowired
 	private ProductService productService;
-
+	
 	@Autowired
-	private AmazonS3 s3Client;
+	private LogService logService;
+	
+	@Value("${app.server.host}")
+    private String serverHost;
+
+    @Value("${app.server.port}")
+    private String serverPort;
+    
+
+    @Autowired
+    private VerificationConfigRepository verificationConfigRepository;
+
+
+//	@Autowired
+//	private AmazonS3 s3Client;
 
 	private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
 
-	private final String bucketName = "elasticbeanstalk-ap-south-1-012676044441"; // Replace with your bucket name
-//	private final String region = "ap-south-1"; // Replace with your AWS region (e.g., "us-east-1")
+//	private final String bucketName = "elasticbeanstalk-ap-south-1-012676044441"; // Replace with your bucket name
+////	private final String region = "ap-south-1"; // Replace with your AWS region (e.g., "us-east-1")
 
 	// Only logged-in users can add products
 	@PreAuthorize("hasRole('ADMIN')")
@@ -140,6 +181,13 @@ public class ProductController {
 	}
 
 	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/verify-product")
+	public String verifyPoductPage() {
+		return "verify_products"; // Return the verify_products.html view
+	}
+
+	
+	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/get-estimate")
 	public String getEstimatePage() {
 		return "get_estimate"; // Return the view_product.html view
@@ -162,6 +210,79 @@ public class ProductController {
 	public String permission() {
 		return "permission"; // Renders the permission.html page
 	}
+	
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/enquiry-log")
+	public String enquiryLog() {
+		return "enquiry_log"; // Renders the enquiry_log.html page
+	}
+	
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/sales-log")
+	public String salesLog() {
+		return "sales_log"; // Renders the sales_log.html page
+	}
+	
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/product-snapshot")
+	public String productSnapshot() {
+		return "product_snapshot"; // Renders the product_snapshot.html page
+	}
+	
+	@PreAuthorize("isAuthenticated()")
+	@GetMapping("/estimate-snapshot")
+	public String estimateSnapshot() {
+		return "estimate_snapshot"; // Renders the estimate_snapshot.html page
+	}
+	
+	@PostMapping("/logEnquiry")
+    public ResponseEntity<String> logEnquiry(@RequestBody LogRequest request) {
+        logService.logEnquiry(request);
+        return ResponseEntity.ok("Enquiry logged successfully");
+    }
+
+    @PostMapping("/logSale")
+    public ResponseEntity<String> logSale(@RequestBody LogRequest request) {
+        logService.logSale(request);
+        return ResponseEntity.ok("Sale logged successfully and product freed");
+    }
+
+	@GetMapping("/categories")
+	@ResponseBody
+	public List<Map<String, Object>> getAllCategories() {
+	    return productService.getAllCategories().stream()
+	        .map(category -> {
+	            Map<String, Object> map = new HashMap<>();
+	            map.put("id", category.getCategoryId());
+	            map.put("name", category.getCategoryName());
+
+	            if (category.getParentCategory() == null) {
+	                map.put("isParent", true);
+	                map.put("parentId", null);
+	                map.put("parentName", null);
+	            } else {
+	                map.put("isParent", false);
+	                map.put("parentId", category.getParentCategory().getCategoryId());
+	                map.put("parentName", category.getParentCategory().getCategoryName());
+	            }
+
+	            return map;
+	        })
+	        .toList();
+	}
+
+	@GetMapping("/{categoryId}/name")
+	public ResponseEntity<String> getCategoryNameById(@PathVariable("categoryId") Long categoryId) {
+	    String categoryName = productService.getCategoryNameById(categoryId);
+	    if (categoryName != null) {
+	    	System.out.println("came here");
+	        return ResponseEntity.ok(categoryName);
+	    } else {
+	    	System.out.println("came here else");
+	        return ResponseEntity.notFound().build();
+	    }
+	}
+
 
 	@PostMapping("/add")
 	public ResponseEntity<Map<String, Object>> addProduct(@RequestParam("productName") String productName,
@@ -239,7 +360,16 @@ public class ProductController {
 			@RequestParam(value = "chainLabourAll", required = false) BigDecimal chainLabourAll,
 			@RequestParam(value = "diamondLabourAll", required = false) BigDecimal diamondLabourAll,
 			@RequestParam(value = "vilandiLabourAll", required = false) BigDecimal vilandiLabourAll,
-			@RequestParam(value = "jadtarLabourAll", required = false) BigDecimal jadtarLabourAll) {
+			@RequestParam(value = "jadtarLabourAll", required = false) BigDecimal jadtarLabourAll,
+			@RequestParam(value = "categoryId", required = false) Long categoryIds,
+			@RequestParam(value = "subCategoryId", required = false) Long subCategoryId,
+			@RequestParam(value = "diamondGross", required = false) BigDecimal diamondGross,
+			@RequestParam(value = "earringGross", required = false) BigDecimal earringGross,
+			@RequestParam(value = "chainGross", required = false) BigDecimal chainGross,
+			@RequestParam(value = "ssPearlCts", required = false) BigDecimal ssPearlCts,
+			@RequestParam(value = "osSSPearlRate", required = false) BigDecimal osSSPearlRate,
+			 @RequestParam(value = "vilandiGross", required = false) BigDecimal vilandiGross,
+			 @RequestParam(value = "customFields", required = false) String customFieldsJson) {
 
 		try {
 			Product product = new Product();
@@ -251,14 +381,25 @@ public class ProductController {
 			product.setPrice(price);
 			product.setStockQuantity(stockQuantity);
 			product.setCategoryId(categoryId);
+			product.setParentCategoryId(categoryIds);
+			product.setSubCategoryId(subCategoryId);
 			product.setImageUrl(imageUrl);// Set the image URL
 			product.setRemarks(remarks);
 			product.setKarat(karat);
-
+			if (customFieldsJson != null && !customFieldsJson.isEmpty()) {
+	            product.setCustomFields(customFieldsJson);
+	        }
+			/*
+			 * System.out.println("design no dr "+designNoDR);
+			 * System.out.println("design no er "+designNoEarring);
+			 * System.out.println("sub category "+subCategoryId);
+			 */
 //			product.setOrderRef(existingOrderOpt.get());
 			// Set category-specific fields based on categoryId
-			if (categoryId == 1) { // Diamond Rings
+			if (categoryId == 1 && (subCategoryId != 19 && subCategoryId !=20)) { 
+				System.out.println("inside diamond ring");// Diamond Rings
 				product.setNet(net);
+				product.setGross(diamondGross);
 				product.setPcs(pcs);
 				product.setDiamondsCt(diaWeight);
 				product.setDiaRt(diaRate);
@@ -278,6 +419,8 @@ public class ProductController {
 				product.setBdRate(vilandiBeadsRate);
 				product.setPearlsGm(pearlsGm);
 				product.setPrlRate(vilandiPearlRate);
+				product.setSsPearlCt(ssPearlCts);
+				product.setSsRate(osSSPearlRate);
 				product.setOtherStonesCt(otherStonesCt);
 				product.setDesignNo(designNoOS);
 				product.setLabour(osLabour);
@@ -287,11 +430,15 @@ public class ProductController {
 			} else if (categoryId == 3) { // Chains
 				product.setDesignNo(designNo);
 				product.setNet(chainNet);
+				product.setGross(chainGross);
 				product.setLabour(chainLabour);
 				product.setLabourAll(chainLabourAll);
-			} else if (categoryId == 4) { // Diamond Earrings
+			} else if (subCategoryId == 19 || subCategoryId ==20) { // Diamond Earrings
+			//	System.out.println("inside diamond Earrings");// Diamond Rings
+
 				product.setDesignNo(designNoEarring);
 				product.setNet(earringNet);
+				product.setGross(earringGross);
 				product.setPcs(earringPcs);
 				product.setDiamondsCt(diamondWeightEarring);
 				product.setDiaRt(diamondsWtRate);
@@ -299,8 +446,9 @@ public class ProductController {
 				product.setLabourAll(diamondLabourAll);
 				product.setOtherStonesCt(earSt);
 				product.setOtherStonesRt(earStRate);
-			} else if (categoryId == 5) { // Vilandi
+			} else if (categoryId == 4) { // Vilandi
 				product.setDesignNo(designNoVilandi);
+				product.setGross(vilandiGross);
 				product.setNet(net);
 				product.setVilandiCt(vilandi);
 				product.setvRate(vilandiRate);
@@ -316,7 +464,7 @@ public class ProductController {
 				product.setFitting(vilandiFitting);
 				product.setLabour(vilandiLabour);
 				product.setLabourAll(vilandiLabourAll);
-			} else if (categoryId == 6) { // Jadtar Register
+			} else if (categoryId == 5) { // Jadtar Register
 				System.out.println("Design is " + designNoJadtar);
 				product.setDesignNo(designNoJadtar);
 				product.setGross(jadtarGross);
@@ -339,7 +487,7 @@ public class ProductController {
 
 			Orders order;
 			Optional<Orders> existingOrderOpt = productService.findByOrderId(orderId);
-			System.out.println("order id is "+orderId);
+			//System.out.println("order id is "+orderId);
 			if (existingOrderOpt.isPresent()) {
 			    // User selected from existing list
 			    order = existingOrderOpt.get();
@@ -353,27 +501,108 @@ public class ProductController {
 			 else {
 				    // User gave a custom ID
 				    order = new Orders();
-				    System.out.println("new order id is "+orderId);
+			//	    System.out.println("new order id is "+orderId);
 				    order.setOrderId(orderId);
 				    order.setCategoryId(product.getCategoryId());
 				    order.setAssigned(true);
 				    order.setAssignedProduct(product);
 				    product.setOrders(order);
 				}
+			
+		//	String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
+			String qrUrl = "https://say-comfort-statute-toilet.trycloudflare.com" + "/loadProductByDesignNo/" + product.getDesignNo();
+
+			// 2. Define save location
+			String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
+			Files.createDirectories(Paths.get(qrDir));
+			String qrFileName = "QR_" + product.getDesignNo() + ".png";
+			String qrFilePath = qrDir + qrFileName;
+
+			// 3. Generate QR
+			generateQRCodeImage(qrUrl, qrFilePath);
+			
+			String qr_path="/uploads/qr_codes/" + qrFileName;
+			// 4. Save QR path in product
+			product.setQrCodePath(qr_path);
 			// Add the product using the service
 			productService.addProduct(product);
-
-			
 			//	productService.saveOrders(order);
 			Map<String, Object> response = new HashMap<>();
 			response.put("message", "Product added successfully!");
 			response.put("success", true);
 			return ResponseEntity.ok(response);
-		} catch (Exception e) {
+		}catch (IllegalArgumentException e) {
+		    // Let known service exceptions bubble up unchanged
+		    throw e;
+		} 
+		
+		catch (Exception e) {
 			logger.error("Error occurred while adding product: {}", productName, e);
 			throw new AddProductException("Error occurred while adding product: " + productName, e);
 		}
 	}
+	
+	@GetMapping("/loadProductByDesignNo/{designNo:[a-zA-Z0-9_-]+}")
+	public String getProductByDesignNo(@PathVariable String designNo, Model model) {
+	    Product product = productService.findProductById(designNo)
+	            .orElseThrow(() -> new ProductNotFoundException("Product not found with design no: " + designNo));
+	    System.out.println(product);
+		RateWrapper rateWrapper = new RateWrapper();
+		List<Rate> rates = productService.getAllRates();
+		rateWrapper.resetRates();
+		Iterator<Rate> it = rates.iterator();
+		while (it.hasNext()) {
+		    Rate rate = it.next();
+		    String c = rate.getCommodity();
+		    if (c == null) continue;
+
+		    switch (c.toLowerCase(Locale.ROOT)) {
+		        case "diamond": rateWrapper.diamondPrice = rate.getPrice(); break;
+		        case "gst":     rateWrapper.gst = rate.getPrice(); break;
+		        case "silver":  rateWrapper.silver = rate.getPrice(); break;
+		        default: /* ignore */ 
+		    }
+		}
+        int verificationFreqcy = getVerificationFrequency(); // get from DB
+		Estimate e = new Estimate();
+		List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
+		product.setPrice(prices.get(0));
+		product.setPriceWithFields(prices.get(1));
+		 boolean verified = isProductVerified(product, verificationFreqcy);
+         if (verified) {
+         	  product.setVerificationStatus(1);
+         	} else {
+         	  // preserve -1; set 0 only if not -1
+         	  if (product.getVerificationStatus()!=-1) {
+         	    product.setVerificationStatus(0);
+         	  }
+         	}
+	    try {
+	    	ObjectMapper mapper = new ObjectMapper();
+	        mapper.registerModule(new JavaTimeModule());
+	        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+			model.addAttribute("productJson", mapper.writeValueAsString(product));
+		} catch (JsonProcessingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	    return "load_product"; 
+	}
+
+	
+	// GET current frequency
+    @GetMapping("/frequency")
+    public ResponseEntity<Integer> getFrequency() {
+        int days = productService.getVerificationDays();
+        return ResponseEntity.ok(days);
+    }
+
+    // POST update frequency
+    @PostMapping("/frequency")
+    public ResponseEntity<String> setFrequency(@RequestBody FrequencyRequest request) {
+    	productService.setVerificationDays(request.getFrequency());
+        return ResponseEntity.ok("Verification frequency updated successfully");
+    }
 	
 	@GetMapping("/available-order-ids")
 	public ResponseEntity<List<String>> getAvailableOrderIds(@RequestParam(value = "categoryId", required = false) Long categoryId) {
@@ -386,8 +615,11 @@ public class ProductController {
 
 
 	/*
-	 * local image store private String saveImageFile(MultipartFile imageFile) { try
-	 * { // Specify the directory to save the images String uploadDir =
+	 * local image store 
+	 */
+	/*
+	 * private String saveImageFile(MultipartFile imageFile) { try { // Specify the
+	 * directory to save the images String uploadDir =
 	 * "C:\\Users\\Admin\\Downloads\\uploads\\"; // Update to your desired upload
 	 * directory Files.createDirectories(Paths.get(uploadDir));
 	 * 
@@ -401,30 +633,80 @@ public class ProductController {
 	 * on your context return imageUrl; } catch (IOException e) {
 	 * e.printStackTrace(); return null; } }
 	 */
+	
+	@PostMapping("/upload-image")
+	public String saveImageFile(@RequestParam("imageFile") MultipartFile imageFile) {
+	    try {
+	        // Save directory
+	        String uploadDir = "C:/Users/Admin/Downloads/uploads/";
+	        Files.createDirectories(Paths.get(uploadDir));
 
-	public String saveImageFile(MultipartFile file) {
-		try {
-			File fileObj = convertMultiPartFileToFile(file);
-			String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-			s3Client.putObject(new PutObjectRequest(bucketName, fileName, fileObj)
-					.withCannedAcl(CannedAccessControlList.PublicRead));
-			fileObj.delete();
-			return s3Client.getUrl(bucketName, fileName).toString();
-		} catch (Exception e) {
-			throw new FileUploadException("Error uploading file: " + file.getOriginalFilename(), e);
-		}
+	        // Get file extension
+	        String originalFilename = imageFile.getOriginalFilename();
+	        String extension = "";
+	        if (originalFilename != null && originalFilename.contains(".")) {
+	            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+	        }
+
+	        // Generate 8-digit random number
+	        String newFileName = "IMG_" + String.format("%08d", (int)(Math.random() * 100_000_000)) + extension;
+
+	        // Save file
+	        Path filePath = Paths.get(uploadDir, newFileName);
+	        imageFile.transferTo(filePath.toFile());
+
+	        // Return path for frontend
+	        return "/uploads/" + newFileName;
+
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	        return "Upload failed!";
+	    }
 	}
 
-	private File convertMultiPartFileToFile(MultipartFile file) {
-		File convertedFile = new File(file.getOriginalFilename());
-		try (FileOutputStream fos = new FileOutputStream(convertedFile)) {
-			fos.write(file.getBytes());
-		} catch (IOException e) {
-			throw new FileConversionException("Error converting multipartFile to file: " + file.getOriginalFilename(),
-					e);
-		}
-		return convertedFile;
+	 
+	public static String generateQRCodeImage(String text, String filePath) 
+	        throws WriterException, IOException {
+
+	    QRCodeWriter qrCodeWriter = new QRCodeWriter();
+
+	    Map<EncodeHintType, Object> hints = new HashMap<>();
+	    hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.Q);
+	    hints.put(EncodeHintType.MARGIN, 1);
+
+	    // Generate higher resolution (300x300 px)
+	    BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, 300, 300, hints);
+
+	    Path path = FileSystems.getDefault().getPath(filePath);
+	    MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
+
+	    return filePath;
 	}
+
+
+	// public String saveImageFile(MultipartFile file) {
+	// 	try {
+	// 		File fileObj = convertMultiPartFileToFile(file);
+	// 		String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+	// 		s3Client.putObject(new PutObjectRequest(bucketName, fileName, fileObj)
+	// 				.withCannedAcl(CannedAccessControlList.PublicRead));
+	// 		fileObj.delete();
+	// 		return s3Client.getUrl(bucketName, fileName).toString();
+	// 	} catch (Exception e) {
+	// 		throw new FileUploadException("Error uploading file: " + file.getOriginalFilename(), e);
+	// 	}
+	// }
+
+	// private File convertMultiPartFileToFile(MultipartFile file) {
+	// 	File convertedFile = new File(file.getOriginalFilename());
+	// 	try (FileOutputStream fos = new FileOutputStream(convertedFile)) {
+	// 		fos.write(file.getBytes());
+	// 	} catch (IOException e) {
+	// 		throw new FileConversionException("Error converting multipartFile to file: " + file.getOriginalFilename(),
+	// 				e);
+	// 	}
+	// 	return convertedFile;
+	// }
 
 	@PostMapping("/remove/{productId}")
 	public ResponseEntity<Map<String, Object>> removeProduct(@PathVariable String productId) {
@@ -459,98 +741,205 @@ public class ProductController {
 	public ResponseEntity<Product> getProduct(@PathVariable Long id) {
 		Product product = productService.findProductFromId(id)
 				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+		RateWrapper rateWrapper = new RateWrapper();
+		List<Rate> rates = productService.getAllRates();
+		rateWrapper.resetRates();
+		Iterator<Rate> it = rates.iterator();
+		while (it.hasNext()) {
+		    Rate rate = it.next();
+		    String c = rate.getCommodity();
+		    if (c == null) continue;
+
+		    switch (c.toLowerCase(Locale.ROOT)) {
+		        case "diamond": rateWrapper.diamondPrice = rate.getPrice(); break;
+		        case "gst":     rateWrapper.gst = rate.getPrice(); break;
+		        case "silver":  rateWrapper.silver = rate.getPrice(); break;
+		        default: /* ignore */ 
+		    }
+		}
+
+		Estimate e = new Estimate();
+		List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
+		System.out.println("prices "+prices);
+		product.setPrice(prices.get(0));
+		product.setPriceWithFields(prices.get(1));
+		System.out.println(product);
 		return ResponseEntity.ok(product);
 	}
 
-	@GetMapping("/product/load")
-	public ResponseEntity<ProductPage> loadProducts(@RequestParam int page, @RequestParam int size,
-			@RequestParam(required = false) Integer category,
-			@RequestParam(required = false, defaultValue = "") String searchTerm, String sortBy, HttpSession session) {
-		if (page < 0 || size <= 0) {
-			throw new InvalidPaginationException("Page index must be 0 or greater, and size must be greater than 0.");
-		}
+	 @GetMapping("/product/load")
+	    public ResponseEntity<ProductPage> loadProducts(
+	            @RequestParam int page,
+	            @RequestParam int size,
+	            @RequestParam(required = false) String category,
+	            @RequestParam(required = false, defaultValue = "") String searchTerm,
+	            @RequestParam(required = false, defaultValue = "name") String searchBy, // <-- new
+	            @RequestParam(required = false) String sortBy,
+	            HttpSession session) {
 
-		Page<Product> products;
-		RateWrapper rateWrapper = new RateWrapper();
+	        if (page < 0 || size <= 0) {
+	            throw new InvalidPaginationException("Page index must be 0 or greater, and size must be greater than 0.");
+	        }
 
-		try {
-			// Fetch previous search from session
-			String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
-			Integer prevCategory = (Integer) session.getAttribute("prevCategory");
+	        // Parse category ids (comma-separated) -> List<Integer>
+	        List<Integer> categories = null;
+	        if (category != null && !category.isBlank()) {
+	            categories = Arrays.stream(category.split(","))
+	                    .map(String::trim)
+	                    .map(Integer::valueOf)
+	                    .toList();
+	        }
 
-			// If new search is different from the previous one, reset page to 0
-			if (!searchTerm.equals(prevSearchTerm) || !Objects.equals(category, prevCategory)) {
-				page = 0; // Reset pagination
-			}
-			// Store current search values in session
-			session.setAttribute("prevSearchTerm", searchTerm);
-			session.setAttribute("prevCategory", category);
-		} catch (Exception e) {
-			throw new SessionHandlingException("Error accessing session attributes.");
-		}
-		Sort sort = Sort.unsorted(); // No sorting by default
+	        // Reset pagination when filters change (searchTerm/category/searchBy)
+	        try {
+	            String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
+	            @SuppressWarnings("unchecked")
+	            List<Integer> prevCategory = (List<Integer>) session.getAttribute("prevCategory");
+	            String prevSearchBy = (String) session.getAttribute("prevSearchBy");
 
-		if ("old".equals(sortBy)) {
-			sort = Sort.by(Sort.Order.asc("createDateTime")); // Ascending for Old Products
-		} else if ("recent".equals(sortBy)) {
-			sort = Sort.by(Sort.Order.desc("createDateTime")); // Descending for Most Recent
-		} else if ("nameAsc".equals(sortBy)) {
-		    sort = Sort.by(Sort.Order.asc("item")); // A to Z
-		} else if ("nameDesc".equals(sortBy)) {
-		    sort = Sort.by(Sort.Order.desc("item")); // Z to A
-		}
-		else if ("none".equals(sortBy) || sortBy == null || sortBy.isEmpty()) {
-		    sort = Sort.unsorted();
-		}
-		
-		if (category == null) {
-			products = productService.findWithoutCategory(category, PageRequest.of(page, size, sort), searchTerm);
-		} else {
-			products = productService.findByCategory(category, PageRequest.of(page, size, sort), searchTerm);
-		}
-		if (products.isEmpty()) {
-			throw new ProductNotFoundException("No products found for the given filters.");
-		}
-		List<Rate> rates = productService.getAllRates();
+	            boolean filtersChanged = false;
+	            if (!Objects.equals(searchTerm, session.getAttribute("prevSearchTerm"))) {
+	                filtersChanged = true;
+	            }
+	            if (!Objects.equals(categories, session.getAttribute("prevCategory"))) {
+	                filtersChanged = true;
+	            }
+	            if (!Objects.equals(searchBy, session.getAttribute("prevSearchBy"))) {
+	                filtersChanged = true;
+	            }
 
-		// Fetch rates for calculations
+	            if (filtersChanged && page == 0) {
+	                // Only reset page if it's first page (optional)
+	                page = 0;
+	            }
 
-		for (Rate rate : rates) {
-			switch (rate.getCommodity().toLowerCase()) {
-			case "diamond":
-				rateWrapper.diamondPrice = rate.getPrice();
-				break;
-			case "gst":
-				rateWrapper.gst = rate.getPrice();
-				break;
-			case "silver":
-				rateWrapper.silver = rate.getPrice();
-				break;
-			}
-		}
-		Estimate e = new Estimate();
-		products.forEach(product -> {
-			BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
-			product.setPrice(calculatedPrice);
-			System.out.println("item name " + product.getItem());
-		});
+	            session.setAttribute("prevSearchTerm", searchTerm);
+	            session.setAttribute("prevCategory", categories);
+	            session.setAttribute("prevSearchBy", searchBy);
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            throw new SessionHandlingException("Error accessing session attributes.");
+	        }
 
-		return ResponseEntity.ok(new ProductPage(products.getContent(), products.getTotalElements()));
-	}
+	        // Build Sort from sortBy flag
+	        Sort sort = Sort.unsorted();
+	        if ("old".equalsIgnoreCase(sortBy)) {
+	            sort = Sort.by(Sort.Order.asc("createDateTime"));
+	        } else if ("recent".equalsIgnoreCase(sortBy)) {
+	            sort = Sort.by(Sort.Order.desc("createDateTime"));
+	        } else if ("nameAsc".equalsIgnoreCase(sortBy)) {
+	            sort = Sort.by(Sort.Order.asc("item"));
+	        } else if ("nameDesc".equalsIgnoreCase(sortBy)) {
+	            sort = Sort.by(Sort.Order.desc("item"));
+	        } else if ("none".equalsIgnoreCase(sortBy) || sortBy == null || sortBy.isEmpty()) {
+	            sort = Sort.unsorted();
+	        }
+	        PageRequest pageable = PageRequest.of(page, size, sort);
 
-	private BigDecimal calculateProductPrice(Product product, RateWrapper rateWrapper, Estimate e, List<Rate> r) {
+	        System.out.println("cateogries "+categories);
+	        // Execute search based on presence of category filter and searchBy
+	        Page<Product> products;
+	        System.out.println("Pageable: " + pageable);
+
+	        if (categories == null) {
+	            products = productService.searchWithoutCategory(searchTerm, searchBy, pageable);
+	        } else {
+	            products = productService.searchByCategory(categories, searchTerm, searchBy, pageable);
+	        }
+
+	        if (products.isEmpty()) {
+	            throw new ProductNotFoundException("No products found for the given filters.");
+	        }
+
+	        // Rates/price calculation (unchanged)
+	        List<Rate> rates = productService.getAllRates();
+	        RateWrapper rateWrapper = new RateWrapper();
+	        for (Rate rate : rates) {
+	            switch (rate.getCommodity().toLowerCase()) {
+	                case "diamond" -> rateWrapper.diamondPrice = rate.getPrice();
+	                case "gst" -> rateWrapper.gst = rate.getPrice();
+	                case "silver" -> rateWrapper.silver = rate.getPrice();
+	            }
+	        }
+
+	        Estimate e = new Estimate();
+	        
+	        int verificationFreqcy = getVerificationFrequency(); // get from DB
+	        LocalDateTime now = LocalDateTime.now();
+
+	        products.forEach(product -> {
+	            List<BigDecimal> prices = calculateProductPrice(product, rateWrapper, e, rates);
+	            product.setPrice(prices.get(0));
+	            product.setPriceWithFields(prices.get(1));
+	            // Verification logic
+	            boolean verified = isProductVerified(product, verificationFreqcy);
+	            if (verified) {
+	            	  product.setVerificationStatus(1);
+	            	} else {
+	            	  // preserve -1; set 0 only if not -1
+	            	  if (product.getVerificationStatus()!=-1) {
+	            	    product.setVerificationStatus(0);
+	            	  }
+	            	}
+	        });
+
+	        return ResponseEntity.ok(new ProductPage(products.getContent(), products.getTotalElements()));
+	    }
+
+	 public static boolean isProductVerified(Product product, int verificationFrequencyDays) {
+	        if (product == null) return false;
+	        LocalDateTime verificationDate = product.getVerificationDate();
+	        if (verificationDate == null) return false;
+	        if (product.getVerificationStatus() != 1) return false;
+
+	        LocalDateTime now = LocalDateTime.now();
+	        long daysSinceVerification = ChronoUnit.DAYS.between(verificationDate, now);
+	        return daysSinceVerification <= verificationFrequencyDays;
+	    }
+	 
+	 public int getVerificationFrequency() {
+	        return verificationConfigRepository.findAll()
+	                .stream()
+	                .findFirst()
+	                .map(VerificationConfig::getVerificationDays)
+	                .orElse(1); // default 1 day
+	    }
+
+	 
+	private List<BigDecimal> calculateProductPrice(Product product, RateWrapper rateWrapper, Estimate e, List<Rate> r) {
 		try {
 			BigDecimal labour = null;
 			BigDecimal gold1 = null;
 			BigDecimal estimate_gst = null;
 			BigDecimal estimate_nogst = null;
+			BigDecimal estimate_nogst_withfields = null;
+			BigDecimal estimate_gst_withfields = null;
 			BigDecimal total = null;
+			BigDecimal total_withfields = null;
+			BigDecimal additionalFieldsTotal = BigDecimal.ZERO;
+	        String customFieldsJson = product.getCustomFields();
+	        if (customFieldsJson != null && !customFieldsJson.isEmpty() && !customFieldsJson.equals("{}")) {
+	            try {
+	                // Parse JSON string
+	                ObjectMapper mapper = new ObjectMapper();
+	                Map<String, Map<String, String>> extras = mapper.readValue(customFieldsJson, new TypeReference<Map<String, Map<String, String>>>(){});
 
-			if (nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(24)) == 0
-					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(22)) == 0
-					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(18)) == 0
-					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(14)) == 0
-					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(10)) == 0) {
+	                for (Map<String, String> value : extras.values()) {
+	                    BigDecimal qty = new BigDecimal(value.getOrDefault("qty", "0"));
+	                    BigDecimal rate = new BigDecimal(value.getOrDefault("rate", "0"));
+	                    additionalFieldsTotal = additionalFieldsTotal.add(qty.multiply(rate));
+	                }
+	            } catch (Exception ex) {
+	                // Log parsing error, treat additionalFieldsTotal as zero
+	                System.err.println("Error parsing additional fields in estimate: " + ex.getMessage());
+	            }
+	        }
+
+			if (nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(24.0000)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(22.0000)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(18.0000)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(14.0000)) == 0
+					|| nullSafe(product.getKarat()).compareTo(BigDecimal.valueOf(10.0000)) == 0) {
 
 				Rate rate = getKaratRate(product, r);
 				if (rate == null) {
@@ -586,16 +975,28 @@ public class ProductController {
 			estimate_nogst = nullSafe(e.getGold().add(e.getLabour()).add(e.getStones()).add(e.getBeads())
 					.add(e.getPearls()).add(e.getSsPearls()).add(e.getVilandi()).add(e.getMozo()).add(e.getRealStones())
 					.add(e.getFitting()).add(e.getDiamonds()).add(e.getOtherStones()));
-
+			e.setNogsttotal(estimate_nogst);
+			estimate_nogst_withfields = nullSafe(e.getGold().add(e.getLabour()).add(e.getStones()).add(e.getBeads())
+					.add(e.getPearls()).add(e.getSsPearls()).add(e.getVilandi()).add(e.getMozo()).add(e.getRealStones())
+					.add(e.getFitting()).add(e.getDiamonds()).add(e.getOtherStones()).add(additionalFieldsTotal));
+			e.setEstimate_nogst_withfields(estimate_nogst_withfields);
 			estimate_gst = nullSafe(
 					estimate_nogst.multiply(rateWrapper.gst).divide(new BigDecimal("100"), RoundingMode.HALF_UP));
-
+			estimate_gst_withfields = nullSafe(
+					estimate_nogst_withfields.multiply(rateWrapper.gst).divide(new BigDecimal("100"), RoundingMode.HALF_UP));
+			e.setEstimate_gst_withfields(estimate_gst_withfields);
 			e.setGst(estimate_gst);
+			
+			
 
 			total = nullSafe(estimate_nogst.add(estimate_gst));
-
+			total_withfields = nullSafe(estimate_nogst_withfields.add(estimate_gst_withfields));
 			e.setTotal(total);
-			return e.getTotal() != null ? e.getTotal() : BigDecimal.valueOf(0);
+			e.setTotalWithAdditionalFields(total_withfields);
+			List<BigDecimal> prices =  new ArrayList<>();
+			prices.add(total != null ? total : BigDecimal.ZERO);
+			prices.add(total_withfields != null ? total_withfields : BigDecimal.ZERO);
+			return prices;
 		} catch (ArithmeticException ex) {
 			throw new InvalidCalculationException("Error occurred while calculating product price", ex);
 		}
@@ -609,6 +1010,7 @@ public class ProductController {
 			@RequestParam(value = "productRemarks", required = false) String productRemarks,
 			@RequestParam(value = "productImageUrl", required = false) String productImageUrl,
 			@RequestParam(value = "categoryId", required = false) Integer categoryId,
+			@RequestParam(value = "subCategoryId", required = false) Long subCategoryId,
 			@RequestParam(value = "productNet", required = false) BigDecimal productNet,
 			@RequestParam(value = "pcs", required = false) Integer pcs,
 			@RequestParam(value = "diaWeight", required = false) BigDecimal diaWeight,
@@ -672,7 +1074,12 @@ public class ProductController {
 			@RequestParam("image") MultipartFile imageFile,
 			@RequestParam(value = "karat", required = false) BigDecimal karat,
 			@RequestParam(value = "labour", required = false) BigDecimal labour,
-			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll
+			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll,
+			@RequestParam(value = "ssosPearlCt", required = false) BigDecimal ssosPearlCt,
+			@RequestParam(value = "ssosPearllbl", required = false) BigDecimal ssosPearllbl,
+			@RequestParam(value = "customFields", required = false) String customFieldsJson,
+			@RequestParam(value = "grossPg", required = false) BigDecimal grossPg,
+			@RequestParam(value = "grossDia", required = false) BigDecimal grossDia
 			) {
 
 		if (id == null || id.isEmpty()) {
@@ -685,6 +1092,9 @@ public class ProductController {
 		System.out.println("order id is "+productOrderid);
 		//System.out.println("existing order id is "+existingOrderIds);
 		Product updatedProduct = new Product();
+		 if(customFieldsJson != null) {
+			 updatedProduct.setCustomFields(customFieldsJson);
+		    }
 		// String design ="";
 		if (categoryId == 1) {
 			updatedProduct.setItem(productName);
@@ -692,7 +1102,9 @@ public class ProductController {
 			updatedProduct.setRemarks(productRemarks);
 			updatedProduct.setImageUrl(productImageUrl);
 			updatedProduct.setCategoryId(categoryId);
+			updatedProduct.setSubCategoryId(subCategoryId);
 			updatedProduct.setNet(productNet);
+			updatedProduct.setGross(grossDia);
 			updatedProduct.setPcs(pcs);
 			updatedProduct.setDesignNo(designNoDR);
 			updatedProduct.setDiamondsCt(diaWeight);
@@ -710,6 +1122,7 @@ public class ProductController {
 			updatedProduct.setRemarks(productRemarks);
 			updatedProduct.setImageUrl(productImageUrl);
 			updatedProduct.setCategoryId(categoryId);
+			updatedProduct.setSubCategoryId(subCategoryId);
 			updatedProduct.setNet(productNet);
 			updatedProduct.setGross(gross);
 			updatedProduct.setVilandiCt(vilandiCt);
@@ -728,6 +1141,8 @@ public class ProductController {
 			updatedProduct.setLabour(labour);
 			updatedProduct.setLabourAll(labourAll);
 			updatedProduct.setKarat(karat);
+			updatedProduct.setSsPearlCt(ssosPearllbl);
+			updatedProduct.setSsRate(ssosPearlCt);
 			// design=designNo;
 		}
 		if (categoryId == 3) {
@@ -736,37 +1151,41 @@ public class ProductController {
 			updatedProduct.setRemarks(productRemarks);
 			updatedProduct.setImageUrl(productImageUrl);
 			updatedProduct.setCategoryId(categoryId);
+			updatedProduct.setSubCategoryId(subCategoryId);
 			updatedProduct.setDesignNo(designNo);
 			updatedProduct.setNet(productNet);
+			updatedProduct.setGross(grossPg);
 			updatedProduct.setLabour(labour);
 			updatedProduct.setLabourAll(labourAll);
 			updatedProduct.setKarat(karat);
 			// design=designNo;
 		}
+//		if (categoryId == 40) {
+//		
+//			updatedProduct.setItem(productName);
+//			updatedProduct.setPrice(productPrice);
+//			updatedProduct.setRemarks(productRemarks);
+//			updatedProduct.setImageUrl(productImageUrl);
+//			updatedProduct.setCategoryId(categoryId);
+//			updatedProduct.setDesignNo(designNoEarrings);
+//			updatedProduct.setNet(productNet);
+//			updatedProduct.setPcs(pcsEarrings);
+//			updatedProduct.setDiamondsCt(diamondsCtEarrings);
+//			updatedProduct.setDiaRt(diamondsCtEarringsRate);
+//			updatedProduct.setOtherStonesCt(diaEOs);
+//			updatedProduct.setOtherStonesRt(diaEOsRate);
+//			updatedProduct.setLabour(labour);
+//			updatedProduct.setLabourAll(labourAll);
+//			updatedProduct.setKarat(karat);
+//			// design=designNoEarrings;
+//		}
 		if (categoryId == 4) {
 			updatedProduct.setItem(productName);
 			updatedProduct.setPrice(productPrice);
 			updatedProduct.setRemarks(productRemarks);
 			updatedProduct.setImageUrl(productImageUrl);
 			updatedProduct.setCategoryId(categoryId);
-			updatedProduct.setDesignNo(designNoEarrings);
-			updatedProduct.setNet(productNet);
-			updatedProduct.setPcs(pcsEarrings);
-			updatedProduct.setDiamondsCt(diamondsCtEarrings);
-			updatedProduct.setDiaRt(diamondsCtEarringsRate);
-			updatedProduct.setOtherStonesCt(diaEOs);
-			updatedProduct.setOtherStonesRt(diaEOsRate);
-			updatedProduct.setLabour(labour);
-			updatedProduct.setLabourAll(labourAll);
-			updatedProduct.setKarat(karat);
-			// design=designNoEarrings;
-		}
-		if (categoryId == 5) {
-			updatedProduct.setItem(productName);
-			updatedProduct.setPrice(productPrice);
-			updatedProduct.setRemarks(productRemarks);
-			updatedProduct.setImageUrl(productImageUrl);
-			updatedProduct.setCategoryId(categoryId);
+			updatedProduct.setSubCategoryId(subCategoryId);
 			updatedProduct.setNet(productNet);
 			updatedProduct.setDesignNo(designNoVilandi);
 			updatedProduct.setGross(grossVilandi);
@@ -789,12 +1208,13 @@ public class ProductController {
 			updatedProduct.setKarat(karat);
 			// design=designNoVilandi;
 		}
-		if (categoryId == 6) {
+		if (categoryId == 5) {
 			updatedProduct.setItem(productName);
 			updatedProduct.setPrice(productPrice);
 			updatedProduct.setRemarks(productRemarks);
 			updatedProduct.setImageUrl(productImageUrl);
 			updatedProduct.setCategoryId(categoryId);
+			updatedProduct.setSubCategoryId(subCategoryId);
 			updatedProduct.setNet(productNet);
 			updatedProduct.setDesignNo(designNoJadtar);
 			updatedProduct.setGross(grossJadtar);
@@ -833,9 +1253,9 @@ public class ProductController {
 		rateWrapper.resetRates();
 		for (Rate rate : rates) {
 			switch (rate.getCommodity().toLowerCase()) {
-			case "gold":
-				rateWrapper.goldPrice = rate.getPrice();
-				break;
+			/*
+			 * case "gold": rateWrapper.goldPrice = rate.getPrice(); break;
+			 */
 			case "diamond":
 				rateWrapper.diamondPrice = rate.getPrice();
 				break;
@@ -848,8 +1268,10 @@ public class ProductController {
 			}
 		}
 		Estimate e = new Estimate();
-		BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
-		product.setPrice(calculatedPrice);
+		List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
+		product.setPrice(prices.get(0));
+		product.setPriceWithFields(prices.get(1));
+	//	System.out.println("pricec with additional fields "+product.getPriceWithFields());
 		Map<String, Object> response = new HashMap<>();
 		response.put("object1", product);
 		response.put("object2", e);
@@ -927,9 +1349,9 @@ public class ProductController {
 
 		for (Rate rate : rates) {
 			switch (rate.getCommodity().toLowerCase()) {
-			case "gold":
-				rateWrapper.goldPrice = rate.getPrice();
-				break;
+			/*
+			 * case "gold": rateWrapper.goldPrice = rate.getPrice(); break;
+			 */
 			case "diamond":
 				rateWrapper.diamondPrice = rate.getPrice();
 				break;
@@ -943,8 +1365,9 @@ public class ProductController {
 		}
 		Estimate e = new Estimate();
 		products.forEach(product -> {
-			BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
-			product.setPrice(calculatedPrice);
+			List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
+			product.setPrice(prices.get(0));
+			product.setPriceWithFields(prices.get(1));
 		});
 		return products.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(products);
 	}
@@ -963,9 +1386,9 @@ public class ProductController {
 	    RateWrapper rateWrapper = new RateWrapper();
 	    for (Rate rate : rates) {
 	        switch (rate.getCommodity().toLowerCase()) {
-	            case "gold":
-	                rateWrapper.goldPrice = rate.getPrice();
-	                break;
+			/*
+			 * case "gold": rateWrapper.goldPrice = rate.getPrice(); break;
+			 */
 	            case "diamond":
 	                rateWrapper.diamondPrice = rate.getPrice();
 	                break;
@@ -980,13 +1403,23 @@ public class ProductController {
 
 	    Estimate e = new Estimate();
 	    allProducts.forEach(product -> {
-	        BigDecimal calculatedPrice = calculateProductPrice(product, rateWrapper, e, rates);
-	        product.setPrice(calculatedPrice);
+	    	List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
+			product.setPrice(prices.get(0));
+			product.setPriceWithFields(prices.get(1));
 	    });
 
 	    return ResponseEntity.ok(allProducts);
 	}
 
+	 @PutMapping("/verify/{designNo:[a-zA-Z0-9_-]+}")
+	    public ResponseEntity<Void> setVerification(
+	            @PathVariable String designNo,
+	            @RequestBody VerificationUpdate body) {
+		 System.out.println("came here");
+	        int status = body.verificationStatus() != null ? body.verificationStatus() : 1;
+	        productService.updateVerificationByDesignNo(designNo, status);
+	        return ResponseEntity.noContent().build();
+	    }
 
 	@PostMapping("/uploadFile")
 	public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file,

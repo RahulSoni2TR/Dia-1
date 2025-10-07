@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Estimate Snapshot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col items-center py-10">
+
+<div class="flex justify-between w-full max-w-3xl mb-4 px-2">
+  <button onclick="history.back()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+    ← Back
+  </button>
+  <button id="downloadBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+    Download PDF
+  </button>
+</div>
+
+<div id="estimateContainer" class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-3xl"></div>
+
+<!-- Include html2pdf library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+const snapshotStr = sessionStorage.getItem('estimateFromLog');
+if(snapshotStr){
+  try {
+    let estimate = JSON.parse(snapshotStr);
+    if(typeof estimate === "string"){
+      estimate = JSON.parse(estimate); // handle double encoding
+    }
+
+    let rowsHtml = "";
+
+    // Table rows from lines
+    (estimate.lines || []).forEach(line => {
+      if(line.amount && line.amount > 0){
+        rowsHtml += `
+          <tr>
+            <td class="border px-4 py-2">${line.description}</td>
+            <td class="border px-4 py-2">${line.qty}</td>
+            <td class="border px-4 py-2">₹ ${Number(line.rate).toLocaleString()}</td>
+            <td class="border px-4 py-2">₹ ${Number(line.amount).toLocaleString()}</td>
+          </tr>`;
+      }
+    });
+
+    // Special items from estimateParts: Realstone & Fitting
+    const parts = estimate.estimateParts || {};
+    if(parts.realStone && parts.realStone > 0){
+      rowsHtml += `
+        <tr>
+          <td class="border px-4 py-2">Realstone</td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2">₹ ${Number(parts.realStone).toLocaleString()}</td>
+        </tr>`;
+    }
+    if(parts.fitting && parts.fitting > 0){
+      rowsHtml += `
+        <tr>
+          <td class="border px-4 py-2">Fitting</td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2">₹ ${Number(parts.fitting).toLocaleString()}</td>
+        </tr>`;
+    }
+
+    // GST row
+    if(estimate.totals?.gst > 0){
+      rowsHtml += `
+        <tr>
+          <td class="border px-4 py-2">GST</td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2"></td>
+          <td class="border px-4 py-2">
+          ₹ ${Math.round(Number(estimate.totals.gst)).toLocaleString()}
+        </td>
+        </tr>`;
+    }
+
+    // Grand Total row
+    rowsHtml += `
+      <tr class="font-bold">
+        <td class="border px-4 py-2" colspan="3">Total</td>
+        <td class="border px-4 py-2">₹ ${Number(estimate.totals?.grandTotal || 0).toLocaleString()}</td>
+      </tr>`;
+
+    document.getElementById("estimateContainer").innerHTML = `
+      <h2 class="text-xl font-bold text-center mb-2">Estimate for ${estimate.item || ''}</h2>
+      <h3 class="text-md text-center mb-4">Design No: ${estimate.orderId || ''}/${estimate.designNo || ''}</h3>
+      <table class="w-full border-collapse border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border px-4 py-2">Description</th>
+            <th class="border px-4 py-2">Qty</th>
+            <th class="border px-4 py-2">Rate</th>
+            <th class="border px-4 py-2">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+
+    // Download PDF button
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const element = document.getElementById("estimateContainer");
+      const fileName = `${estimate.orderId || 'estimate'}_${Date.now()}.pdf`;
+      html2pdf().from(element).set({ filename: fileName, margin: 10 }).save();
+    });
+
+  } catch(err){
+    console.error("Error parsing estimate:", err);
+    document.getElementById("estimateContainer").innerHTML = "<p class='text-red-500'>Error loading estimate</p>";
+  }
+}
+</script>
+
+</body>
+</html>

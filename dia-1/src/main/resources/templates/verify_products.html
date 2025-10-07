@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Verify Product</title>
+    <link rel="stylesheet" href="verify_products_style.css" />
+  </head>
+  <body>
+    <header>
+      <button class="back-btn" onclick="window.location.href='/home'">← Back</button>
+      <div class="header-title">Verify Product</div>
+
+      <div class="filters">
+        <select id="categoryFilter"></select>
+        <select id="subcategoryFilter" style="display: none;"></select>
+
+        <input type="text" id="searchBox" placeholder="Search product..." />
+
+        <label for="verificationFreq">Verification Frequency (days):</label>
+        <input
+          type="number"
+          id="verificationFreq"
+          min="1"
+          value="1"
+          style="width: 70px;"
+        />
+        <button id="setFreqBtn">Set</button>
+
+        <div class="view-toggle">
+          <button id="listViewBtn" class="active">List View</button>
+          <button id="gridViewBtn">Grid View</button>
+        </div>
+
+        <label class="price-toggle">
+          <input type="checkbox" id="priceToggle" />
+          Show Price With Fields
+        </label>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="panel left">
+        <h2>Unverified Products</h2>
+        <div id="unverifiedList" class="product-list list-view"></div>
+        <button
+          id="loadMoreUnverified"
+          class="load-more"
+          style="display: none;"
+        >
+          Load More
+        </button>
+      </div>
+
+      <div class="panel right">
+        <h2>Verified Products</h2>
+        <div id="verifiedList" class="product-list list-view"></div>
+        <button
+          id="loadMoreVerified"
+          class="load-more"
+          style="display: none;"
+        >
+          Load More
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal -->
+<div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+  <div class="modal-content">
+    <h2 id="productModalTitle">Product Details</h2>
+
+    <!-- Scrollable content area -->
+    <div id="productDetailsContainer" class="product-details"></div>
+
+    <!-- Sticky footer with actions -->
+    <div class="modal-buttons">
+      <button class="modify-btn" id="modifyBtn">Modify Product</button>
+      <button class="verify-final-btn" id="verifyFinalBtn">Mark as Verified</button>
+    </div>
+
+    <button class="close-btn" id="closeModalBtn">Close</button>
+  </div>
+</div>
+
+
+    <script>
+      // Element references
+      const unverifiedList = document.getElementById("unverifiedList");
+      const verifiedList = document.getElementById("verifiedList");
+      const categoryFilter = document.getElementById("categoryFilter");
+      const subcategoryFilter = document.getElementById("subcategoryFilter");
+      const searchBox = document.getElementById("searchBox");
+      const listViewBtn = document.getElementById("listViewBtn");
+      const gridViewBtn = document.getElementById("gridViewBtn");
+      const loadMoreUnverified = document.getElementById("loadMoreUnverified");
+      const loadMoreVerified = document.getElementById("loadMoreVerified");
+      const setFreqBtn = document.getElementById("setFreqBtn");
+      const priceToggle = document.getElementById("priceToggle");
+
+      const modal = document.getElementById("productModal");
+      const verifyFinalBtn = document.getElementById("verifyFinalBtn");
+      const closeModalBtn = document.getElementById("closeModalBtn");
+      const modifyBtn = document.getElementById("modifyBtn");
+      const productDetailsContainer = document.getElementById(
+        "productDetailsContainer"
+      );
+
+      // State
+      let currentProductId = null;
+      let lastFocusedEl = null;
+
+      let unverifiedPage = 0;
+      let verifiedPage = 0;
+      const PAGE_SIZE = 12;
+      let unverifiedProducts = [];
+      let verifiedProducts = [];
+      let totalUnverified = 0;
+      let totalVerified = 0;
+
+      // Subcategory options
+      const subCategories = {
+        Jadtar: [
+          { id: 6, name: "Jadtar Register" },
+          { id: 7, name: "Jadtar Halfsets" },
+          { id: 8, name: "Jadtar Bangles / Bracelets" },
+          { id: 17, name: "Only Earrings" },
+        ],
+        Vilandi: [
+          { id: 9, name: "Vilandi Halfsets" },
+          { id: 10, name: "Vilandi Bangles / Bracelets" },
+        ],
+        Diamond: [
+          { id: 20, name: "Diamond Rings" },
+          { id: 19, name: "Diamond Earrings" },
+          { id: 11, name: "Diamond Bangles / Bracelets" },
+          { id: 12, name: "Diamond Pendants / Pendant Sets" },
+          { id: 13, name: "Diamond Halfsets" },
+        ],
+        "Open Setting": [
+          { id: 14, name: "OS Halfsets" },
+          { id: 15, name: "OS Bangles / Bracelets" },
+        ],
+        "Plain Gold": [
+          { id: 18, name: "Chains" },
+          { id: 16, name: "PG Bangles / Bracelets" },
+        ],
+      };
+
+      // Category/Subcategory labels map
+      const detailsMap = {
+        1: "Diamond",
+        2: "Open Setting",
+        3: "Plain Gold",
+        4: "Vilandi",
+        5: "Jadtar",
+        6: "Jadtar Register",
+        7: "Jadtar Halfsets",
+        8: "Jadtar Bangles / Bracelets",
+        9: "Vilandi Halfsets",
+        10: "Vilandi Bangles / Bracelets",
+        11: "Diamond Bangles / Bracelets",
+        12: "Diamond Pendants / Pendant Sets",
+        13: "Diamond Halfsets",
+        14: "OS Halfsets",
+        15: "OS Bangles / Bracelets",
+        16: "PG Bangles / Bracelets",
+        17: "Only Earrings",
+        18: "Chains",
+        19: "Diamond Earrings",
+        20: "Diamond Rings",
+      };
+
+      // Helpers
+      const renderText = (v) =>
+        v !== null && v !== undefined && v !== ""
+          ? v
+          : '<span class="empty-label">No value</span>';
+
+      function roundNearestInt(v) {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.round(n) : null;
+      }
+
+      const inrInteger = new Intl.NumberFormat("en-IN");
+
+      // Card builder
+      function createProductCard(product, view = "list") {
+        const card = document.createElement("div");
+        card.className = "product-card";
+
+        const img = document.createElement("img");
+        img.src = product.image || "https://via.placeholder.com/40";
+        img.alt = product.item || "Product";
+        card.appendChild(img);
+
+        const info = document.createElement("div");
+        info.className = "product-info";
+
+        const title = document.createElement("h3");
+        title.textContent = product.name;
+        info.appendChild(title);
+
+        const extraInfo = document.createElement("p");
+        extraInfo.textContent = `Order: ${product.orderId || "N/A"} | Design: ${
+          product.designNo || "N/A"
+        }`;
+        info.appendChild(extraInfo);
+
+        const priceLabel = document.createElement("p");
+        priceLabel.className = "product-price";
+        const usePriceWithFields = document.getElementById("priceToggle")
+          ?.checked;
+        const priceVal = usePriceWithFields
+          ? product.priceWithFields
+          : product.price;
+        priceLabel.textContent = `Price: ${priceVal ?? "N/A"}`;
+        info.appendChild(priceLabel);
+
+        const lastVerified = document.createElement("div");
+        lastVerified.className = "last-verified";
+        if (product.lastVerifiedDays === -1)
+          lastVerified.textContent = "Never verified";
+        else if (product.lastVerifiedDays === 0)
+          lastVerified.textContent = "Last verified today";
+        else if (product.lastVerifiedDays === 1)
+          lastVerified.textContent = "Last verified 1 day ago";
+        else
+          lastVerified.textContent = `Last verified ${product.lastVerifiedDays} days ago`;
+        info.appendChild(lastVerified);
+
+        card.appendChild(info);
+
+        const btn = document.createElement("button");
+        btn.className = product.verified ? "reverify-btn" : "verify-btn";
+        btn.textContent = product.verified ? "Reverify" : "Verify Product";
+        btn.onclick = () => {
+          if (product.verified) {
+            product.verified = false;
+            product.lastVerifiedDays = -1;
+            renderProducts();
+          } else {
+            openModalWithDetails(product);
+          }
+        };
+
+        if (view === "grid") {
+          const btnContainer = document.createElement("div");
+          btnContainer.className = "product-button";
+          btnContainer.appendChild(btn);
+          card.appendChild(btnContainer);
+        } else {
+          card.appendChild(btn);
+        }
+
+        if (product.verified) {
+          const badge = document.createElement("div");
+          badge.className = "verified-badge";
+          badge.textContent = "Verified";
+          card.appendChild(badge);
+        }
+
+        return card;
+      }
+
+      function addEmptyState(listEl, text) {
+        const div = document.createElement("div");
+        div.className = "empty-state";
+        div.textContent = text;
+        listEl.appendChild(div);
+      }
+
+      function renderProducts() {
+        unverifiedList.innerHTML = "";
+        verifiedList.innerHTML = "";
+
+        if (unverifiedProducts.length === 0) {
+          addEmptyState(
+            unverifiedList,
+            "No products found for the selected filters."
+          );
+        } else {
+          unverifiedProducts.forEach((p) =>
+            unverifiedList.appendChild(createProductCard(p))
+          );
+        }
+
+        if (verifiedProducts.length === 0) {
+          addEmptyState(
+            verifiedList,
+            "No verified products for the selected filters."
+          );
+        } else {
+          verifiedProducts.forEach((p) =>
+            verifiedList.appendChild(createProductCard(p))
+          );
+        }
+
+        loadMoreUnverified.style.display =
+          unverifiedProducts.length < totalUnverified ? "block" : "none";
+        loadMoreVerified.style.display =
+          verifiedProducts.length < totalVerified ? "block" : "none";
+      }
+
+      // Modal a11y helpers
+      function trapFocus(container) {
+        const SELECTOR =
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
+        const focusables = Array.from(
+          container.querySelectorAll(SELECTOR)
+        ).filter((el) => !el.disabled);
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        function onKeydown(e) {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            closeModal();
+            return;
+          }
+          if (e.key !== "Tab") return;
+
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+
+        container.addEventListener("keydown", onKeydown);
+        container._untrap = () =>
+          container.removeEventListener("keydown", onKeydown);
+      }
+
+      function releaseFocus(container) {
+        container._untrap?.();
+      }
+
+      function openModal() {
+        lastFocusedEl = document.activeElement;
+        modal.classList.add("show");
+        trapFocus(modal);
+        modifyBtn?.focus();
+      }
+
+      function closeModal() {
+        modal.classList.remove("show");
+        releaseFocus(modal);
+        currentProductId = null;
+        if (lastFocusedEl && typeof lastFocusedEl.focus === "function") {
+          lastFocusedEl.focus();
+        }
+      }
+
+      // Details rendering
+      function renderProductDetails(product) {
+        const categoryName = detailsMap[product.categoryId] || "Unknown";
+        const subCategoryName =
+          detailsMap[product.subCategoryId] || "Unknown";
+
+        // extras
+        let hasExtras = false;
+        let extrasHTML = "";
+        if (product.customFields && product.customFields !== "{}") {
+          try {
+            const extras = JSON.parse(product.customFields);
+            const keys = Object.keys(extras);
+            if (keys.length > 0) {
+              hasExtras = true;
+              extrasHTML += '<h4>Additional Fields:</h4><ul>';
+              keys.forEach((key) => {
+                const qty =
+                  (extras[key] &&
+                    (extras[key].qty ??
+                      extras[key].Qty ??
+                      extras[key].value)) ?? "N/A";
+                extrasHTML += `<li><strong>${key}</strong>: ${qty}</li>`;
+              });
+              extrasHTML += "</ul>";
+            }
+          } catch (e) {
+            console.error("Failed to parse customFields:", e);
+          }
+        }
+        const extrasBlock = hasExtras ? extrasHTML : "";
+
+        let html = `
+          <div class="product-top">
+            <div class="product-image">
+              <img
+                src="${
+                  product.imageUrl
+                    ? product.imageUrl
+                    : "https://placehold.co/200x150?text=No+Image"
+                }"
+                alt="${product.item ? product.item : "Product"}"
+              />
+            </div>
+            <div class="product-qr">
+              <img
+                class="qr-code"
+                src="${
+                  product.qrCodePath
+                    ? product.qrCodePath
+                    : "https://placehold.co/140?text=QR"
+                }"
+                alt="QR Code"
+              />
+            </div>
+          </div>
+
+          <div class="product-details">
+            <h2>${product.item ? product.item : "Unnamed item"}</h2>
+            <p><strong>Category:</strong> ${categoryName}</p>
+            <p><strong>Sub Category:</strong> ${subCategoryName}</p>
+            <p>
+              <strong>Design No:</strong>
+              ${
+                product.orders && product.orders.orderId
+                  ? product.orders.orderId
+                  : "N/A"
+              }/${product.designNo ?? "N/A"}
+            </p>
+            <p><strong>Gold:</strong> ${product.karat ?? "N/A"} Karat</p>
+            <p>
+              <label>
+                <input type="checkbox" id="withFieldsToggle" checked />
+                Price with additional fields
+              </label>
+            </p>
+            <p><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
+            <h3>Additional Details:</h3>
+        `;
+
+        const c = Number(product.categoryId);
+
+        if ([1, 11, 12, 13].includes(c)) {
+          html += `
+            <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+            <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+            <p><strong>Pcs:</strong> ${product.pcs ?? "N/A"}</p>
+            <p><strong>Diamonds:</strong> ${product.diamondsCt ?? "N/A"} ct</p>
+            <p><strong>Other Stones:</strong> ${
+              product.otherStonesCt ?? "N/A"
+            } ct</p>
+            ${extrasBlock}
+            <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+          `;
+        } else if ([2, 14, 15].includes(c)) {
+          html += `
+            <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+            <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+            <p><strong>Vilandi:</strong> ${product.vilandiCt ?? "N/A"} ct</p>
+            <p><strong>Diamonds:</strong> ${product.diamondsCt ?? "N/A"} ct</p>
+            <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+            <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+            <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+            <p><strong>Other Stones:</strong> ${
+              product.otherStonesCt ?? "N/A"
+            } ct</p>
+            ${extrasBlock}
+            <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+          `;
+        } else if ([3, 16, 18].includes(c)) {
+          html += `
+            <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+            <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+            ${extrasBlock}
+            <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+          `;
+        } else if ([4, 9, 10].includes(c)) {
+          html += `
+            <p><strong>Vilandi:</strong> ${product.vilandiCt ?? "N/A"} ct</p>
+            <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+            <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+            <p><strong>Stones:</strong> ${product.stones ?? "N/A"}</p>
+            <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+            <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+            <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+            <p><strong>Real Stone:</strong> ₹${product.realStone ?? "N/A"}</p>
+            <p><strong>Fitting:</strong> ₹${product.fitting ?? "N/A"}</p>
+            ${extrasBlock}
+            <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+          `;
+        } else if ([5, 6, 7, 8, 17].includes(c)) {
+          html += `
+            <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+            <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+            <p><strong>Stones:</strong> ${product.stones ?? "N/A"} ct</p>
+            <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+            <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+            <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+            <p><strong>Real Stone:</strong> ₹${product.realStone ?? "N/A"}</p>
+            <p><strong>Mozonite:</strong> ${product.mozonite ?? "N/A"}</p>
+            <p><strong>Fitting:</strong> ₹${product.fitting ?? "N/A"}</p>
+            ${extrasBlock}
+            <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+          `;
+        } else {
+          html += `<p>Category not recognized.</p>`;
+        }
+
+        html += `</div>`;
+
+        productDetailsContainer.innerHTML = html;
+
+        // Price toggle inside modal
+        const toggleEl = document.getElementById("withFieldsToggle");
+        const priceValueEl = document.getElementById("priceValue");
+
+        function currentPrice(useWithFields) {
+          return useWithFields
+            ? product.priceWithFields ?? product.price
+            : product.price;
+        }
+
+        function renderPrice() {
+          const value = currentPrice(toggleEl ? toggleEl.checked : false);
+          const rounded = roundNearestInt(value);
+          priceValueEl.textContent =
+            rounded === null ? "No value" : inrInteger.format(rounded);
+        }
+
+        if (toggleEl) toggleEl.addEventListener("change", renderPrice);
+        renderPrice();
+      }
+
+      async function loadVerificationFrequency() {
+    	  try {
+    	    const res = await fetch("/frequency");
+    	    if (!res.ok) throw new Error("Failed to fetch frequency");
+    	    const days = await res.json();
+    	    document.getElementById("verificationFreq").value = days;
+    	  } catch (e) {
+    	    console.error("Could not load verification frequency:", e);
+    	    document.getElementById("verificationFreq").value = 1;
+    	  }
+    	}
+
+    	async function setVerificationFrequency() {
+    	  const days = parseInt(document.getElementById("verificationFreq").value);
+    	  if (!days || days <= 0) return alert("Enter valid frequency");
+    	  try {
+    	    const res = await fetch("/frequency", {
+    	      method: "POST",
+    	      headers: { "Content-Type": "application/json" },
+    	      body: JSON.stringify({ frequency: days })
+    	    });
+    	    if (!res.ok) throw new Error("Failed to update frequency");
+    	    await loadProducts(); // reload products with new frequency
+    	  } catch (e) {
+    	    console.error(e);
+    	    alert("Failed to update frequency");
+    	  }
+    	}
+
+    	// Attach to Set button
+    	document.getElementById("setFreqBtn").onclick = setVerificationFrequency;
+
+      
+      function openModalWithDetails(product) {
+        currentProductId = product.id;
+
+        // Build best-effort full product object
+        const fullProduct = {
+          productId: product.id,
+          item: product.name,
+          categoryId: Number(product.category),
+          subCategoryId:
+            product.subCategory &&
+            !Number.isNaN(Number(product.subCategory))
+              ? Number(product.subCategory)
+              : null,
+          imageUrl: product.image,
+
+          orders:
+            product.orders || (product.orderId ? { orderId: product.orderId } : null),
+          orderId: product.orderId,
+          designNo: product.designNo,
+
+          karat: product.karat,
+          gross: product.gross,
+          net: product.net,
+          pcs: product.pcs,
+          diamondsCt: product.diamondsCt,
+          otherStonesCt: product.otherStonesCt,
+          vilandiCt: product.vilandiCt,
+          beadsCt: product.beadsCt,
+          pearlsGm: product.pearlsGm,
+          ssPearlCt: product.ssPearlCt,
+          stones: product.stones,
+          realStone: product.realStone,
+          fitting: product.fitting,
+          mozonite: product.mozonite,
+          remarks: product.remarks,
+
+          qrCodePath: product.qrCodePath,
+          customFields: product.customFields,
+          price: product.price,
+          priceWithFields: product.priceWithFields,
+        };
+
+        renderProductDetails(fullProduct);
+        openModal();
+    
+        modifyBtn.onclick = () => {
+        	  const designNo = fullProduct.designNo || product.designNo || '';
+        	  sessionStorage.setItem('returnUrl', window.location.href);
+        	  sessionStorage.setItem('returnDesignNo', String(designNo));
+        	  sessionStorage.setItem('returnContext', 'verify');
+
+        	  // existing handoff for Modify preload
+        	  sessionStorage.setItem('returnToViewPage', 'true');
+        	  sessionStorage.setItem('modifyDesignNo', String(designNo));
+
+        	  const url = new URL('/modify-product', location.origin);
+        	  url.searchParams.set('designNo', designNo);
+        	  url.searchParams.set('returnUrl', window.location.href);
+        	  url.searchParams.set('returnDesignNo', designNo);
+        	  url.searchParams.set('returnContext', 'verify');
+        	  location.href = url.toString();
+        	};
+
+        
+      }
+
+  
+
+      // Modal controls
+      closeModalBtn.addEventListener("click", closeModal);
+
+      verifyFinalBtn.onclick = async () => {
+    	  if (currentProductId == null) { closeModal(); return; }
+
+    	  // Find the product in current arrays
+    	  let product = unverifiedProducts.find(p => p.id === currentProductId)
+    	             || verifiedProducts.find(p => p.id === currentProductId);
+    	  if (!product) { closeModal(); return; }
+
+    	  const designNo = String(product.designNo || '').trim();
+    	  if (!designNo) { 
+    	    console.error('Missing designNo for verification');
+    	    closeModal(); 
+    	    return; 
+    	  }
+
+    	  try {
+    	    // If Spring Security CSRF is enabled, add the CSRF header here:
+    	    // const token = document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='))?.split('=')[1];
+    	    const res = await fetch(`/verify/${encodeURIComponent(designNo)}`, {
+    	      method: 'PUT',
+    	      headers: {
+    	        'Content-Type': 'application/json'
+    	        // ,'X-XSRF-TOKEN': token
+    	      },
+    	      body: JSON.stringify({ verificationStatus: 1 })
+    	    });
+
+    	    if (res.status === 404) {
+    	      throw new Error('Product not found for design number');
+    	    }
+    	    if (!res.ok && res.status !== 204) {
+    	      throw new Error(`Failed to verify: HTTP ${res.status}`);
+    	    }
+
+    	    // Update UI state locally after success
+    	    product.verified = true;
+    	    product.lastVerifiedDays = 0;
+
+    	    // Move product from unverified to verified list if present
+    	    unverifiedProducts = unverifiedProducts.filter(p => p.id !== product.id);
+    	    const alreadyInVerified = verifiedProducts.find(p => p.id === product.id);
+    	    if (!alreadyInVerified) verifiedProducts.unshift(product);
+
+    	    renderProducts();
+    	  } catch (e) {
+    	    console.error('Verification failed:', e);
+    	    // Optionally show a toast/modal
+    	  } finally {
+    	    closeModal();
+    	  }
+    	};
+
+
+      modifyBtn.addEventListener("click", () => {
+        // Integrate as needed
+      });
+
+      // Data loading
+      async function loadProducts() {
+        const categoryName =
+          categoryFilter.value !== "All" ? categoryFilter.value : "";
+        const subCategoryId =
+          subcategoryFilter.value && subcategoryFilter.value !== "All"
+            ? String(subcategoryFilter.value)
+            : "";
+        const searchTerm = searchBox.value || "";
+        const verificationFreq =
+          parseInt(document.getElementById("verificationFreq").value) || 1;
+
+        const categoryMap = {
+          "Diamond": 1,
+          "Open Setting": 2,
+          "Plain Gold": 3,
+          "Vilandi": 4,
+          "Jadtar": 5,
+        };
+        const baseCategoryId = categoryName
+          ? String(categoryMap[categoryName])
+          : "";
+        const categoryParam = subCategoryId ? subCategoryId : baseCategoryId;
+
+        try {
+          const params = new URLSearchParams();
+          params.set("page", "0");
+          params.set("size", "1000");
+          if (categoryParam) params.set("category", categoryParam);
+          if (searchTerm) params.set("searchTerm", searchTerm);
+
+          const res = await fetch(`/product/load?${params.toString()}`);
+
+          if (res.status === 404 || res.status === 204) {
+            unverifiedProducts = [];
+            verifiedProducts = [];
+            totalUnverified = 0;
+            totalVerified = 0;
+            renderProducts();
+            return;
+          }
+
+          if (!res.ok) {
+            throw new Error(`Backend responded with status ${res.status}`);
+          }
+
+          const data = await res.json();
+          const productsArray = Array.isArray(data.products)
+            ? data.products
+            : [];
+
+          if (productsArray.length === 0) {
+            unverifiedProducts = [];
+            verifiedProducts = [];
+            totalUnverified = 0;
+            totalVerified = 0;
+            renderProducts();
+            return;
+          }
+
+          totalUnverified = data.totalUnverified || 0;
+          totalVerified = data.totalVerified || 0;
+
+          const now = new Date();
+          
+       // put this near the top of loadProducts, after: const now = new Date();
+          function daysBetweenUTC(a, b) {
+            const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+            const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+            return Math.floor((utcB - utcA) / 86400000);
+          }
+
+          
+          const mappedProducts = productsArray.map((p) => {
+        	  // Accept camelCase or snake_case from backend
+        	  const rawVerificationDate = p.verificationDate ?? p.verification_date ?? null;
+        	  const verificationDate = rawVerificationDate ? new Date(rawVerificationDate) : null;
+
+        	  // If there is no verification date, we treat as never verified for text (-1)
+        	  // For classification, the rule requires a date present to count as verified.
+        	  const daysSince = verificationDate ? daysBetweenUTC(verificationDate, now) : Number.POSITIVE_INFINITY;
+
+        	  // Business rule:
+        	  // - Verified list: status == 1 AND days since verification <= verificationFreq
+        	  // - Otherwise unverified list (includes status 0, -1, or expired status 1)
+        	 const isVerifiedNow = p.verificationStatus === 1;
+
+        	  return {
+        	    id: p.productId,
+        	    name: p.item,
+        	    category: p.categoryId,
+        	    subCategory: p.subCategoryId || "N/A",
+        	    image: p.imageUrl || "https://placehold.co/200x150?text=No+Image",
+
+        	    verified: isVerifiedNow,
+        	    // UI text: show -1 for never verified, else actual days
+        	    lastVerifiedDays: verificationDate ? daysBetweenUTC(verificationDate, now) : -1,
+
+        	    orderId: p.orders?.orderId,
+        	    designNo: p.designNo,
+        	    price: p.price,
+        	    priceWithFields: p.priceWithFields,
+
+        	    // extra fields for modal
+        	    karat: p.karat,
+        	    gross: p.gross,
+        	    net: p.net,
+        	    pcs: p.pcs,
+        	    diamondsCt: p.diamondsCt,
+        	    otherStonesCt: p.otherStonesCt,
+        	    vilandiCt: p.vilandiCt,
+        	    beadsCt: p.beadsCt,
+        	    pearlsGm: p.pearlsGm,
+        	    ssPearlCt: p.ssPearlCt,
+        	    stones: p.stones,
+        	    realStone: p.realStone,
+        	    fitting: p.fitting,
+        	    mozonite: p.mozonite,
+        	    remarks: p.remarks,
+        	    qrCodePath: p.qrCodePath,
+        	    customFields: p.customFields,
+        	    orders: p.orders
+        	  };
+        	});
+
+        	// Then keep the existing splits:
+        	verifiedProducts = mappedProducts.filter((p) => p.verified);
+        	unverifiedProducts = mappedProducts.filter((p) => !p.verified);
+        	
+        	const verifiedIds = verifiedProducts.map(p => p.id);
+        	sessionStorage.setItem('verifiedProductIds', JSON.stringify(verifiedIds));
+          renderProducts();
+        } catch (err) {
+          console.error("Failed to load products:", err);
+          unverifiedProducts = [];
+          verifiedProducts = [];
+          totalUnverified = 0;
+          totalVerified = 0;
+          renderProducts();
+        }
+      }
+
+      // Events
+      categoryFilter.addEventListener("change", () => {
+        const cat = categoryFilter.value;
+        const subs = subCategories[cat] || [];
+        if (subs.length > 0) {
+          subcategoryFilter.style.display = "inline-block";
+          subcategoryFilter.innerHTML =
+            '<option value="All">All Subcategories</option>';
+          subs.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.name;
+            subcategoryFilter.appendChild(opt);
+          });
+        } else {
+          subcategoryFilter.style.display = "none";
+          subcategoryFilter.innerHTML = "";
+        }
+        loadProducts();
+      });
+
+      subcategoryFilter.addEventListener("change", () => loadProducts());
+
+      // Debounced search
+      let searchDebounce;
+      searchBox.addEventListener("input", () => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+          unverifiedPage = 0;
+          verifiedPage = 0;
+          loadProducts();
+        }, 250);
+      });
+
+      loadMoreUnverified.addEventListener("click", () => loadProducts());
+      loadMoreVerified.addEventListener("click", () => loadProducts());
+      setFreqBtn.onclick = () => loadProducts();
+      document
+        .getElementById("verificationFreq")
+        .addEventListener("input", () => loadProducts());
+
+      // Price toggle refresh for list cards
+      priceToggle.addEventListener("change", () => renderProducts());
+
+      // View toggle
+      listViewBtn.onclick = () => {
+        unverifiedList.classList.remove("grid-view");
+        unverifiedList.classList.add("list-view");
+        verifiedList.classList.remove("grid-view");
+        verifiedList.classList.add("list-view");
+        listViewBtn.classList.add("active");
+        gridViewBtn.classList.remove("active");
+        listViewBtn.setAttribute("aria-pressed", "true");
+        gridViewBtn.setAttribute("aria-pressed", "false");
+      };
+
+      gridViewBtn.onclick = () => {
+        unverifiedList.classList.remove("list-view");
+        unverifiedList.classList.add("grid-view");
+        verifiedList.classList.remove("list-view");
+        verifiedList.classList.add("grid-view");
+        gridViewBtn.classList.add("active");
+        listViewBtn.classList.remove("active");
+        gridViewBtn.setAttribute("aria-pressed", "true");
+        listViewBtn.setAttribute("aria-pressed", "false");
+      };
+
+      // Init
+      (async function init() {
+        const catOptions = [
+          "All",
+          "Diamond",
+          "Open Setting",
+          "Plain Gold",
+          "Vilandi",
+          "Jadtar",
+        ];
+        catOptions.forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
+          categoryFilter.appendChild(opt);
+        });
+
+        listViewBtn.setAttribute("aria-pressed", "true");
+        gridViewBtn.setAttribute("aria-pressed", "false");
+
+        await loadVerificationFrequency();
+
+        await loadProducts();
+      })();
+      
+   // At the end of init() after await loadProducts();
+     (function handleReturnOpen(){
+  const sp = new URLSearchParams(location.search);
+  const dn = sp.get('openDesignNo');
+  if (!dn) return;
+  const all = [...unverifiedProducts, ...verifiedProducts];
+  const match = all.find(p => String(p.designNo) === String(dn));
+  if (match) openModalWithDetails(match);
+  sp.delete('openDesignNo'); sp.delete('updated'); sp.delete('returnContext');
+  const clean = `${location.pathname}?${sp.toString()}`.replace(/\?$/,'');
+  history.replaceState({}, '', clean);
+})();
+
+
+    </script>
+  </body>
+</html>

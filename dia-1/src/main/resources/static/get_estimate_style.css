@@ -24,6 +24,11 @@ body {
             margin-bottom: 20px;
         }
 
+		        h4 {
+            text-align: center;
+        }
+		
+
         .estimate-table {
             width: 100%;
             border-collapse: collapse;
@@ -126,6 +131,23 @@ body {
     cursor: pointer;
 }
 
+#print-pdf {
+    display: block;  /* Makes the button a block-level element */
+    padding: 10px 20px;
+    margin: 20px auto;  /* Centers the button horizontally with a margin */
+    background-color: #007bff;  /* Same color as back button */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#print-pdf:hover {
+    background-color: #0056b3;  /* Darker shade on hover, same as back button hover */
+}
+
 #download-pdf:hover {
     background-color: #0056b3;  /* Darker shade on hover, same as back button hover */
 }
@@ -133,5 +155,39 @@ body {
        tr {
     display: none;
 }
+
+.modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      width: 300px;
+      text-align: left;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .modal-content h3 { margin-top: 0; }
+    .modal-content label {
+      display: block;
+      margin: 8px 0;
+    }
+    .modal-content button {
+      margin-right: 10px;
+      margin-top: 10px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #confirm-download { background: #007bff; color: #fff; }
+    #cancel-download { background: #ccc; }
         
         

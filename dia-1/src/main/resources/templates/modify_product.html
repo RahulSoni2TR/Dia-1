@@ -66,15 +66,34 @@
                 <input type="file" id="imageFileInput" name="image" style="display: none;" accept="image/*" onchange="uploadImage()">
                 <img id="imagePreview" src="" alt="Image Preview"/>
 
-                <label for="categoryId">Category ID:</label>
+                <label for="categoryId">Category:</label>
                 <select id="categoryId" name="categoryId" onchange="updateCategoryFields()">
                     <option value="">Select Category</option>
-                    <option value="1">Diamond Rings</option>
+                    <option value="1">Diamond</option>
                     <option value="2">Open Setting</option>
-                    <option value="3">Chains</option>
-                    <option value="4">Diamond Earrings</option>
-                    <option value="5">Vilandi</option>
+                    <option value="3">Plain Gold</option>
+                    <option value="4">Vilandi</option>
+                    <option value="5">Jadtar</option>
+                </select>
+                
+                <label for="subCategoryId">Sub Category:</label>
+                <select id="subCategoryId" name="subCategoryId" onchange="updateSubCategoryFields()">
+                    <option value="">Select Category</option>
                     <option value="6">Jadtar Register</option>
+                    <option value="7">Jadtar Halfsets</option>
+                    <option value="8">Jadtar Bangles / Bracelets</option>
+                    <option value="9">Vilandi Halfsets</option>
+                    <option value="10">Vilandi Bangles / Bracelets</option>
+                    <option value="11">Diamond Bangles / Bracelets</option>
+                    <option value="12">Diamond Pendants / Pendant Sets</option>
+                    <option value="13">Diamond Halfsets</option>
+                    <option value="14">OS Halfsets</option>
+                    <option value="15">OS Bangles / Bracelets</option>
+                    <option value="16">PG Bangles / Bracelets</option>
+                    <option value="17">Only Earrings</option>
+                    <option value="18">Chains</option>
+                    <option value="19">Diamond Earrings</option>
+                    <option value="20">Diamond Rings</option>
                 </select>
 
                 <!-- Common fields for all categories -->
@@ -92,6 +111,8 @@
                 <!-- Category-specific fields -->
                 <div id="categoryFields" style="display: none;">
                     <div id="diamondRingsFields" class="category-specific" style="display: none;">
+                     	<label for="grossDia">Gross:</label>
+                        <input type="number" id="grossDia" name="grossDia" step="any">
                         <label for="designNoDR">Design No:</label>
                         <input type="text" id="designNoDR" name="designNoDR" step="any">
                         <label for="pcs">Pieces:</label>
@@ -127,6 +148,10 @@
                         <input type="text" id="pearlsGm" name="pearlsGm" step="any">
                         <label for="openPearlsRate">Pearls Rate:</label>
                         <input type="number" id="openPearlsRate" name="openPearlsRate" step="any">
+                        <label for="ssosPearllbl">SS Pearls(Ct.):</label>
+                        <input type="number" id="ssosPearllbl" name="ssosPearllbl" step="any">
+                        <label for="ssosPearlCt">SS Pearls Rate:</label>
+                        <input type="number" id="ssosPearlCt" name="ssosPearlCt" step="any">
                         <label for="otherStonesCt">Other Stones(Ct.):</label>
                         <input type="number" id="otherStonesCt" name="otherStonesCt" step="any">
                         <label for="otherOsRate">Other Stones Rate:</label>
@@ -138,9 +163,11 @@
                     <div id="chainsFields" class="category-specific" style="display: none;">
                         <label for="designNo">Design No:</label>
                         <input type="text" id="designNo" name="designNo" step="any">
+                        <label for="grossPg">Gross:</label>
+                        <input type="number" id="grossPg" name="grossPg" step="any">
                     </div>
 
-                    <div id="diamondEarringsFields" class="category-specific" style="display: none;">
+                  <!--   <div id="diamondEarringsFields" class="category-specific" style="display: none;">
                         <label for="designNoEarrings">Design No:</label>
                         <input type="text" id="designNoEarrings" name="designNoEarrings" step="any">
                         <label for="pcsEarrings">Pieces:</label>
@@ -154,7 +181,7 @@
                         <label for="diaOsRate">Other Stones Rate:</label>
                         <input type="text" id="diaEOsRate" name="diaEOsRate" step="any">
                     </div>
-
+ -->
                     <div id="vilandiFields" class="category-specific" style="display: none;">
                        <label for="designNoVilandi">Design No:</label>
                         <input type="text" id="designNoVilandi" name="designNoVilandi" step="any">
@@ -225,6 +252,12 @@
                         <input type="number" id="jmRate" name="jmRate" step="any">
                     </div>
                 </div>
+                <div id="extraFieldsContainer" style="margin-top: 15px;">
+  <label>Additional Fields:</label>
+  <div id="extraFieldsList"></div>
+    <button type="button" id="addExtraFieldBtn">Add More Fields</button>
+</div>
+                
             </div>
            
             <button type="submit" class="submit-button">Modify Product</button>
@@ -251,6 +284,8 @@
     	    productId = document.getElementById('productId').value;
     	}
 
+    	
+    	
         fetch(`/loadProduct/${productId}`)
             .then(response => {
                 if (!response.ok) {
@@ -271,8 +306,13 @@
                 updateImagePreview();
 
                 const categoryId = product.categoryId;
+                const subCategoryId = product.subCategoryId;
                 document.getElementById('categoryId').value = categoryId;
+                updateSubCategories();
+
+                document.getElementById('subCategoryId').value = subCategoryId;
                 updateCategoryFields();
+                document.getElementById('subCategoryId').value = subCategoryId;
                 loadAvailableOrderIds(product.categoryId);
 
 
@@ -281,6 +321,7 @@
                 	document.getElementById('designNoDR').value = product.designNo; 
                     document.getElementById('pcs').value = product.pcs;
                     document.getElementById('diaWeight').value = product.diamondsCt;
+                    document.getElementById('grossDia').value = product.gross;
                 } else if (categoryId === 2) { // Open Setting
                 	document.getElementById('designNoOS').value = product.designNo; 
                     document.getElementById('gross').value = product.gross;
@@ -290,16 +331,22 @@
                     document.getElementById('beadsCt').value = product.beadsCt;
                     document.getElementById('beadsRate').value = product.bdRate;
                     document.getElementById('pearlsGm').value = product.pearlsGm;
+                    document.getElementById('ssosPearlCt').value = product.ssPearlCt;
                     document.getElementById('openPearlsRate').value = product.prlRate;
                     document.getElementById('otherStonesCt').value = product.otherStonesCt;
                     document.getElementById('others').value = product.others;
                 } else if (categoryId === 3) { // Chains
                      document.getElementById('designNo').value = product.designNo; 
-                } else if (categoryId === 4) { // Diamond Earrings
+                     document.getElementById('grossPg').value = product.gross;
+                } /* else if (categoryId === 4) { // Diamond Earrings
+                	console.log(product);
                      document.getElementById('designNoEarrings').value = product.designNo; 
                     document.getElementById('pcsEarrings').value = product.pcs;
                     document.getElementById('diamondsCtEarrings').value = product.diamondsCt;
-                } else if (categoryId === 5) { // Vilandi
+                    document.getElementById('diamondsCtEarringsRate').value = product.diaRt;
+                    document.getElementById('diaEOs').value = product.otherStonesCt;
+                    document.getElementById('diaEOsRate').value = product.otherStonesRt;               
+                } */ else if (categoryId === 4) { // Vilandi
                     document.getElementById('designNoVilandi').value = product.designNo; 
                     document.getElementById('vilandi').value = product.vilandiCt;
                     document.getElementById('vRate').value = product.vRate;
@@ -317,7 +364,7 @@
                     document.getElementById('vfitting').value = product.fitting;
                     document.getElementById('vmoz').value = product.mozonite;
                     document.getElementById('vmRate').value = product.mRate;
-                } else if (categoryId === 6) { // Jadtar Register
+                } else if (categoryId === 5) { // Jadtar Register
                      document.getElementById('designNoJadtar').value = product.designNo; 
                     document.getElementById('grossJadtar').value = product.gross;
                     /* document.getElementById('netJadtar').value = product.net; */
@@ -334,28 +381,147 @@
                     document.getElementById('jmoz').value = product.mozonite;
                     document.getElementById('jmRate').value = product.mRate;
                 }
+                $('#extraFieldsList').empty();
+
+                if (product.customFields) {
+                	  try {
+                	    const extras = JSON.parse(product.customFields);
+                	    $('#extraFieldsList').empty();
+                	    for (const [fieldName, obj] of Object.entries(extras)) {
+                	      const $div = $(`
+                	        <div class="extraFieldPair">
+                	    		  <label for="karat">Name:</label>
+                	          <input type="text" class="extraFieldName" placeholder="Name" required />
+                	          <label for="karat">Qty:</label>
+                	          <input type="number" class="extraFieldQty" placeholder="Qty (Ct./ etc)" required />
+                	          <label for="karat">Price:</label>
+                	          <input type="number" class="extraFieldRate" placeholder="Rate" step="any" required style="width:100px;" />
+                	          <button type="button" class="removeBtn">Remove</button>
+                	        </div>`);
+                	      $div.find('.extraFieldName').val(fieldName);
+                	      $div.find('.extraFieldQty').val(obj.qty || '');
+                	      $div.find('.extraFieldRate').val(obj.rate || '');
+                	      $('#extraFieldsList').append($div);
+                	    }
+                	  } catch (e) {
+                	    console.error('Error parsing customFields', e);
+                	  }
+                	}
+                
+             // Add new fields
+                $('#extraFieldsList').on('click', '.removeBtn', function() {
+                  $(this).closest('.extraFieldPair').remove();
+                });
+                
+                $('#extraFieldsList').on('click', '.removeExtraFieldBtn', function() {
+                    $(this).closest('.extraFieldPair').remove();
+                  });
+                  
+             
+                $('#extraFieldsContainer').on('click', '#addExtraFieldBtn', function () {
+                	  const fieldHtml = `
+                	    <div class="extraFieldPair">
+                	      <input type="text" class="extraFieldName" placeholder="Field name" required />
+                	      <input type="number" class="extraFieldQty" placeholder="Qty (Ct./Gm/ etc)" required />
+                	      <input type="number" class="extraFieldRate" placeholder="Rate" step="any" required style="width:100px;" />
+                	      <button type="button" class="removeExtraFieldBtn">Remove</button>
+                	    </div>`;
+                	  $('#extraFieldsList').append(fieldHtml);
+                	});
+
 
                 document.getElementById('productDetails').style.display = 'block'; // Show details
             })
             .catch(error => {
-                alert(error.message);
-                document.getElementById('productDetails').style.display = 'none'; // Hide details if error
-            });
-    }
+                showModal("Error", error.message, false);
+                document.getElementById('productDetails').style.display = 'none';
 
-    document.addEventListener("DOMContentLoaded", function () {
-    	 const cameFromView = sessionStorage.getItem("returnToViewPage") === "true";
+                // Close modal without redirect
+                $(".close-btn").off("click").on("click", function () {
+                    $("#notificationModal").fadeOut();
+                });
+            });
+
+    }
+    
+    const subCategories = {
+    	    "Jadtar": [
+    	        {id: 6, name: "Jadtar Register"},
+    	        {id: 7, name: "Jadtar Halfsets"},
+    	        {id: 8, name: "Jadtar Bangles / Bracelets"},
+    	        {id: 5, name: "Only Earrings"}
+    	    ],
+    	    "Vilandi": [
+    	        {id: 9, name: "Vilandi Halfsets"},
+    	        {id: 10, name: "Vilandi Bangles / Bracelets"},
+    	    ],
+    	    "Diamond": [
+    	        {id: 20, name: "Diamond Rings"},
+    	        {id: 19, name: "Diamond Earrings"},
+    	        {id: 11, name: "Diamond Bangles / Bracelets"},
+    	        {id: 12, name: "Diamond Pendants / Pendant Sets"},
+    	        {id: 13, name: "Diamond Halfsets"},
+    	    ],
+    	    "Open Setting": [
+    	        {id: 14, name: "OS Halfsets"},
+    	        {id: 15, name: "OS Bangles / Bracelets"},
+    	    ],
+    	    "Plain Gold": [
+    	        {id: 18, name: "Chains"},
+    	        {id: 16, name: "PG Bangles / Bracelets"},
+    	    ],
+    	};
+
+    const categoryMap = {
+    	    1: "Diamond",
+    	    2: "Open Setting",
+    	    3: "Plain Gold",
+    	    4: "Vilandi",
+    	    5: "Jadtar"
+    	};
+
+    	function updateSubCategories() {
+    	    const categorySelect = document.getElementById("categoryId");
+    	    const subCategorySelect = document.getElementById("subCategoryId");
+    	    const selectedCategoryId = categorySelect.value;
+    	    const categoryName = categoryMap[selectedCategoryId];
+
+    	    // Clear existing subcategory options
+    	    subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+
+    	    if (categoryName && subCategories[categoryName]) {
+    	        subCategories[categoryName].forEach(subcat => {
+    	            let option = document.createElement("option");
+    	            option.value = subcat.id;
+    	            option.text = subcat.name;
+    	            subCategorySelect.appendChild(option);
+    	        });
+    	        subCategorySelect.disabled = false;
+    	    } else {
+    	        subCategorySelect.disabled = true;
+    	    }
+    	}
+
+
+
+    	document.addEventListener("DOMContentLoaded", function () {
+    	    const cameFromView = sessionStorage.getItem("returnToViewPage") === "true";
     	    const productIdInput = document.getElementById("productId");
 
     	    if (cameFromView) {
     	        const designNo = sessionStorage.getItem("modifyDesignNo");
 
     	        if (designNo && productIdInput) {
-    	            productIdInput.value = designNo; // ✅ Set the input field
-    	            loadProductDetails();           // ✅ Automatically load product
+    	            productIdInput.value = designNo;   // Prefill input
+    	            loadProductDetails();              // Auto load details
+
+    	            // ✅ Reset so it only happens once
+    	            sessionStorage.removeItem("returnToViewPage");
+    	            sessionStorage.removeItem("modifyDesignNo");
     	        }
     	    }
-    });
+    	});
+
     
     
         function updateImagePreview() {
@@ -386,6 +552,8 @@
 
         function updateCategoryFields() {
             const categoryId = document.getElementById('categoryId').value;
+            updateSubCategories();
+            document.getElementById('subCategoryId').value = subCategoryId;
 
             // Hide all category-specific fields
             const categoryFields = document.querySelectorAll('.category-specific');
@@ -398,9 +566,8 @@
                     1: 'diamondRingsFields',
                     2: 'openSettingFields',
                     3: 'chainsFields',
-                    4: 'diamondEarringsFields',
-                    5: 'vilandiFields',
-                    6: 'jadtarFields',
+                    4: 'vilandiFields',
+                    5: 'jadtarFields',
                 };
                 document.getElementById(selectedFields[categoryId]).style.display = 'block';
             }
@@ -448,13 +615,48 @@
                 const finalOrderInput = document.getElementById("finalOrderId");
 
                 if (selectedOption === 'existing') {
-                    finalOrderInput.value = document.getElementById("existingOrderIds").value;
+                	 var val = document.getElementById("existingOrderIds").value;
+                     if (!val) {
+                         val = document.getElementById("oldOrderId").value;
+                     }
+                     finalOrderInput.value = val;
+                    
                 } else {
                     finalOrderInput.value = document.getElementById("newOrderId").value;
                 }
 
+                const extras = {};
+                let valid = true;
+                
+                $('#extraFieldsList .extraFieldPair').each(function () {
+                  const key = $(this).find('.extraFieldName').val().trim();
+                  const qty = $(this).find('.extraFieldQty').val().trim();
+                  const rate = $(this).find('.extraFieldRate').val().trim();
+
+                  if (!key) {
+                    alert("Enter a field name for all additional fields.");
+                    valid = false;
+                    return false; // break loop
+                  }
+                  if (!qty) {
+                    alert("Enter quantity for all additional fields.");
+                    valid = false;
+                    return false;
+                  }
+                  if (!rate) {
+                    alert("Enter rate for all additional fields.");
+                    valid = false;
+                    return false;
+                  }
+
+                  extras[key] = { qty: qty, rate: rate };
+                });
+
+                if (!valid) return;
+                
             const form = document.getElementById('productForm');
             const formData = new FormData(form);
+            formData.append('customFields', JSON.stringify(extras));
             const Id = encodeURIComponent(formData.get('productId'));
 			/* console.log(formData.get('designNo'));
 			console.log(formData.get('designNoVilandi'));	 */		
@@ -470,19 +672,49 @@
                     // Clear form after success
                     $("#productForm")[0].reset();
                     $("#dynamicFields").empty();
+                    $('#extraFieldsList').empty();
 
-                    // Attach redirect logic to the OK button
+                 // Inside $.ajax success: after showModal("Success", ...)
+
                     $(".close-btn").off("click").on("click", function () {
-                        $("#notificationModal").fadeOut(() => {
-                            if (sessionStorage.getItem("returnToViewPage") === "true") {
-                                sessionStorage.removeItem("returnToViewPage");
-                                sessionStorage.removeItem("modifyDesignNo");
-                                window.location.href = "/view-product";
-                            } else {
-                                window.location.href = "/modify-product";
-                            }
-                        });
+                      $("#notificationModal").fadeOut(() => {
+                        // Read handoff (sessionStorage preferred)
+                        const ssReturnUrl = sessionStorage.getItem("returnUrl");
+                        const ssReturnDesignNo = sessionStorage.getItem("returnDesignNo");
+                        const ssReturnContext = sessionStorage.getItem("returnContext");
+
+                        // Fallback to query params
+                        const sp = new URLSearchParams(location.search);
+                        const qpReturnUrl = sp.get('returnUrl');
+                        const qpReturnDesignNo = sp.get('returnDesignNo');
+                        const qpReturnContext = sp.get('returnContext');
+
+                        // Final targets with safe default: stay on Modify if none provided
+                        const baseUrl = ssReturnUrl || qpReturnUrl || location.href;   // default = this page
+                        const returnDesignNo = ssReturnDesignNo || qpReturnDesignNo || "";
+                        const returnContext = ssReturnContext || qpReturnContext || "";
+
+                        // Clear handoff keys to avoid stale redirects
+                        ["returnUrl","returnDesignNo","returnContext","returnToViewPage","modifyDesignNo"].forEach(k => sessionStorage.removeItem(k));
+
+                        // If returning to the same page (direct use), just reload to clear the form and stay put
+                        const target = new URL(baseUrl, location.origin);
+                        if (baseUrl === location.href) {
+                          // Optional: soft reload to reset UI without navigation history
+                          location.replace(target.toString());
+                          return;
+                        }
+
+                        // Otherwise, append hints so caller can restore context/open item
+                        if (returnDesignNo) target.searchParams.set("openDesignNo", String(returnDesignNo));
+                        if (returnContext) target.searchParams.set("returnContext", String(returnContext));
+                        target.searchParams.set("updated", "1");
+
+                        location.href = target.toString();
+                      });
                     });
+
+
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                 	console.error("AJAX Error: ", textStatus, errorThrown);
