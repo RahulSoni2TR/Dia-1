@@ -141,3 +141,147 @@ ul li {
   color: red;
   font-weight: bold;
 }
+
+.verify-btn-inline {
+  display: inline-block;
+  margin-top: 12px;
+  background: #007bff;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.verify-btn-inline[disabled] {
+  background: #9bb7e6;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+#verifyModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 12, 12, 0.45);
+  z-index: 9999;
+}
+#verifyModal .modal-card {
+  background: #fff;
+  max-width: 640px;
+  width: 92%;
+  padding: 18px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+#verifyModal .modal-actions {
+  display:flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+#verifyModal .btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+#verifyModal .btn.modify { background: #17a2b8; color: #fff; }
+#verifyModal .btn.verify { background: #28a745; color: #fff; }
+#verifyModal .btn.close { background: #6c757d; color: #fff; }
+.modal-info { margin-top:6px; color:#333; }
+
+/* Small style to ensure QR and button stack nicely */
+.product-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .modal-content {
+    background: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-align: center;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  .modal-content h3 {
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .modal-content button {
+    padding: 6px 14px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #0056b3;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .estimate-btn-inline {
+  background-color: #17a2b8;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.estimate-btn-inline:hover {
+  background-color: #138496;
+}
+  
+  .modal-actions .btn.sold {
+  background-color: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+}
+
+.modal-actions .btn.sold:hover {
+  background-color: #c82333;
+}
+
+.modal-actions .btn.enquiry {
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #007bff;
+}
+
+.modal-actions .btn.enquiry:hover {
+  background-color: #0056b3;
+}
+
+/* Ensure modal-actions can handle 5 buttons */
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}
+  

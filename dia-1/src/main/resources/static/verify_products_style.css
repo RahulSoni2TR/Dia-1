@@ -2,7 +2,7 @@
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
-  background: #f4f6f9;
+  background: linear-gradient(to bottom, #43a0a0, #f6f7e4);
   color: #333;
 }
 
@@ -10,17 +10,23 @@ body {
 header {
   background: #008080;
   color: #fff;
-  padding: 12px 20px;
+  padding: 8px 12px;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;      /* ⬅ stack title row and filters row */
+  gap: 6px;
+  box-sizing: border-box;
 }
 
+
+
+/* Header title */
 .header-title {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: bold;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .back-btn {
@@ -31,27 +37,46 @@ header {
   padding: 6px 12px;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
+
 .back-btn:hover {
   background: #004040;
   color: #fff;
+  transform: translateY(-1px);
 }
 
+/* First row: back + title + maybe one small control */
+header > .header-title,
+header > .back-btn {
+  /* they are direct children, but we want them on same row */
+}
+
+header .header-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+/* Filters - PERFECT FIT (NO SCROLL) */
 .filters {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: wrap;             /* ⬅ allow wrap instead of overflowing */
   align-items: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 select,
 input[type="text"],
 input[type="number"] {
-  font-size: 1rem;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  min-height: 30px;
 }
 
 /* Panels */
@@ -298,30 +323,43 @@ button.reverify-btn:hover {
   }
 }
 
-/* View toggle buttons */
+/* View toggle - NO BORDERS */
 .view-toggle {
   display: flex;
   gap: 0;
-  border: 1px solid #008080;
+  border: none !important;           /* ✅ NO BORDER */
+  background: rgba(255,255,255,0.15); /* ✅ Subtle background */
   border-radius: 6px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .view-toggle button {
-  padding: 6px 12px;
-  background: #fff;
-  color: #008080;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  background: transparent;           /* ✅ Transparent */
+  color: rgba(255,255,255,0.95);
+  border: none !important;           /* ✅ NO BORDER */
   flex: 1;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .view-toggle button.active {
-  background: #008080;
-  color: #fff;
+  background: rgba(255,255,255,0.9);
+  color: #008080;
+  font-weight: 700;
 }
+
+.view-toggle button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.price-toggle {
+  font-size: 0.78rem;    /* ✅ Smaller text */
+  padding: 2px 4px;
+}
+
 
   /* Minimal modal enhancements for accessibility */
       .modal {
@@ -531,3 +569,301 @@ button.reverify-btn {
   transform: translateY(0);     /* Reset lift */
 }
   
+  
+  /* =========================
+   Action Buttons (Common)
+========================= */
+
+/* Generate Tags (top bar) */
+#generateBtn {
+  background-color: #2ea44f;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#generateBtn:hover {
+  background-color: #22863a;
+}
+
+#generateBtn:active {
+  transform: scale(0.97);
+}
+
+/* Add / Remove buttons inside product cards */
+.product-card button {
+  margin-left: auto;
+  background-color: #0366d6;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* Hover */
+.product-card button:hover {
+  background-color: #024ea2;
+}
+
+/* Remove button (right panel) */
+.panel.right .product-card button {
+  background-color: #d73a49;
+}
+
+.panel.right .product-card button:hover {
+  background-color: #b92534;
+}
+
+/* Disabled state (future-proof) */
+button:disabled {
+  background-color: #bdbdbd;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+  
+
+/* Grid view button container */
+.product-list.grid-view .product-button {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: space-between;
+}
+
+
+.product-list.grid-view .product-button button {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-list.grid-view .product-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.product-list.grid-view .product-info {
+  flex: 1;
+}
+
+/* ==== FORCE FIX: Button spacing in LIST VIEW ==== */
+.product-list.list-view .product-button {
+  display: flex;
+  gap: 4px !important;
+  margin-top: 6px;
+}
+
+.product-list.list-view .product-button button {
+  margin: 0 !important;        /* 🔥 THIS IS THE KEY */
+  padding: 6px 12px;
+  min-width: 80px;
+}
+
+
+.product-list.list-view .product-card {
+  align-items: flex-start;
+}
+
+.product-list.list-view .product-button {
+  justify-content: flex-end;
+}
+
+.view-toggle button {
+  background: transparent;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  padding: 6px 12px;
+  margin-left: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ACTIVE BUTTON */
+.view-toggle button.active {
+  background: #ffffff;
+  color: #008b8b;   /* same green theme */
+  font-weight: 600;
+}
+
+#sortFilter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  min-width: 160px;
+}
+
+#sortFilter:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+  outline: none;
+}
+
+.filter-group {
+  flex: 1 1 auto;
+  min-width: 140px;            /* will wrap to next line if not enough space */
+}
+
+
+.filter-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  white-space: nowrap;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Search & Sort Selects */
+#searchType, #sortFilter {
+  min-width: 95px;       /* ✅ Smaller selects */
+}
+
+#searchType:focus, #sortFilter:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+#searchBox {
+  min-width: 110px;      /* ✅ Smaller search */
+}
+
+#searchBox:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  header {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+  }
+  
+  .filters {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+input[type="number"] {
+  width: 55px;           /* ✅ Smaller number */
+}
+
+.verify-final-btn,
+.view-toggle,
+.price-toggle {
+  flex: 0 0 auto;
+}
+
+/* Desktop: put back/title and filters on one row when enough width */
+@media (min-width: 900px) {
+  header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .header-title {
+    flex: 0 0 auto;
+    margin-right: 8px;
+  }
+
+  .filters {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;         /* only on wide screens */
+  }
+}
+
+/* Small screens: everything can wrap but stays inside header */
+@media (max-width: 899px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-wrap: wrap;
+  }
+}
+
+/* 1) Let filters wrap even on wide screens */
+.filters {
+  display: flex;
+  flex-wrap: wrap;       /* always allow wrapping */
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 2) Desktop header: keep back + title on first row, filters below if needed */
+@media (min-width: 900px) {
+  header {
+    flex-direction: row;
+    align-items: flex-start;  /* title row top, filters can wrap below */
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .filters {
+    flex: 1 1 auto;
+  }
+}
+
+/* 3) Make filter groups shrink and wrap */
+.filter-group {
+  flex: 0 1 auto;        /* allow shrinking */
+  min-width: 160px;      /* wraps to next line if no space */
+}
+
+/* 4) View toggle and price checkbox: push to next line if necessary */
+.view-toggle,
+.price-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* When screen is not very wide, let these drop to their own line */
+@media (max-width: 1100px) {
+  .view-toggle,
+  .price-toggle {
+    width: 100%;         /* each on its own row at the end */
+    justify-content: flex-end;
+    display: flex;
+  }
+}
+
+/* 5) Slightly reduce width of the big select that overlaps (sort filter) */
+#sortFilter {
+  min-width: 130px;      /* was 160px */
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+.page-footer {
+  background: #2e2e2e;
+  color: #f5f5f5;
+  text-align: center;
+  padding: 12px 16px;
+  margin-top: 24px;
+}

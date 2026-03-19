@@ -254,15 +254,30 @@ function renderTable(logs) {
             <td class="px-4 py-3">${log.customerName||'-'}</td>
             <td class="px-4 py-3">${new Date(log.createdAt).toLocaleString()}</td>
             <td class="px-4 py-3">
-              <button class="view-product-btn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                  data-product='${encodeURIComponent(JSON.stringify(productSnapshot))}'>
+            <div class="flex flex-col gap-2 w-32">
+              <button
+                class="view-product-btn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-center"
+                data-product='${encodeURIComponent(JSON.stringify(productSnapshot))}'
+              >
                 View Product
               </button>
-              <button class="view-estimate-btn bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-2"
-                  data-estimate='${encodeURIComponent(JSON.stringify(log.estimateSnapshot))}'>
+
+              <button
+                class="view-estimate-btn bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-center"
+                data-estimate='${encodeURIComponent(JSON.stringify(log.estimateSnapshot))}'
+              >
                 View Estimate
               </button>
-            </td>
+                
+                <button
+                class="delete-sale-btn bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-center"
+                data-id="${log.id}"
+              >
+                Delete
+              </button>
+                
+            </div>
+          </td>
         `;
         salesTableBody.appendChild(tr);
     });
@@ -304,6 +319,26 @@ document.addEventListener('click', function(e){
     sessionStorage.setItem('returnToPage', window.location.href);
     window.location.href = '/estimate-snapshot';
   }
+  if (e.target && e.target.classList.contains('delete-sale-btn')) {
+	    const id = e.target.dataset.id;
+	    if (!id) return;
+
+	    const ok = window.confirm("Are you sure you want to delete this sale log?");
+	    if (!ok) return;
+
+	    fetch(`/api/sales-logs/${encodeURIComponent(id)}`, {
+	      method: 'DELETE'
+	    })
+	      .then(res => {
+	        if (!res.ok) throw new Error('Delete failed: ' + res.status);
+	        return fetchSalesLogs(); // reload table
+	      })
+	      .catch(err => {
+	        console.error('Failed to delete sale log:', err);
+	        alert('Failed to delete sale log. Check console for details.');
+	      });
+	  }
+  
 });
 
 document.getElementById("resetFilters").addEventListener("click", () => {
@@ -323,6 +358,7 @@ document.getElementById("resetFilters").addEventListener("click", () => {
 	  // Reload all logs
 	  fetchSalesLogs();
 	});
+
 
 
 // Initialize

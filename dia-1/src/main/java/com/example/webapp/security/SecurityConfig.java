@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -45,12 +46,30 @@ public class SecurityConfig {
             .and()
             .authorizeHttpRequests()
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**", "/files/**","/uploads/**").permitAll()
+                // allow public loading of product details (GET)
+                .requestMatchers(HttpMethod.GET,"/get-estimate", "/loadProduct/**", "/load-product/**", "/loadProductByDesignNo/**","/available-order-ids"," \"/getTagsPdf/**\"").permitAll()
+                // allow anonymous updates (PUT) — BE CAREFUL: this opens modification without auth
+                .requestMatchers(HttpMethod.PUT, "/updateProduct/**", "/update-product/**","/verify/**", "/batch-update").hasRole("ADMIN")
+                .requestMatchers(
+                        HttpMethod.POST,
+                        "/tags/custom/pdf"
+                    ).permitAll()
+                .requestMatchers(HttpMethod.GET,  "/getEstimate/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/logEnquiry").permitAll()
+                .requestMatchers(HttpMethod.POST, "/logSale").permitAll()
+                // keep login/registration public
                 .requestMatchers("/login", "/register", "/logout", "*.css","/get-security-question","/reset-password","/verify-security-answer",
-                		"/reset-ns-password",
+                		"/reset-ns-password","/modify-product",
                 	"proxy-image","/loadProductByDesignNo/**","/load-product/**").permitAll() 
-                .requestMatchers("/add-product", "/modify-product", "/remove-product", "/set-price","/available-order-ids","/categories",
-                		"/getCategoryNameById","/api/enquiries","/enquiries","/sales/logs","/verify","/frequency").hasRole("ADMIN")
+                .requestMatchers("/add-product", "/remove-product", "/set-price","/available-order-ids","/categories",
+                		"/getCategoryNameById","/api/enquiries","/enquiries","/sales/logs","/verify","/frequency", "/batch-update").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/enquiries/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/sales-logs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/rate-history/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/rates").permitAll()
+                .requestMatchers("/public-rates").permitAll()
                 .requestMatchers("/view-product").authenticated()
+                .requestMatchers("/price-history").authenticated()
                 .anyRequest().authenticated()
             .and()
             .formLogin()

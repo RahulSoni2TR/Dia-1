@@ -241,3 +241,15 @@ input[type="checkbox"] {
       border-radius: 5px;
       margin-top: 10px;
     }
+
+.form a.button {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  line-height: 50px;
+  color: #fff;
+}
+
+.signup .button {
+  margin-top: 10px;
+}

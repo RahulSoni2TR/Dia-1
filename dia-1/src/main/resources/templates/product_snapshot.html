@@ -46,6 +46,12 @@ function renderProduct(product) {
     };
 
     const renderText = v => v ? v : '<span class="empty-label">No value</span>';
+    function renderTexts(value) {
+    	  if (value == null || value === '') return '<span class="empty-label">No value</span>';
+    	  const num = Number(value);
+    	  if (!Number.isFinite(num)) return value;
+    	  return num.toFixed(3);  // Always 8.000, 7.650
+    	}
 
     // Additional fields
     let extrasHTML = '';
@@ -73,8 +79,8 @@ function renderProduct(product) {
     switch(product.categoryId){
         case 1: case 11: case 12: case 13:
             categoryFields = `
-                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
                 <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
                 <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
                 <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
@@ -82,30 +88,30 @@ function renderProduct(product) {
             break;
         case 2: case 14: case 15:
             categoryFields = `
-                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
                 <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
                 <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
                 <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
-                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                <p><strong>Pearls:</strong> ${renderTexts(product.pearlsGm)} gm</p>
                 <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
                 <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
             `;
             break;
         case 3: case 16: case 18:
             categoryFields = `
-                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
             `;
             break;
         case 4: case 9: case 10:
             categoryFields = `
                 <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
-                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
+                <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+                <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
                 <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
                 <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
-                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
+                <p><strong>Pearls:</strong> ${renderTexts(product.pearlsGm)} gm</p>
                 <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
                 <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
                 <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>

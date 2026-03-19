@@ -7,6 +7,7 @@
 </head>
 <body>
   <header>
+      <a href="/home" class="home-btn">Home</a>
     <h1>Explore Our Product Range</h1>
     <a href="/logout" class="logout-btn">Logout</a>
   </header>
@@ -16,7 +17,7 @@
     <select id="searchBy">
       <option value="name">Search by Product Name</option>
       <option value="design">Search by Design No</option>
-      <option value="order">Search by Order Id</option>
+      <option value="order">Search by Register Id</option>
     </select>
     <input type="text" id="searchInput" placeholder="Search by Product Name">
     <select id="sortFilter">
@@ -210,8 +211,8 @@
             const productCard = document.createElement('div');
             productCard.classList.add('product-card');
          // Mark product as verified if it's in the verified list
-            const isVerified = product.verificationStatus === 1;
-
+const isVerified = Number(product.verificationStatus) === 1;
+console.log(isVerified);
             if (isVerified) {
                 productCard.classList.add('verified'); // optional class for UI
             }
@@ -427,7 +428,7 @@
       const si = document.getElementById('searchInput');
       si.placeholder =
         savedSearchBy === 'design' ? 'Search by Design No' :
-        savedSearchBy === 'order'  ? 'Search by Order Id' :
+        savedSearchBy === 'order'  ? 'Search by Register Id' :
                                      'Search by Product Name';
 
       // Sidebar state
@@ -567,5 +568,8 @@
       });
 
   </script>
+  <footer class="page-footer">
+    <span>&copy; 2026 Jewellery Store. All rights reserved.</span>
+  </footer>
 </body>
 </html>

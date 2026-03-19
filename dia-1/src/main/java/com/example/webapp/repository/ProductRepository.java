@@ -18,7 +18,7 @@ import com.example.webapp.models.Product;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     // Additional query methods can be defined here
-	List<Product> findByCategoryId(Long categoryId);
+	List<Product> findByCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(Long categoryId);
 //	Page<Product> findByCategoryId(Integer category, Pageable pageable);
 	Optional<Product> findByDesignNo(String designNo);
 	void deleteByDesignNo(String productId);
@@ -49,6 +49,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             String searchTerm,
             Pageable pageable
     );
+
+//    Page<Product> findProductsByCategoryAndSubCategoryAndDateRange(Long categoryId, Long subCategoryId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+    List<Product> findByCategoryIdAndSubCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(Long categoryId, Long subCategoryId);
 
 
 
@@ -93,4 +96,82 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("UPDATE Product p SET p.orders = null, p.designNo = null WHERE p.designNo = :designNo")
     int resetProductMappingByDesignNo(@Param("designNo") String designNo);
     
+    Page<Product> findByCategoryIdAndCreateDateTimeBetweenAndOrdersIsNotNullAndDesignNoIsNotNull(
+            Long categoryId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable);
+
+        Page<Product> findByCategoryIdAndSubCategoryIdAndCreateDateTimeBetweenAndOrdersIsNotNullAndDesignNoIsNotNull(
+            Long categoryId,
+            Long subCategoryId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable);
+        
+        List<Product> findByDesignNoIn(List<String> designNos);
+        
+        Page<Product>
+        findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+            String item,
+            String designNo,
+            String empty,
+            Pageable pageable
+        );
+        
+        Page<Product>
+        findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String item,
+            String designNo,
+            List<Integer> categoryIds,
+            String empty,
+            Pageable pageable
+        );
+
+        
+        Page<Product>
+        findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+            String item,
+            String designNo,
+            List<Long> subCategoryIds,
+            String empty,
+            Pageable pageable
+        );
+
+        /* =====================================================
+        DESIGN NO – EXACT MATCH
+        ===================================================== */
+     Page<Product> findByDesignNo(
+             Long designNo,
+             Pageable pageable
+     );
+
+
+     /* =====================================================
+        ALL – Product Name (LIKE) OR Design No (EXACT)
+        ===================================================== */
+     @Query("""
+         SELECT p FROM Product p
+         WHERE
+           (
+             LOWER(p.item) LIKE LOWER(CONCAT('%', :term, '%'))
+             OR p.designNo = :designNo
+           )
+           AND p.designNo IS NOT NULL
+           AND p.designNo <> ''
+     """)
+     Page<Product> searchByNameOrDesign(
+             @Param("term") String term,
+             @Param("designNo") Long designNo,
+             Pageable pageable
+     );
+
+     Page<Product> findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+    		    long subCategoryId, String term, String notValue, Pageable pageable
+    		);
+
+    		Page<Product> findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+    		    long subCategoryId, String term, String notValue, Pageable pageable
+    		);
+     
 }

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Custom Foldable Tags</title>
+  <link rel="stylesheet" href="verify_products_style.css" />
+</head>
+
+<body>
+
+<header>
+<div class="header-top">
+  <button class="back-btn" onclick="window.location.href='/home'">← Back</button>
+  <div class="header-title">Custom Foldable Tags</div>
+</div>
+  <div class="filters">
+    <select id="categoryFilter"></select>
+    <select id="subcategoryFilter" style="display:none;"></select>
+	
+ <!-- ✅ SEARCH BY SECTION -->
+  <div class="filter-group">
+    <label class="filter-label">Search By:</label>
+    <select id="searchType">
+      <option value="all">Design No or Product Name</option>
+      <option value="design">Design No</option>
+      <option value="name">Product Name</option>
+    </select>
+    <input type="text" id="searchBox" placeholder="Design No or Product Name..." />
+  </div>
+
+  <!-- ✅ SORT BY SECTION -->
+  <div class="filter-group">
+    <label class="filter-label">Sort By:</label>
+    <select id="sortFilter">
+      <option value="recent">Most Recent First</option>
+      <option value="modified">Recently Modified</option>
+      <option value="oldest">Oldest First</option>
+    </select>
+  </div>
+
+    <label>Start Tag Position:</label>
+    <input type="number" id="startSlot" min="1" value="1" style="width:70px;" />
+
+<label>Tag Font Size:</label>
+<select id="tagFontSize">
+  <option value="5.5" selected>5.5 px (Default)</option>
+  <option value="6">6 px</option>
+  <option value="6.5">6.5 px</option>
+  <option value="7">7 px</option>
+  <option value="7.5">7.5 px</option>
+  <option value="8">8 px</option>
+  <option value="8.5">8.5 px</option>
+</select>
+
+
+<button id="printTagsBtn" class="verify-final-btn">
+  Print Tags
+</button>
+
+<button id="downloadTagsBtn" class="verify-final-btn">
+  Download PDF
+</button>
+
+
+    <div class="view-toggle">
+      <button id="listViewBtn">List View</button>
+      <button id="gridViewBtn" class="active">Grid View</button>
+    </div>
+
+    <label class="price-toggle">
+      <input type="checkbox" id="priceToggle" />
+      Show Price With Fields
+    </label>
+  </div>
+</header>
+
+<div class="container">
+  <!-- AVAILABLE -->
+  <div class="panel left">
+    <h2>Available Products</h2>
+    <div id="availableList" class="product-list grid-view"></div>
+  </div>
+
+  <!-- SELECTED -->
+  <div class="panel right">
+    <h2>Selected For Tagging</h2>
+    <div id="selectedList" class="product-list grid-view"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="productModal" class="modal" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <h2>Product Details</h2>
+    <div id="productDetailsContainer" class="product-details"></div>
+
+    <div class="modal-buttons">
+      <button class="modify-btn" id="modifyBtn">Modify Product</button>
+      <button class="verify-final-btn" id="addToTagBtn">
+        Add for Tagging
+      </button>
+    </div>
+
+    <button class="close-btn" id="closeModalBtn">Close</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   ELEMENTS
+===================================================== */
+const availableList = document.getElementById("availableList");
+const selectedList  = document.getElementById("selectedList");
+
+const categoryFilter = document.getElementById("categoryFilter");
+const subcategoryFilter = document.getElementById("subcategoryFilter");
+const searchBox = document.getElementById("searchBox");
+
+const listViewBtn = document.getElementById("listViewBtn");
+const gridViewBtn = document.getElementById("gridViewBtn");
+const priceToggle = document.getElementById("priceToggle");
+
+const modal = document.getElementById("productModal");
+const productDetailsContainer = document.getElementById("productDetailsContainer");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const modifyBtn = document.getElementById("modifyBtn");
+const addToTagBtn = document.getElementById("addToTagBtn");
+
+/* =====================================================
+   STATE
+===================================================== */
+let allProducts = [];
+let availableProducts = [];
+let selectedProducts = [];
+let currentProduct = null;
+let allProductsCache = new Map(); // key: productId, value: product object
+let selectedIdsSet = new Set();   // or use designNo if that is unique/stable
+
+/* =====================================================
+   CATEGORY DATA (UNCHANGED)
+===================================================== */
+const subCategories = {
+  Jadtar: [
+    { id: 6, name: "Jadtar Register" },
+    { id: 7, name: "Jadtar Halfsets" },
+    { id: 8, name: "Jadtar Bangles / Bracelets" },
+    { id: 17, name: "Only Earrings" },
+  ],
+  Vilandi: [
+    { id: 9, name: "Vilandi Halfsets" },
+    { id: 10, name: "Vilandi Bangles / Bracelets" },
+  ],
+  Diamond: [
+    { id: 20, name: "Diamond Rings" },
+    { id: 19, name: "Diamond Earrings" },
+    { id: 11, name: "Diamond Bangles / Bracelets" },
+    { id: 12, name: "Diamond Pendants / Pendant Sets" },
+    { id: 13, name: "Diamond Halfsets" },
+  ],
+  "Open Setting": [
+    { id: 14, name: "OS Halfsets" },
+    { id: 15, name: "OS Bangles / Bracelets" },
+  ],
+  "Plain Gold": [
+    { id: 18, name: "Chains" },
+    { id: 16, name: "PG Bangles / Bracelets" },
+  ],
+};
+//Category/Subcategory labels map (REQUIRED for modal view)
+const detailsMap = {
+  1: "Diamond",
+  2: "Open Setting",
+  3: "Plain Gold",
+  4: "Vilandi",
+  5: "Jadtar",
+  6: "Jadtar Register",
+  7: "Jadtar Halfsets",
+  8: "Jadtar Bangles / Bracelets",
+  9: "Vilandi Halfsets",
+  10: "Vilandi Bangles / Bracelets",
+  11: "Diamond Bangles / Bracelets",
+  12: "Diamond Pendants / Pendant Sets",
+  13: "Diamond Halfsets",
+  14: "OS Halfsets",
+  15: "OS Bangles / Bracelets",
+  16: "PG Bangles / Bracelets",
+  17: "Only Earrings",
+  18: "Chains",
+  19: "Diamond Earrings",
+  20: "Diamond Rings",
+};
+
+/* =====================================================
+   RENDER
+===================================================== */
+function render() {
+  availableList.innerHTML = "";
+  selectedList.innerHTML = "";
+
+  availableProducts.forEach(p =>
+    availableList.appendChild(createCard(p, false))
+  );
+
+  selectedProducts.forEach(p =>
+    selectedList.appendChild(createCard(p, true))
+  );
+}
+
+function createCard(product, isSelected) {
+  const card = document.createElement("div");
+  card.className = "product-card";
+
+  const price = priceToggle.checked
+    ? product.priceWithFields
+    : product.price;
+
+  card.innerHTML = `
+    <img src="${product.image}">
+    <div class="product-info">
+      <h3>${product.name}</h3>
+      <p>Order: ${product.orderId || "N/A"} | Design: ${product.designNo}</p>
+      <p>Price: ${price ?? "N/A"}</p>
+      <div class="product-button"></div>
+    </div>
+  `;
+
+  const btnContainer = card.querySelector(".product-button");
+
+  const viewBtn = document.createElement("button");
+  viewBtn.className = "reverify-btn";
+  viewBtn.textContent = "View";
+  viewBtn.onclick = () => openModalWithDetails(product);
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.className = "verify-btn";
+  toggleBtn.textContent = isSelected ? "Remove" : "Add";
+  toggleBtn.onclick = () => toggleProduct(product);
+
+  btnContainer.appendChild(viewBtn);
+  btnContainer.appendChild(toggleBtn);
+
+  return card;
+}
+
+function toggleProduct(product) {
+	  const id = product.id;
+
+	  if (selectedIdsSet.has(id)) {
+	    selectedIdsSet.delete(id);
+	  } else {
+	    selectedIdsSet.add(id);
+	  }
+
+	  // Rebuild from cache + current fetched products
+	  rebuildLists();
+	}
+
+
+/* =====================================================
+PRODUCT DETAILS RENDERER (COPIED AS-IS)
+===================================================== */
+function renderProductDetails(product) {
+const categoryName = detailsMap[product.categoryId] || "Unknown";
+const subCategoryName = detailsMap[product.subCategoryId] || "Unknown";
+
+let hasExtras = false;
+let extrasHTML = "";
+
+if (product.customFields && product.customFields !== "{}") {
+ try {
+   const extras = JSON.parse(product.customFields);
+   const keys = Object.keys(extras);
+   if (keys.length > 0) {
+     hasExtras = true;
+     extrasHTML += "<h4>Additional Fields:</h4><ul>";
+     keys.forEach((key) => {
+       const qty =
+         (extras[key] &&
+           (extras[key].qty ??
+            extras[key].Qty ??
+            extras[key].value)) ?? "N/A";
+       extrasHTML += `<li><strong>${key}</strong>: ${qty}</li>`;
+     });
+     extrasHTML += "</ul>";
+   }
+ } catch (e) {
+   console.error("Failed to parse customFields:", e);
+ }
+}
+
+const extrasBlock = hasExtras ? extrasHTML : "";
+
+let html = `
+ <div class="product-top">
+   <div class="product-image">
+     <img src="${product.imageUrl || "https://placehold.co/200x150"}" />
+   </div>
+   <div class="product-qr">
+     <img class="qr-code"
+          src="${product.qrCodePath || "https://placehold.co/140?text=QR"}"/>
+   </div>
+ </div>
+
+ <div class="product-details">
+   <h2>${product.item || "Unnamed item"}</h2>
+   <p><strong>Category:</strong> ${categoryName}</p>
+   <p><strong>Sub Category:</strong> ${subCategoryName}</p>
+   <p><strong>Design No:</strong>
+     ${product.orders?.orderId || "N/A"}/${product.designNo || "N/A"}
+   </p>
+   <p><strong>Gold:</strong> ${product.karat || "N/A"} Karat</p>
+
+   <p>
+     <label>
+       <input type="checkbox" id="withFieldsToggle" checked />
+       Price with additional fields
+     </label>
+   </p>
+
+   <p><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
+   <h3>Additional Details:</h3>
+   `;
+
+   const c = Number(product.categoryId);
+
+   if ([1, 11, 12, 13].includes(c)) {
+     html += `
+       <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+       <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+       <p><strong>Pcs:</strong> ${product.pcs ?? "N/A"}</p>
+       <p><strong>Diamonds:</strong> ${product.diamondsCt ?? "N/A"} ct</p>
+       <p><strong>Other Stones:</strong> ${product.otherStonesCt ?? "N/A"} ct</p>
+       ${extrasBlock}
+       <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+     `;
+   }
+   else if ([2, 14, 15].includes(c)) {
+     html += `
+       <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+       <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+       <p><strong>Vilandi:</strong> ${product.vilandiCt ?? "N/A"} ct</p>
+       <p><strong>Diamonds:</strong> ${product.diamondsCt ?? "N/A"} ct</p>
+       <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+       <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+       <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+       <p><strong>Other Stones:</strong> ${product.otherStonesCt ?? "N/A"} ct</p>
+       ${extrasBlock}
+       <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+     `;
+   }
+   else if ([3, 16, 18].includes(c)) {
+     html += `
+       <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+       <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+       ${extrasBlock}
+       <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+     `;
+   }
+   else if ([4, 9, 10].includes(c)) {
+     html += `
+       <p><strong>Vilandi:</strong> ${product.vilandiCt ?? "N/A"} ct</p>
+       <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+       <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+       <p><strong>Stones:</strong> ${product.stones ?? "N/A"}</p>
+       <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+       <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+       <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+       <p><strong>Real Stone:</strong> ₹${product.realStone ?? "N/A"}</p>
+       <p><strong>Fitting:</strong> ₹${product.fitting ?? "N/A"}</p>
+       ${extrasBlock}
+       <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+     `;
+   }
+   else if ([5, 6, 7, 8, 17].includes(c)) {
+     html += `
+       <p><strong>Gross:</strong> ${product.gross ?? "N/A"} gm</p>
+       <p><strong>Net:</strong> ${product.net ?? "N/A"} gm</p>
+       <p><strong>Stones:</strong> ${product.stones ?? "N/A"} ct</p>
+       <p><strong>Beads:</strong> ${product.beadsCt ?? "N/A"} ct</p>
+       <p><strong>Pearls:</strong> ${product.pearlsGm ?? "N/A"} gm</p>
+       <p><strong>SS Pearl:</strong> ${product.ssPearlCt ?? "N/A"} ct</p>
+       <p><strong>Real Stone:</strong> ₹${product.realStone ?? "N/A"}</p>
+       <p><strong>Mozonite:</strong> ${product.mozonite ?? "N/A"}</p>
+       <p><strong>Fitting:</strong> ₹${product.fitting ?? "N/A"}</p>
+       ${extrasBlock}
+       <p><strong>Remarks:</strong> ${product.remarks ?? "N/A"}</p>
+     `;
+   }
+
+
+/* keep ALL your category-based blocks here exactly as before */
+
+html += `</div>`;
+productDetailsContainer.innerHTML = html;
+
+const toggleEl = document.getElementById("withFieldsToggle");
+const priceValueEl = document.getElementById("priceValue");
+
+function renderPrice() {
+ const val = toggleEl.checked
+   ? product.priceWithFields ?? product.price
+   : product.price;
+ priceValueEl.textContent =
+   val == null ? "N/A" : Math.round(val).toLocaleString("en-IN");
+}
+
+toggleEl.addEventListener("change", renderPrice);
+renderPrice();
+}
+
+priceToggle.addEventListener("change", () => {
+	  // just rebuild DOM from existing arrays using new checkbox state
+	  render();
+	});
+
+
+/* =====================================================
+   MODAL (VIEW + MODIFY PRESERVED)
+===================================================== */
+function openModalWithDetails(product) {
+  currentProduct = product;
+  renderProductDetails(product);
+  modal.classList.add("show");
+
+  modifyBtn.onclick = () => {
+    const designNo = product.designNo;
+    sessionStorage.setItem("returnUrl", location.href);
+    sessionStorage.setItem("modifyDesignNo", designNo);
+    location.href = `/modify-product?designNo=${designNo}`;
+  };
+
+  addToTagBtn.onclick = () => {
+    if (!selectedProducts.find(p => p.id === product.id)) {
+      toggleProduct(product);
+    }
+    closeModal();
+  };
+}
+
+function closeModal() {
+  modal.classList.remove("show");
+  currentProduct = null;
+}
+
+closeModalBtn.onclick = closeModal;
+
+/* =====================================================
+   LOAD PRODUCTS (NO VERIFICATION)
+===================================================== */
+async function loadProducts() {
+	  const categoryName = categoryFilter.value !== "All" ? categoryFilter.value : "";
+	  const subCategoryId = subcategoryFilter.value && subcategoryFilter.value !== "All"
+	    ? String(subcategoryFilter.value)
+	    : "";
+	  const searchTerm = searchBox.value.trim();
+	  const searchType = document.getElementById("searchType")?.value || "all";
+	  const sortBy = document.getElementById("sortFilter")?.value || "recent";
+
+	  const categoryMap = {
+	    "Diamond": 1,
+	    "Open Setting": 2,
+	    "Plain Gold": 3,
+	    "Vilandi": 4,
+	    "Jadtar": 5,
+	  };
+
+	  const baseCategoryId = categoryName ? String(categoryMap[categoryName]) : "";
+	  const categoryParam = subCategoryId || baseCategoryId;
+
+	  const params = new URLSearchParams();
+	  params.set("page", "0");
+	  params.set("size", "1000");
+
+	  if (categoryParam) params.set("category", categoryParam);
+	  if (searchTerm) params.set("searchTerm", searchTerm);
+	  params.set("searchBy", searchType || "all");
+
+	  const res = await fetch(`/product/load?${params.toString()}`);
+	  const data = await res.json();
+
+	  // This fetched list is ONLY the current "available" universe under filters
+	  const fetched = data.products
+	    .map(p => ({
+	      id: p.productId,
+	      name: p.item,
+	      image: p.imageUrl || "https://placehold.co/200x150",
+	      orderId: p.orders?.orderId,
+	      designNo: p.designNo,
+	      price: p.price,
+	      priceWithFields: p.priceWithFields,
+	      createdAt: p.createDateTime,
+	      updatedAt: p.updateDateTime,
+	      ...p
+	    }))
+	    .filter(p => p.designNo && p.orderId);
+
+	  fetched.sort((a, b) => {
+	    const dateA = new Date(a[sortBy === "recent" ? "createdAt" : "updatedAt"]);
+	    const dateB = new Date(b[sortBy === "recent" ? "createdAt" : "updatedAt"]);
+	    return sortBy === "recent" || sortBy === "modified"
+	      ? dateB - dateA
+	      : dateA - dateB;
+	  });
+
+	  // This is the latest snapshot of products matching current filters
+	// 1) Update global cache with freshly fetched page
+	  fetched.forEach(p => {
+	    allProductsCache.set(p.id, p); // last data “wins”
+	  });
+
+	  // 2) Keep this page as the current “available universe” for the left side
+	  allProducts = fetched;
+
+	  // 3) Rebuild arrays according to selection
+	  rebuildLists();
+
+	}
+	
+function rebuildLists() {
+	  // right: from global cache, independent of current filters
+	  selectedProducts = Array.from(selectedIdsSet)
+	    .map(id => allProductsCache.get(id))
+	    .filter(Boolean); // in case something was deleted on backend
+
+	  // left: from current filtered page, excluding selected
+	  availableProducts = allProducts.filter(p => !selectedIdsSet.has(p.id));
+
+	  render();
+	}
+
+
+
+/* =====================================================
+   VIEW TOGGLE
+===================================================== */
+gridViewBtn.onclick = () => {
+	  availableList.classList.remove("list-view");
+	  availableList.classList.add("grid-view");
+
+	  selectedList.classList.remove("list-view");
+	  selectedList.classList.add("grid-view");
+
+	  gridViewBtn.classList.add("active");
+	  listViewBtn.classList.remove("active");
+	};
+
+	listViewBtn.onclick = () => {
+	  availableList.classList.remove("grid-view");
+	  availableList.classList.add("list-view");
+
+	  selectedList.classList.remove("grid-view");
+	  selectedList.classList.add("list-view");
+
+	  listViewBtn.classList.add("active");
+	  gridViewBtn.classList.remove("active");
+	};
+
+
+/* =====================================================
+   INIT
+===================================================== */
+(function init(){
+  ["All","Diamond","Open Setting","Plain Gold","Vilandi","Jadtar"].forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c; o.textContent=c;
+    categoryFilter.appendChild(o);
+  });
+  gridViewBtn.classList.add("active");
+  listViewBtn.classList.remove("active");
+
+  loadProducts();
+})();
+
+categoryFilter.addEventListener("change", () => {
+	  const cat = categoryFilter.value;
+	  const subs = subCategories[cat] || [];
+
+	  if (subs.length > 0) {
+	    subcategoryFilter.style.display = "inline-block";
+	    subcategoryFilter.innerHTML =
+	      '<option value="All">All Subcategories</option>';
+
+	    subs.forEach(s => {
+	      const opt = document.createElement("option");
+	      opt.value = s.id;
+	      opt.textContent = s.name;
+	      subcategoryFilter.appendChild(opt);
+	    });
+	  } else {
+	    subcategoryFilter.style.display = "none";
+	    subcategoryFilter.innerHTML = "";
+	  }
+
+	  loadProducts(); // 🔥 THIS WAS MISSING
+	});
+
+	subcategoryFilter.addEventListener("change", loadProducts);
+
+	const generateTagsBtn = document.getElementById("generateTagsBtn");
+
+	document
+	  .getElementById("printTagsBtn")
+	  .addEventListener("click", () => generateTagsPdf("print"));
+
+	document
+	  .getElementById("downloadTagsBtn")
+	  .addEventListener("click", () => generateTagsPdf("download"));
+
+	
+	async function generateTagsPdf(action) {
+		  const startSlot = parseInt(
+		    document.getElementById("startSlot").value,
+		    10
+		  );
+
+		  if (!startSlot || startSlot < 1) {
+		    alert("Please enter a valid Start Tag Position (>= 1)");
+		    return;
+		  }
+
+		  if (selectedProducts.length === 0) {
+		    alert("Please select at least one product for tagging");
+		    return;
+		  }
+
+		  const payload = {
+		    startSlot,
+		    fontSize: parseInt(document.getElementById("tagFontSize").value, 10),
+		    designNos: selectedProducts.map(p => p.designNo)
+		  };
+
+		  try {
+		    const res = await fetch("/tags/custom/pdf", {
+		      method: "POST",
+		      headers: { "Content-Type": "application/json" },
+		      body: JSON.stringify(payload)
+		    });
+
+		    if (!res.ok) {
+		      throw new Error(`Failed to generate tags (HTTP ${res.status})`);
+		    }
+
+		    const blob = await res.blob();
+		    const url = URL.createObjectURL(blob);
+
+		    if (action === "print") {
+		      // 🖨️ PRINT
+		      const printWindow = window.open(url, "_blank");
+		      printWindow.onload = () => {
+		        printWindow.print();
+		      };
+		    }
+
+		    if (action === "download") {
+		      // ⬇️ DOWNLOAD
+		      const a = document.createElement("a");
+		      a.href = url;
+		      a.download = "custom-foldable-tags.pdf";
+		      document.body.appendChild(a);
+		      a.click();
+		      document.body.removeChild(a);
+		    }
+
+		  } catch (err) {
+		    console.error("Tag generation failed:", err);
+		    alert("Failed to generate tags. Please try again.");
+		  }
+		}
+	
+	
+	const tagFontSizeSelect = document.getElementById("tagFontSize");
+
+	// Load saved font size on page load
+	const savedFontSize = localStorage.getItem("tagFontSize");
+	if (savedFontSize) {
+	  tagFontSizeSelect.value = savedFontSize;
+	}
+
+	// Save whenever changed
+	tagFontSizeSelect.addEventListener("change", () => {
+	  localStorage.setItem("tagFontSize", tagFontSizeSelect.value);
+	});
+
+	
+	let searchDebounceTimer = null;
+
+	searchBox.addEventListener("input", () => {
+	  clearTimeout(searchDebounceTimer);
+	  searchDebounceTimer = setTimeout(loadProducts, 300);
+	});
+
+	document
+	  .getElementById("searchType")
+	  ?.addEventListener("change", loadProducts);
+	
+	// ✅ Sort filter
+	document.getElementById("sortFilter")?.addEventListener("change", loadProducts);
+
+
+</script>
+
+</body>
+</html>

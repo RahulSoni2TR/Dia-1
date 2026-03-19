@@ -278,3 +278,22 @@ button:hover {
         margin-bottom: 5px;
     }
 }
+
+.product-details img.product-image {
+    max-width: 120px;  /* or 80px, 100px, as you like */
+    max-height: 120px;
+    width: auto;
+    height: auto;
+    display: block;
+    margin-top: 10px;
+    border-radius: 6px;
+}
+
+/* Footer Styling */
+.page-footer {
+    background: #2e2e2e;
+    color: #f5f5f5;
+    text-align: center;
+    padding: 12px 16px;
+    margin: 24px 0 0;
+}

@@ -5,98 +5,192 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Set Prices</title>
   <link rel="stylesheet" href="set_price_style.css">
-  <script>
-    document.addEventListener("DOMContentLoaded", fetchPrices);
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    fetchPrices();
+    fetchVerificationFrequency();
+});
 
-    function fetchPrices() {
-        fetch('/rates')
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(rate => {
-                    let fieldId = getFieldId(rate.commodity);
-                    if (fieldId) {
-                        document.getElementById(fieldId).value = rate.price;
-                    }
-                });
+const currentPrices = {};
+let currentFrequency = null;
 
-                updatePriceLabel(data);
-            })
-            .catch(error => {
-                console.error('Error fetching prices:', error);
-                alert('Failed to load prices. Please try again.');
+function fetchPrices() {
+    fetch('/rates')
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(rate => {
+                let fieldId = getFieldId(rate.commodity);
+                if (fieldId) {
+                    document.getElementById(fieldId).value = rate.price;
+                    currentPrices[rate.commodity] = Number(rate.price);
+                }
             });
-    }
-
-    function getFieldId(commodity) {
-        const mapping = {
-            '10.00': 'gold_10k',
-            '14.00': 'gold_14k',
-            '18.00': 'gold_18k',
-            '22.00': 'gold_22k',
-            '24.00': 'gold_24k',
-            'silver': 'silver',
-            'diamond': 'diamond',
-            'gst': 'gst'
-        };
-        return mapping[commodity] || null;
-    }
-
-    function updatePriceLabel(data) {
-        const prices = {
-            gold_10k: getPriceForCommodity(data, '10.00'),
-            gold_14k: getPriceForCommodity(data, '14.00'),
-            gold_18k: getPriceForCommodity(data, '18.00'),
-            gold_22k: getPriceForCommodity(data, '22.00'),
-            gold_24k: getPriceForCommodity(data, '24.00'),
-            silver: getPriceForCommodity(data, 'silver'),
-            diamond: getPriceForCommodity(data, 'diamond'),
-            gst: getPriceForCommodity(data, 'gst')
-        };
-
-        const priceLabel = `Gold 10k: ₹${prices.gold_10k} | Gold 14k: ₹${prices.gold_14k} | Gold 18k: ₹${prices.gold_18k} | Gold 22k: ₹${prices.gold_22k} | Gold 24k: ₹${prices.gold_24k} | Silver: ₹${prices.silver} | Diamond: ₹${prices.diamond} | GST: ${prices.gst}%`;
-        document.getElementById("priceLabel").textContent = priceLabel;
-    }
-
-    function getPriceForCommodity(data, commodity) {
-        const rate = data.find(item => item.commodity === commodity);
-        return rate ? rate.price : 'N/A';
-    }
-
-    function setPrices() {
-        const prices = {};
-        document.querySelectorAll(".price-input").forEach(input => {
-            prices[input.getAttribute("data-commodity")] = input.value;
-        });
-
-        fetch('/updatePrices', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(prices)
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to update prices');
-            return response.text();
-        })
-        .then(message => {
-            alert('Prices updated successfully!');
-            fetchPrices();
+            updatePriceLabel(data);
         })
         .catch(error => {
-            console.error('Error updating prices:', error);
-            alert('Failed to update prices. Please try again.');
+            console.error('Error fetching prices:', error);
+            alert('Failed to load prices. Please try again.');
         });
+}
+
+// 🔹 NEW — fetch verification frequency and show it
+function fetchVerificationFrequency() {
+    fetch('/frequency')
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch frequency');
+            return response.json();
+        })
+        .then(data => {
+            // backend can return { frequency: 15 } or just 15
+            const freqValue = typeof data === "object" && data.frequency !== undefined ? data.frequency : data;
+            currentFrequency = Number(freqValue);
+            document.getElementById("prod_freq").value = freqValue;
+        })
+        .catch(error => {
+            console.error('Error fetching verification frequency:', error);
+        });
+}
+
+function getFieldId(commodity) {
+    const mapping = {
+        '10.00': 'gold_10k',
+        '14.00': 'gold_14k',
+        '18.00': 'gold_18k',
+        '22.00': 'gold_22k',
+        '24.00': 'gold_24k',
+        'silver': 'silver',
+        'diamond': 'diamond',
+        'gst': 'gst'
+    };
+    return mapping[commodity] || null;
+}
+
+function updatePriceLabel(data) {
+    const prices = {
+        gold_10k: getPriceForCommodity(data, '10.00'),
+        gold_14k: getPriceForCommodity(data, '14.00'),
+        gold_18k: getPriceForCommodity(data, '18.00'),
+        gold_22k: getPriceForCommodity(data, '22.00'),
+        gold_24k: getPriceForCommodity(data, '24.00'),
+        silver: getPriceForCommodity(data, 'silver'),
+        diamond: getPriceForCommodity(data, 'diamond'),
+        gst: getPriceForCommodity(data, 'gst')
+    };
+
+    const priceLabel = `Gold 10k: ₹${prices.gold_10k} | Gold 14k: ₹${prices.gold_14k} | Gold 18k: ₹${prices.gold_18k} | Gold 22k: ₹${prices.gold_22k} | Gold 24k: ₹${prices.gold_24k} | Silver: ₹${prices.silver} | Diamond: ₹${prices.diamond} | GST: ${prices.gst}%`;
+    document.getElementById("priceLabel").textContent = priceLabel;
+}
+
+function getPriceForCommodity(data, commodity) {
+    const rate = data.find(item => item.commodity === commodity);
+    return rate ? rate.price : 'N/A';
+}
+
+function getCommodityLabel(commodity) {
+    const labels = {
+        '10.00': 'Gold 10K',
+        '14.00': 'Gold 14K',
+        '18.00': 'Gold 18K',
+        '22.00': 'Gold 22K',
+        '24.00': 'Gold 24K',
+        'silver': 'Silver',
+        'diamond': 'Diamond',
+        'gst': 'GST'
+    };
+    return labels[commodity] || commodity;
+}
+
+function normalizePrice(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+}
+
+// 🔹 Save both — prices and frequency
+function setPrices() {
+    const prices = {};
+    const updatedCommodities = [];
+    document.querySelectorAll(".price-input").forEach(input => {
+        const key = input.getAttribute("data-commodity");
+        if (key !== "prod_freq") {
+            const newPrice = normalizePrice(input.value);
+            if (newPrice === null) {
+                return;
+            }
+            const oldPrice = currentPrices[key];
+            if (oldPrice === undefined || oldPrice !== newPrice) {
+                prices[key] = input.value;
+                updatedCommodities.push(getCommodityLabel(key));
+            }
+        }
+    });
+
+    const freqValue = normalizePrice(document.getElementById("prod_freq").value);
+    let frequencyChanged = false;
+    if (currentFrequency === null) {
+        currentFrequency = freqValue;
+    } else {
+        frequencyChanged = freqValue !== null && freqValue !== currentFrequency;
     }
 
-    function editPrices() {
-        document.querySelectorAll(".price-input").forEach(input => input.disabled = false);
+    if (updatedCommodities.length === 0 && !frequencyChanged) {
+        alert('No changes to update.');
+        return;
     }
 
-    function goBack() {
-        window.location.href = "/home";
+    const requests = [];
+
+    if (updatedCommodities.length > 0) {
+        requests.push(
+            fetch('/updatePrices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(prices)
+            })
+        );
     }
-  </script>
+
+    if (frequencyChanged) {
+        requests.push(
+            fetch('/frequency', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frequency: freqValue })
+            })
+        );
+    }
+
+    Promise.all(requests)
+    .then(responses => {
+        if (responses.some(r => !r.ok)) throw new Error('Update failed');
+
+        const messages = [];
+        if (updatedCommodities.length > 0) {
+            messages.push(`Updated prices for: ${updatedCommodities.join(', ')}.`);
+        }
+        if (frequencyChanged) {
+            messages.push('Verification frequency updated successfully!');
+        }
+        alert(messages.join(' '));
+
+        fetchPrices();
+        fetchVerificationFrequency();
+        document.querySelectorAll(".price-input").forEach(input => input.disabled = true);
+    })
+    .catch(error => {
+        console.error('Error updating prices/frequency:', error);
+        alert('Failed to update prices or frequency.');
+    });
+}
+
+function editPrices() {
+    document.querySelectorAll(".price-input").forEach(input => input.disabled = false);
+}
+
+function goBack() {
+    window.location.href = "/home";
+}
+</script>
+
 </head>
 <body>
   <header class="header">Product Manager</header>
@@ -130,10 +224,14 @@
 
   <label class="label" for="gst">GST</label>
   <input type="text" id="gst" class="price-input" data-commodity="gst" disabled>
+  
+    <label class="label" for="gst">Product Verification Frequency (Days)</label>
+  <input type="text" id="prod_freq" class="price-input" data-commodity="prod_freq" disabled>
     
     <div class="button-group">
       <button class="button" onclick="setPrices()">Set Prices</button>
       <button class="button" onclick="editPrices()">Edit Prices</button>
+      <button class="button" onclick="window.location.href='/price-history'">Price History</button>
       <button class="button back-button" onclick="goBack()">Back</button>
     </div>
   </div>

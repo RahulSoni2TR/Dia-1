@@ -74,16 +74,16 @@
                 if (categoryId) {
                     // First append the Order ID dropdown and input
                     $('#dynamicFields').append(`
-                    		<!--              <label for="availableOrderId">Available Order IDs:</label>
+                    		             <label for="availableOrderId">Available Register IDs:</label>
                         <select id="availableOrderId" name="availableOrderId">
                             <option value="">Select from available</option>
-                        </select> -->
+                        </select> 
 
-                        <label for="customOrderId"> Enter Custom Order ID:</label>
-                        <input type="text" id="customOrderId" name="customOrderId" placeholder="Enter new Order ID">
+                        <label for="customOrderId"> Enter Register ID:</label>
+                        <input type="text" id="customOrderId" name="customOrderId" placeholder="Enter new Register ID">
                     `);
 
-                    // Then make AJAX call to fetch available Order IDs
+                   /*  // Then make AJAX call to fetch available Order IDs
                     $.ajax({
                     	 url: '/available-order-ids?categoryId=' + categoryId,
                         method: 'GET',
@@ -95,15 +95,37 @@
                             });
                         },
                         error: function () {
-                            alert("Failed to load available order IDs.");
+                            alert("Failed to load available Register IDs.");
                         }
-                    });
+                    }); */
                 }
 
                            });
             
             $(document).on('change', '#subCategoryId', function () {
+            	
+            	const categoryId = $('#categoryId').val();
                 const subCategoryId = $(this).val();
+
+                if (!categoryId || !subCategoryId) return;
+
+                const params = 
+                    'categoryId=' + categoryId + 
+                    '&categoryId=' + subCategoryId;
+                $.ajax({
+                    url: '/available-order-ids?' + params,
+                    method: 'GET',
+                    success: function (orderIds) {
+                        const select = $('#availableOrderId');
+                        select.empty().append('<option value="">Select from available</option>');
+                        orderIds.forEach(function (id) {
+                            select.append(`<option value="${id}">${id}</option>`);
+                        });
+                    },
+                    error: function () {
+                        alert('Failed to load available Register IDs.');
+                    }
+                });
                 $('#subCategoryFields').remove();
 
 
@@ -133,17 +155,18 @@
                         <input type="number" id="diaSt" name="diaSt" step="any">
                         <label for="diaStRate">Other Stones Rate:</label>
                         <div class="price-container">
-                        <input type="number" id="diaStRate" name="diaStRate" step="any">
+                        <input type="number" id= "diaStRate" name="diaStRate" step="any">
                         </div>
                     </div>
                         
-                        <div class="inline-fields">
+                    <div class="labour-row">
                         <label for="drLabour">Labour/Gm:</label>
                         <input type="number" id="drLabour" name="drLabour" step="any">
                         <label for="drLabourAll">Labour Amount:</label>
-                        <div class="price-jadtar">
                         <input type="number" id="drLabourAll" name="drLabourAll" step="any">
-                    </div></div>
+                        <label for="drLabourP">Labour %:</label>
+                        <input type="number" id="drLabourP" name="drLabourP" step="any">
+                        </div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                         </div>`;
@@ -154,20 +177,21 @@
                             <label for="designNoOS">Design No:</label>   
                             <input type="text" id="designNoOS" name="designNoOS" step="any" required>   
                     		
+                            
+                            <label for="gross">Gross:</label>
+                            <input type="number" id="gross" name="gross" step="any" required>
+                                
                     	<label for="net">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
                         
-                        
-                        <label for="gross">Gross:</label>
-                        <input type="number" id="gross" name="gross" step="any" required>
-                        
-                        <div class="inline-fields">
+                        <div class="labour-row">
                         <label for="osLabour">Labour/Gm:</label>
                         <input type="number" id="osLabour" name="osLabour" step="any">
                         <label for="osLabourAll">Labour Amount:</label>
-                        <div class="price-jadtar">
                         <input type="number" id="osLabourAll" name="osLabourAll" step="any">
-                    </div></div>
+                        <label for="osLabourP">Labour %:</label>
+                        <input type="number" id="osLabourP" name="osLabourP" step="any">
+                    </div>
                         <div class="inline-fields">
                         <label for="vilandiCt">Vilandi:</label>
                         <input type="number" id="vilandiCt" name="vilandiCt" step="any">
@@ -233,13 +257,14 @@
                         <input type="number" id="chainGross" name="chainGross" step="any" required>
                         <label for="chainNet">Net:</label>
                         <input type="number" id="chainNet" name="chainNet" step="any" required>
-                        <div class="inline-fields">
+                        <div class="labour-row">
                         <label for="chainLabour">Labour/Gm:</label>
                         <input type="number" id="chainLabour" name="chainLabour" step="any">
                         <label for="chainLabourAll">Labour Amount:</label>
-                        <div class="price-jadtar">
                         <input type="number" id="chainLabourAll" name="chainLabourAll" step="any">
-                    </div></div>
+                        <label for="chainLabourP">Labour %:</label>
+                        <input type="number" id="chainLabourP" name="chainLabourP" step="any">
+                        </div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     </div>`;
@@ -269,13 +294,15 @@
                     <div class="price-container">
                     <input type="number" id="earStRate" name="earStRate" step="any">
                     </div></div>
-                        <div class="inline-fields">
+                    <div class="labour-row">
                         <label for="diamondLabour">Labour/Gm:</label>
                         <input type="number" id="diamondLabour" name="diamondLabour" step="any">
                         <label for="diamondLabourAll">Labour Amount:</label>
-                        <div class="price-jadtar">
+                        
                         <input type="number" id="diamondLabourAll" name="diamondLabourAll" step="any">
-                    </div></div>
+                        <label for="diamondLabourP">Labour %:</label>
+                        <input type="number" id="diamondLabourP" name="diamondLabourP" step="any">
+                   </div>
                         <label for="remarks">Remarks:</label>
                         <input type="text" id="remarks" name="remarks">
                     </div>`;
@@ -290,13 +317,14 @@
                         <label for="vilandiNet">Net:</label>
                         <input type="number" id="net" name="net" step="any" required>
 
-                        <div class="inline-fields">
+                        <div class="labour-row">
                         <label for="vilandiLabour">Labour/Gm:</label>
                         <input type="number" id="vilandiLabour" name="vilandiLabour" step="any">
                         <label for="vilandiLabourAll">Labour Amount:</label>
-                        <div class="price-jadtar">
                         <input type="number" id="vilandiLabourAll" name="vilandiLabourAll" step="any">
-                    </div></div>
+                        <label for="jadtarLabourP">Labour %:</label>
+                        <input type="number" id="vilandiLabourP" name="vilandiLabourP" step="any">
+                    </div>
                         
                         <div class="inline-fields">
                         <label for="vilandi">Vilandi:</label>
@@ -349,7 +377,7 @@
                         
                
                 <div class="inline-fields">
-                                <label for="realStone">Real Stones (Ct.):</label>
+                                <label for="realStone">Real Stones:</label>
                                 <div class="price-container">
                                 <input type="number" id="realStone" name="realStone" step="any">
                                 </div>
@@ -372,13 +400,14 @@
                             <label for="jadtarNet">Net:</label>
                             <input type="number" id="jadtarNet" name="jadtarNet" step="any" required>
                             
-                            <div class="inline-fields">
+                            <div class="labour-row">
                             <label for="jadtarLabour">Labour/Gm:</label>
                             <input type="number" id="jadtarLabour" name="jadtarLabour" step="any">
-                            <label for="jadtarLabourAll">Labour Amount:</label>
-                            <div class="price-jadtar">
+                            <label for="jadtarLabourAll">Labour Amount:</label>              
                             <input type="number" id="jadtarLabourAll" name="jadtarLabourAll" step="any">
-                        </div></div>
+                            <label for="jadtarLabourP">Labour %:</label>
+                            <input type="number" id="jadtarLabourP" name="jadtarLabourP" step="any">
+                            </div>
 
                             <!-- Stones and Stone Rate -->
                             <div class="inline-fields">
@@ -418,7 +447,7 @@
 
                             <!-- Real Stone and Fitting -->
                             <div class="inline-fields">
-                                <label for="jadtarRealStone">Real Stones (Ct.):</label>
+                                <label for="jadtarRealStone">Real Stones:</label>
                                 <div class="price-jadtar">
                                 <input type="number" id="jadtarRealStone" name="jadtarRealStone" step="any">
                                 </div>
@@ -482,65 +511,110 @@
    				    		const jadtarLabourAllInput = document.getElementById('jadtarLabourAll');
    							 const diamondLabourInput = document.getElementById('diamondLabour');
    					    		const diamondLabourAllInput = document.getElementById('diamondLabourAll');
+   					    		const diamondLabourPInput = document.getElementById('drLabourP');
+   					    		const orLabourPInput = document.getElementById('osLabourP');
+   					    		const chainLabourPInput = document.getElementById('chainLabourP');
+   					    		const villabourPInput = document.getElementById('vilandiLabourP');
+   					    	 const jadtarLabourPInput = document.getElementById('jadtarLabourP');
+   					    		
 
-    	        if (labourGmInput && labourAllInput) {
+    	        if (labourGmInput && labourAllInput && villabourPInput) {
     	            if (labourGmInput.value) {
-    	                labourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	                labourAllInput.disabled = true;
+    	                villabourPInput.disabled = true;// Disable Labour Amount if Labour/Gm has a value
     	            } else if (labourAllInput.value) {
-    	                labourGmInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	                labourGmInput.disabled = true;
+    	                villabourPInput.disabled = true;// Disable Labour/Gm if Labour Amount has a value
+    	            }
+    	            else if (villabourPInput.value) {
+    	            	 labourAllInput.disabled = true; 
+    	            	 labourGmInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            }else {
     	                labourGmInput.disabled = false; // Enable both fields if neither has a value
     	                labourAllInput.disabled = false;
+    	                villabourPInput.disabled = false;
     	            }
     	        }
-    	        if (drLabourInput && drLabourAllInput) {
+    	        if (drLabourInput && drLabourAllInput && diamondLabourPInput) {
     	            if (drLabourInput.value) {
-    	            	drLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            	drLabourAllInput.disabled = true;
+    	            	diamondLabourPInput.disabled =  true;// Disable Labour Amount if Labour/Gm has a value
     	            } else if (drLabourAllInput.value) {
-    	            	drLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	            	drLabourInput.disabled = true;
+    	            	diamondLabourPInput.disabled =  true;// Disable Labour/Gm if Labour Amount has a value
+    	            }  else if (diamondLabourPInput.value) {
+    	            	drLabourInput.disabled = true;
+    	            	drLabourAllInput.disabled = true; /// Disable Labour/Gm if Labour Amount has a value
+    	            }
+    	            else {
     	            	drLabourInput.disabled = false; // Enable both fields if neither has a value
     	            	drLabourAllInput.disabled = false;
+    	            	diamondLabourPInput.disabled =  false;
     	            }
     	        }
-    	        if (orLabourInput && orLabourAllInput) {
+    	        if (orLabourInput && orLabourAllInput && orLabourPInput) {
     	            if (orLabourInput.value) {
-    	            	orLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            	orLabourAllInput.disabled = true;
+    	            	orLabourPInput.disabled = true;// Disable Labour Amount if Labour/Gm has a value
     	            } else if (orLabourAllInput.value) {
-    	            	orLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	            	orLabourInput.disabled = true;
+    	            	orLabourPInput.disabled = true;// Disable Labour/Gm if Labour Amount has a value
+    	            } else if (orLabourPInput.value) {
+    	            	orLabourInput.disabled = true; 
+    	            	orLabourAllInput.disabled = true;// Disable Labour/Gm if Labour Amount has a value
+    	            }else {
     	            	orLabourInput.disabled = false; // Enable both fields if neither has a value
     	            	orLabourAllInput.disabled = false;
+    	            	orLabourPInput.disabled = false;
     	            }
     	        }
-    	        if (chainLabourInput && chainLabourAllInput) {
+    	        if (chainLabourInput && chainLabourAllInput && chainLabourPInput) {
     	            if (chainLabourInput.value) {
-    	            	chainLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            	chainLabourAllInput.disabled = true;
+    	            	chainLabourPInput.disabled = true;// Disable Labour Amount if Labour/Gm has a value
     	            } else if (chainLabourAllInput.value) {
-    	            	chainLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	            	chainLabourInput.disabled = true;
+    	            	chainLabourPInput.disabled = true;// Disable Labour/Gm if Labour Amount has a value
+    	             }else if (chainLabourPInput.value) {
+     	            	chainLabourInput.disabled = true; 
+     	            	chainLabourAllInput.disabled = true;
+     	            }
+    	            else {
     	            	chainLabourInput.disabled = false; // Enable both fields if neither has a value
     	            	chainLabourAllInput.disabled = false;
+    	            	chainLabourPInput.disabled = false;
     	            }
     	        }
-    	        if (jadtarLabourInput && jadtarLabourAllInput) {
+    	        if (jadtarLabourInput && jadtarLabourAllInput && jadtarLabourPInput) {
     	            if (jadtarLabourInput.value) {
-    	            	jadtarLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            	jadtarLabourAllInput.disabled = true;
+    	            	jadtarLabourPInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
     	            } else if (jadtarLabourAllInput.value) {
-    	            	jadtarLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	            	jadtarLabourInput.disabled = true;
+    	            	jadtarLabourPInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            } else if (jadtarLabourPInput.value) {
+    	            	jadtarLabourInput.disabled = true;
+    	            	jadtarLabourAllInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
+    	            }else {
     	            	jadtarLabourInput.disabled = false; // Enable both fields if neither has a value
     	                jadtarLabourAllInput.disabled = false;
+    	                jadtarLabourPInput.disabled = false; 
     	            }
     	        }
-    	        if (diamondLabourInput && diamondLabourAllInput) {
+    	        if (diamondLabourInput && diamondLabourAllInput && diamondLabourPInput) {
     	            if (diamondLabourInput.value) {
-    	            	diamondLabourAllInput.disabled = true; // Disable Labour Amount if Labour/Gm has a value
+    	            	diamondLabourAllInput.disabled = true; 
+    	            	diamondLabourPInput.disabled = true;// Disable Labour Amount if Labour/Gm has a value
     	            } else if (diamondLabourAllInput.value) {
-    	            	diamondLabourInput.disabled = true; // Disable Labour/Gm if Labour Amount has a value
-    	            } else {
+    	            	diamondLabourInput.disabled = true;
+    	            	diamondLabourPInput.disabled = true;// Disable Labour/Gm if Labour Amount has a value
+    	            } else if (diamondLabourPInput.value) {
+    	            	diamondLabourInput.disabled = true; 
+    	            	diamondLabourAllInput.disabled = true;
+    	            }else {
     	            	diamondLabourInput.disabled = false; // Enable both fields if neither has a value
     	            	diamondLabourAllInput.disabled = false;
+    	            	diamondLabourPInput.disabled = false;
     	            }
     	        }
     	    }
@@ -552,7 +626,9 @@
     	        		|| event.target.id === 'osLabourAll' || event.target.id === 'chainLabour' || 
     	        		event.target.id === 'chainLabourAll' || event.target.id === 'jadtarLabour' || 
     	        		event.target.id === 'jadtarLabourAll' || event.target.id === 'diamondLabour' || 
-    	        		event.target.id === 'diamondLabourAll') {
+    	        		event.target.id === 'diamondLabourAll' || event.target.id === 'diamondLabourPInput'
+    	        			|| event.target.id === 'osLabourP' || event.target.id === 'chainLabourP'
+    	        				|| event.target.id === 'vilandiLabourP' || event.target.id === 'jadtarLabourP') {
     	            toggleDisabledState(event);
     	        }
     	    });
@@ -743,7 +819,8 @@
 
             
             $(document).ready(function() {
-                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls','chainNet','pearlsVilandi','jadtarGross','jadtarNet'];
+                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls','chainNet','pearlsVilandi','jadtarGross','jadtarNet',
+                	 'diamondLabourPInput', 'osLabourP', 'chainLabourP', 'vilandiLabourP', 'jadtarLabourP'];
                 const ctFields = ['beads', 'ssPearls', 'vilandi', 'diamonds', 'otherStonesCt', 'beadsCt', 'ssPearlCt', 'vilandiCt', 'diamondsCt', 'otherStonesCt', 'jadtarBeads', 'jadtarSSPearl', 'jadtarRealStone', 'diamondsCt', 'beadsVilandi', 'ssPearlCt', 'ssPearls', 'ssPearlCt','diaWeight','diaSt','realStone','jadtarStones','vilandiStones'];
 
                 function limitDecimals(value, maxDecimals) {
@@ -772,7 +849,8 @@
             
             function formatDecimalFields() {
                 // List of gm fields requiring 3 decimals
-                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls'];
+                const gmFields = ['gold', 'labour', 'pearls', 'gross', 'net', 'pearlsGm', 'chainLabour', 'drLabour', 'osLabour', 'vilandiLabour', 'jadtarLabour', 'diamondLabour', 'chainLabourAll', 'drLabourAll', 'osLabourAll', 'vilandiLabourAll', 'jadtarLabourAll', 'diamondLabourAll', 'jadtarPearls',
+                	'diamondLabourPInput', 'osLabourP', 'chainLabourP', 'vilandiLabourP', 'jadtarLabourP'];
                 // List of ct fields requiring 2 decimals
                 const ctFields = ['beads', 'ssPearls', 'vilandi', 'diamonds', 'otherStonesCt', 'beadsCt', 'ssPearlCt', 'vilandiCt', 'diamondsCt', 'otherStonesCt', 'jadtarBeads', 'jadtarSSPearl', 'jadtarRealStone', 'diamondsCt', 'beadsVilandi', 'ssPearlCt', 'ssPearls', 'ssPearlCt'];
 
@@ -807,33 +885,49 @@
                 // existing code continues...
             });
 
-/*             // Load order IDs based on selected category
+             // Load order IDs based on selected category
+         // Load order IDs based on selected parent + subcategory
+         // Load order IDs based on selected parent + subcategory
             $(document).on('click', '#loadOrdersBtn', function () {
-                const categoryId = $('#categoryId').val();
-                if (!categoryId) {
-                    alert("Please select a category first.");
+                const categoryId = $('#categoryId').val();        // parent category
+                const subCategoryId = $('#subCategoryId').val();  // child category
+
+                if (!categoryId || categoryId === 'Select Category') {
+                    alert('Please select a main category first.');
+                    return;
+                }
+                if (!subCategoryId || subCategoryId === 'Select Sub Category') {
+                    alert('Please select a sub category first.');
                     return;
                 }
 
+                // Send BOTH as list: ?categoryId=5&categoryId=7
+                const params = $.param({ categoryId: [categoryId, subCategoryId] });
+
                 $.ajax({
-                    url: '/available-order-ids?categoryId=' + categoryId,
+                    url: '/available-order-ids?' + params,   // ✅ include leading slash
                     method: 'GET',
                     success: function (orderIds) {
-                        const $select = $('#availableOrderId');
-                        $select.empty().append('<option value="">Select from available</option>');
+                        const select = $('#availableOrderId');
+                        select.empty().append('<option value="">Select from available</option>');
                         orderIds.forEach(function (id) {
-                            $select.append(`<option value="${id}">${id}</option>`);
+                            select.append('<option value="' + id + '">' + id + '</option>');
                         });
                     },
                     error: function () {
-                        alert("Failed to load available order IDs.");
+                        alert('Failed to load available order IDs.');
                     }
                 });
-            }); */
+            });
+
 
         });
         
         
     </script>
+    
+  <footer class="page-footer">
+    <span>&copy; 2026 Jewellery Store. All rights reserved.</span>
+  </footer>
 </body>
 </html>

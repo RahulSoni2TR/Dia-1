@@ -227,3 +227,12 @@ button:hover {
 .download-sample-btn:hover {
   background-color: #218838;
 }
+
+/* Footer */
+.page-footer {
+  background: #2e2e2e;
+  color: #f5f5f5;
+  text-align: center;
+  padding: 12px 16px;
+  margin: 24px 0 0;
+}

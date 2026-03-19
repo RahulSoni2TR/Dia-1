@@ -184,20 +184,21 @@ public class LogService {
 	            return true;
 	        }
 	    }
-
-//	    public Page<SalesLog> getSalesLogs(String q, String categoryId, String subCategoryId, int page, int size, String sortBy) {
-//	    	Pageable pageable = PageRequest.of(page, size, Sort.by("created_at").descending());
-//
-//	        return salesLogRepository.searchSalesLogs(
-//	                (q != null && !q.isEmpty()) ? q : null,
-//	                (categoryId != null && !categoryId.isEmpty()) ? categoryId : null,
-//	                (subCategoryId != null && !subCategoryId.isEmpty()) ? subCategoryId : null,
-//	                pageable
-//	        );
-//	    }
-//	    
-//	    // Helper to fetch a single enquiry (optional)
-//	    public Optional<EnquiryLog> findById(Long id) {
-//	        return enquiryLogRepository.findById(id);
-//	    }
+	    
+	    @Transactional
+	    public void deleteEnquiry(Integer id) {
+	        // Optional: check existence first if you want a custom exception
+	        if (!enquiryLogRepository.existsById(id)) {
+	            throw new IllegalArgumentException("Enquiry not found for id: " + id);
+	        }
+	        enquiryLogRepository.deleteById(id);
+	    }
+	    
+	    @Transactional
+	    public void deleteSaleLog(Long id) {
+	        if (!salesLogRepository.existsById(id)) {
+	            throw new IllegalArgumentException("Sale log not found for id: " + id);
+	        }
+	        salesLogRepository.deleteById(id);
+	    }
 }

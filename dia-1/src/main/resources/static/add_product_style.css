@@ -339,3 +339,65 @@ img {
         margin-bottom: 4px;
     }
 }
+
+/* ======================= */
+/* Dedicated Labour Row    */
+/* ======================= */
+
+/* ===== fixed labour-row (fits 600px container with padding) ===== */
+.labour-row {
+  display: grid;
+
+  grid-template-columns:
+    100px minmax(90px, 1fr)
+    100px minmax(90px, 1fr)
+    100px minmax(90px, 1fr);
+    
+  column-gap: 5px;
+  row-gap: 5px;
+  align-items: center;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.labour-row label {
+  margin: 0;
+  text-align: left;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.labour-row input {
+  width: 100%;
+  margin: 0;
+  padding: 10px;         /* slightly smaller padding to help fit */
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* responsive: two-column pairs on medium screens, stack on very small devices */
+@media (max-width: 768px) {
+  .labour-row {
+    grid-template-columns: 110px 1fr; /* label + input per pair stacked */
+    gap: 8px;
+  }
+}
+@media (max-width: 480px) {
+  .labour-row {
+    grid-template-columns: 1fr;
+  }
+  .labour-row label { margin-bottom: 6px; }
+}
+
+/* ======================= */
+/* Footer                  */
+/* ======================= */
+
+.page-footer {
+    background: #2e2e2e;
+    color: #f5f5f5;
+    text-align: center;
+    padding: 12px 16px;
+    margin: 24px 0 0;
+}

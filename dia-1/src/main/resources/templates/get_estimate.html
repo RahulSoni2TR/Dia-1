@@ -28,7 +28,7 @@
         </thead>
         <tbody>
             <tr id="gold_row">
-                <td class="description">Gold</td>
+                <td id="gold-desc" class="description">Gold</td>
                 <td id="gold-qty">17.000</td>
                 <td id="gold-rate"></td>
                 <td id="gold-amt">115175</td>
@@ -38,6 +38,12 @@
                 <td id="labour-qty">17.000</td>
                 <td id="labour-rate">1100</td>
                 <td id="labour-amt">18700</td>
+            </tr>
+                        <tr id="labourAmt_row">
+                <td class="description">Labour</td>
+                <td id="labourAmt-qty"></td>
+                <td id="labourAmt-rate"></td>
+                <td id="labourAmt-amt">18700</td>
             </tr>
             <tr id="stones_row">
                 <td class="description">Stones</td>
@@ -98,12 +104,6 @@
                 <td id="fitting-qty"></td>
                 <td id="fitting-rate"></td>
                 <td id="fitting-amt">1500</td>
-            </tr>
-            <tr id="labourAmt_row">
-                <td class="description">Labour</td>
-                <td id="labourAmt-qty"></td>
-                <td id="labourAmt-rate"></td>
-                <td id="labourAmt-amt">18700</td>
             </tr>
             <tr id="gst_row">
                 <td class="description">GST 3%</td>
@@ -214,13 +214,39 @@ document.addEventListener("DOMContentLoaded", function() {
             const subElement = document.querySelector('h4');
             subElement.textContent = `Design No: ${(product.orders ? product.orders.orderId : 'N/A')}/${product.designNo}`;
 
-            document.getElementById("gold-qty").textContent = (product.net ?? 0)+ " ct";
+            document.getElementById("gold-qty").textContent = (product.net ?? 0)+ " gm";
             document.getElementById("gold-rate").textContent = ` ${adjustedgoldRate ?? 0}`;
             document.getElementById("gold-amt").textContent = ` ${estimate.gold ?? 0}`;
 
-            document.getElementById("labour-qty").textContent = (product.net ?? 0)+ " gm";
-            document.getElementById("labour-rate").textContent = ` ${product.labour ?? 0}`;
-            document.getElementById("labour-amt").textContent = ` ${estimate.labour ?? 0}`;
+         // Condition: both labour and labourAll empty or null
+            const isLabourEmpty =
+                (!product.labour || product.labour === 0) &&
+                (!product.labourAll || product.labourAll === 0);
+            
+            const hasLabourP = product.labourP !== null &&
+            product.labourP !== undefined &&
+            product.labourP !== "" &&
+            Number(product.labourP) !== 0;
+
+            const goldDescEl = document.getElementById("gold-desc");
+
+            if (product.karat !== null && product.karat !== undefined) {
+                goldDescEl.textContent = `Gold (${product.karat} KT)`;
+            } else {
+                goldDescEl.textContent = "Gold(KT)";
+            }
+            if (isLabourEmpty && hasLabourP) {
+                // Use labourP logic
+                document.getElementById("labour-qty").textContent = "";
+                document.getElementById("labour-rate").textContent = (product.labourP ?? 0) + " %";
+                document.getElementById("labour-amt").textContent = estimate.labour ?? 0;
+            } else {
+                // Normal case
+                document.getElementById("labour-qty").textContent = (product.net ?? 0) + " gm";
+                document.getElementById("labour-rate").textContent = product.labour ?? 0;
+                document.getElementById("labour-amt").textContent = estimate.labour ?? 0;
+            }
+
 
             document.getElementById("vilandi-qty").textContent = (product.vilandiCt ?? 0)+ " ct";
             document.getElementById("vilandi-rate").textContent = ` ${product.vRate ?? 0}`;
@@ -858,7 +884,185 @@ function buildEstimateSnapshot() {
 	  return payload;
 	}
 
+(function() {
+	  let pendingAction = null; // "download" or "print"
+	  let printWindow = null;
 
+	  const downloadBtn = document.getElementById("download-pdf");
+	  const printBtn = document.getElementById("print-pdf");
+	  const modal = document.getElementById("downloadModal");
+	  const confirmBtn = document.getElementById("confirm-download");
+	  const cancelBtn = document.getElementById("cancel-download");
+
+	  if (!downloadBtn || !printBtn || !modal || !confirmBtn || !cancelBtn) {
+	    console.warn("Add-on: required elements not found — skipping modal integration add-on.");
+	    return;
+	  }
+
+	  function openModal(action) {
+	    pendingAction = action;
+	    modal.style.display = "flex";
+	  }
+
+	  // Capture Download click
+	  downloadBtn.addEventListener("click", function (ev) {
+	    ev.stopImmediatePropagation();
+	    ev.preventDefault();
+
+	    if (!product || !estimate) {
+	      alert("Data not loaded yet, please wait.");
+	      return;
+	    }
+	    openModal("download");
+	  }, true);
+
+	  // Capture Print click - do NOT pre-open window
+	  printBtn.addEventListener("click", function (ev) {
+	    ev.stopImmediatePropagation();
+	    ev.preventDefault();
+
+	    if (!product || !estimate) {
+	      alert("Data not loaded yet, please wait.");
+	      return;
+	    }
+
+	    openModal("print");
+	  }, true);
+
+	  // Cancel: hide modal and cleanup
+	  cancelBtn.addEventListener("click", function (ev) {
+	    ev.stopImmediatePropagation();
+	    modal.style.display = "none";
+	    pendingAction = null;
+	    // ensure printWindow is closed if somehow set
+	    if (printWindow && !printWindow.closed) {
+	      try { printWindow.close(); } catch (e) {}
+	    }
+	    printWindow = null;
+	  }, true);
+
+	  // Confirm: open print tab synchronously if needed, then do backend calls + PDF action
+	  confirmBtn.addEventListener("click", async function (ev) {
+	    ev.stopImmediatePropagation();
+	    ev.preventDefault();
+
+	    // If printing, open the window now (synchronously) so popup blockers usually allow it.
+	    if (pendingAction === "print") {
+	      try {
+	        printWindow = window.open("", "_blank");
+	        if (!printWindow) {
+	          // popup blocked
+	          alert("Unable to open print window (popup blocked). The estimate will be downloaded instead.");
+	          // fallback to download behaviour
+	          pendingAction = "download";
+	        }
+	      } catch (err) {
+	        console.warn("Failed to open print window:", err);
+	        pendingAction = "download";
+	      }
+	    }
+
+	    // Close/hide modal right away (keeps UX consistent with existing behavior)
+	    modal.style.display = "none";
+
+	    const logEnquiry = document.getElementById("chk-enquiry").checked;
+	    const markSale = document.getElementById("chk-sale").checked;
+	    const customerName = document.getElementById("customer-name-input").value.trim();
+
+	    if (!product || !estimate) {
+	      alert("Data not loaded yet, please wait.");
+	      if (printWindow && !printWindow.closed) {
+	        try { printWindow.close(); } catch (e) {}
+	      }
+	      pendingAction = null;
+	      printWindow = null;
+	      return;
+	    }
+
+	    const snapshot = buildEstimateSnapshot();
+
+	    // Run backend calls (awaited in sequence, same as your original flow)
+	    try {
+	      if (logEnquiry) {
+	        await fetch("/logEnquiry", {
+	          method: "POST",
+	          headers: { "Content-Type": "application/json" },
+	          body: JSON.stringify({
+	            productId: product.productId,
+	            designNo: product.designNo,
+	            customerName,
+	            imageUrl: product.imageUrl,
+	            price: snapshot.price,
+	            priceWithFields: snapshot.priceWithFields,
+	            estimateSnapshot: snapshot
+	          })
+	        });
+	      }
+
+	      if (markSale) {
+	        await fetch("/logSale", {
+	          method: "POST",
+	          headers: { "Content-Type": "application/json" },
+	          body: JSON.stringify({
+	            productId: product.productId,
+	            designNo: product.designNo,
+	            orderId: product.orders ? product.orders.orderId : null,
+	            customerName,
+	            imageUrl: product.imageUrl,
+	            price: snapshot.price,
+	            priceWithFields: snapshot.priceWithFields,
+	            estimateSnapshot: snapshot
+	          })
+	        });
+	      }
+	    } catch (err) {
+	      console.error("Add-on: backend calls failed (continuing to PDF action):", err);
+	      // continue even if backend fails
+	    }
+
+	    // Build PDF & perform chosen action
+	    try {
+	      const docDefinition = buildDocDefinition();
+	      const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
+
+	      if (pendingAction === "download") {
+	        pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+	      } else if (pendingAction === "print") {
+	        // printWindow should exist (we opened it synchronously); fallback to opening new one if closed
+	        if (!printWindow || printWindow.closed) {
+	          try {
+	            printWindow = window.open("", "_blank");
+	          } catch (e) {
+	            printWindow = null;
+	          }
+	        }
+	        if (printWindow) {
+	          pdfMake.createPdf(docDefinition).print({}, printWindow);
+	        } else {
+	          // couldn't open print window; fallback to download
+	          pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+	        }
+	      } else {
+	        // fallback behavior
+	        pdfMake.createPdf(docDefinition).download(`Estimate_${timestamp}.pdf`);
+	      }
+	    } catch (e) {
+	      console.error("Add-on: PDF action failed:", e);
+	      alert("Failed to generate the PDF. Please try again.");
+	      if (printWindow && !printWindow.closed) {
+	        try { printWindow.close(); } catch (err) {}
+	      }
+	    }
+
+	    // cleanup and reset modal checkboxes (optional)
+	    pendingAction = null;
+	    try {
+	      document.getElementById("chk-enquiry").checked = false;
+	      document.getElementById("chk-sale").checked = false;
+	    } catch (ignore) {}
+	    printWindow = null;
+	  }, true);
+	})();
 </script>
 </body>
 </html>

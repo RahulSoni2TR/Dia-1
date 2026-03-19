@@ -265,6 +265,11 @@ function renderTable(enquiries) {
 	          data-estimate='${encodeURIComponent(JSON.stringify(enquiry.estimateSnapshot))}'>
 	          View Estimate
 	        </button>
+	          
+	          <button class="delete-enquiry-btn bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+	              data-id="${enquiry.id}">
+	              Remove
+	            </button>
 	      </td>
 	    `;
 	    enquiryTableBody.appendChild(tr);
@@ -336,7 +341,30 @@ document.addEventListener('click', function(e){
     sessionStorage.setItem('returnToPage', window.location.href);
     window.location.href = '/estimate-snapshot';
   }
+  
+  // 🟥 Delete enquiry
+  if (e.target && e.target.classList.contains('delete-enquiry-btn')) {
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    const ok = window.confirm("Are you sure you want to delete this enquiry?");
+    if (!ok) return;
+
+    fetch(`/api/enquiries/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Delete failed with status ' + res.status);
+        // After delete, reload current page
+        return fetchEnquiries();
+      })
+      .catch(err => {
+        console.error('Failed to delete enquiry:', err);
+        alert('Failed to delete enquiry. Check console for details.');
+      });
+  }
 });
+
 
 
 document.getElementById("resetFilters").addEventListener("click", () => {

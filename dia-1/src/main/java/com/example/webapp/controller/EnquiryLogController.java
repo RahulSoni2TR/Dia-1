@@ -4,6 +4,7 @@ import com.example.webapp.entity.EnquiryLog;
 import com.example.webapp.service.LogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -97,6 +98,13 @@ public class EnquiryLogController {
         resp.put("totalPages", result.getTotalPages());
         return resp;
     }
+    
+    @DeleteMapping("/api/enquiries/{id}")
+    public ResponseEntity<Void> deleteEnquiry(@PathVariable Integer id) {
+    	service.deleteEnquiry(id);
+        return ResponseEntity.noContent().build();
+    }
+
 
     private Sort parseSort(String sortParam) {
         if (sortParam == null || sortParam.isBlank()) return Sort.by(Sort.Direction.DESC, "createdAt");

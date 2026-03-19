@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -18,6 +21,10 @@ public class SalesLogController {
 
     @Autowired
     private SalesLogRepository salesLogRepository;
+    
+    @Autowired
+    private LogService service;
+
 
     @GetMapping("/api/sales-logs")
     @ResponseBody
@@ -30,5 +37,11 @@ public class SalesLogController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return salesLogRepository.searchWithJsonFilters(q, categoryIdStr, subCategoryIdStr, pageable);
+    }
+    
+    @DeleteMapping("/api/sales-logs/{id}")
+    public ResponseEntity<Void> deleteSaleLog(@PathVariable Long id) {
+    	service.deleteSaleLog(id);
+        return ResponseEntity.noContent().build();
     }
 }

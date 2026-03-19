@@ -24,274 +24,683 @@
         <p>&copy; 2024 Your Company. All rights reserved.</p>
     </footer>
 
-    <script>
-        function loadProductDetails() {
-        	let product = null;
-        	 if (typeof productFromModel !== "undefined" && productFromModel !== null) {
-        		 console.log(productFromModel)
-                 // Case 1: Product is directly provided in the model (via QR flow)
-                 renderProduct(productFromModel);
-             } else {
-            const designNo = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
+<!-- Modal (unchanged) -->
+<div id="verifyModal" aria-hidden="true" role="dialog" aria-labelledby="verifyModalTitle">
+  <div class="modal-card" role="document">
+    <h3 id="verifyModalTitle">Product Verification</h3>
+    <div id="verifyModalBody" class="modal-info"></div>
 
-            if (!designNo) {
-                document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
-                return;
-            }
+    <div class="modal-actions">
+      <button class="btn close" id="verifyModalClose">Close</button>
+      <button class="btn modify" id="verifyModalModify">Modify Product</button>
+      <button class="btn verify" id="verifyModalConfirm">Mark as Verified</button>
+      <button class="btn sold" id="markAsSoldBtn">Mark as Sold</button>
+      <button class="btn enquiry" id="logEnquiryBtn">Log Enquiry</button>
+    </div>
+  </div>
+</div>
+<div id="successModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <h3 id="modalMessage">Product marked as verified.</h3>
+    <button id="closeModalBtn">OK</button>
+  </div>
+</div>
+<script>
+// --- wiring function (unchanged) ---
 
-            fetch(`/loadProductDetail/${designNo}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(product => renderProduct(product))
-            .catch(err => {
-                console.error('Error fetching product details:', err);
-                document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
-            });
-    }
-}
-        
-        let currentProduct = null; // declare global at top of script
+// put this once at top-level (outside renderProduct)
+// ✅ FIXED showModal - matches your HTML exactly
+// ✅ FIXED showModal - Auto-redirect ONLY after OK click
+function showModal(message, onOkCallback) {
+  const modal = document.getElementById('successModal');
+  if (!modal) {
+    console.warn('showModal: successModal not found in DOM');
+    return;
+  }
+  
+  const msgElement = document.getElementById('modalMessage');
+  const btn = document.getElementById('closeModalBtn');
 
-        
-                function renderProduct(product){
-                	if (!product) {
-                        document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
-                        return;
-                    }
-                	currentProduct = product
-                    const details = {
-                            1: 'Diamond',
-                            2: 'Open Setting',
-                            3: 'Plain Gold',
-                            4: 'Vilandi',
-                            5: 'Jadtar',
-                            	6:	'Jadtar Register',
-                            	7:	'Jadtar Halfsets',
-                            	8:	'Jadtar Bangles / Bracelets',
-                            	9:	'Vilandi Halfsets',
-                            	10:	'Vilandi Bangles / Bracelets',
-                            	11:	'Diamond Bangles / Bracelets',
-                            	12:	'Diamond Pendants / Pendant Sets',
-                            	13:	'Diamond Halfsets',
-                            	14:	'OS Halfsets',
-                            	15:	'OS Bangles / Bracelets',
-                            	16:	'PG Bangles / Bracelets',
-                            	17:	'Only Earrings',
-                            	18:	'Chains',
-                            	19:	'Diamond Earrings',
-                            	20:	'Diamond Rings'
-                        };
+  if (msgElement) {
+    msgElement.textContent = message || 'Action completed successfully!';
+  }
+  
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
 
-                        const renderText = value => value ? value : '<span class="empty-label">No value</span>';
-
-                        let productDetailsHTML = `
-                            <div class="product-top">
-                                <div class="product-image">
-                                    <img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}"></div>
-                                    <div class="product-qr"> <img class="qr-code" src="${renderText(product.qrCodePath)}" alt="QR Code" />
-                                    </div>
-                                </div>
-                               
-                                <div class="product-details">
-                                    <h2>${renderText(product.item)}</h2>
-                                    <p id="verificationStatus"></p>
-                                <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
-                                <p><strong>Sub Category:</strong> ${details[product.subCategoryId] || 'Unknown'}</p>
-                                <p><strong>Design No:</strong> ${renderText(product.orders ? product.orders.orderId : 'N/A')}/${renderText(product.designNo)}</p>
-                                <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
-                                <p>
-                                <label>
-                                    <input type="checkbox" id="withFieldsToggle" checked>
-                                    Price with additional fields
-                                </label>
-                            </p>
-                            <p><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
-                                <h3>Additional Details:</h3>
-                        `;
-                        
-                        let hasExtras = false;
-    let extrasHTML = '';
-
-    if (product.customFields && product.customFields !== '{}') {
-        try {
-            const extras = JSON.parse(product.customFields);
-            const keys = Object.keys(extras);
-            if (keys.length > 0) {
-                hasExtras = true;
-                extrasHTML += '<h4>Additional Fields:</h4><ul>';
-                keys.forEach(key => {
-                    const qty = extras[key]?.qty || 'N/A';
-                    extrasHTML += `<li><strong>${key}</strong>: ${qty}</li>`;
-                });
-                extrasHTML += '</ul>';
-            }
-        } catch (e) {
-            console.error('Failed to parse customFields:', e);
-        }
-    }
-/* 
-    if (hasExtras) {
-        productDetailsHTML += extrasHTML;
-    } */
-
-    const extrasBlock = hasExtras ? extrasHTML : '';
-                          switch (product.categoryId) {
-                        case 1:
-                        case 11:
-                        case 12:
-                        case 13:
-                            productDetailsHTML += `
-                            	<p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
-                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
-                                ${extrasBlock}
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break;
-                        case 2:
-                        case 14:
-                        case 15:
-                            productDetailsHTML += `
-                                <p><strong>Gross:</strong> ${renderText(product.gross)} Gm</p>
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
-                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
-                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
-                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
-                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
-                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
-                               <!--  <p><strong>Others:</strong> ${renderText(product.others)}</p> -->
-                                ${extrasBlock}
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break;
-                        case 3:
-                        case 16:
-                        case 18:
-                            productDetailsHTML += `
-                            	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                            	<p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                ${extrasBlock}
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break;
-                        /* case 4:
-                            productDetailsHTML += `
-                            	<!-- <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
-                                <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
-                                <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break; */
-                        case 4:
-                        case 9:
-                        case 10:
-                            productDetailsHTML += `
-                            	<!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                                <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
-                                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
-                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
-                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} Gm</p>
-                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
-                                <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
-                                <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
-                                ${extrasBlock}
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break;
-                        case 5:
-                        case 6:
-                        case 7:
-                        case 8:
-                        case 17:
-                            productDetailsHTML += `
-                               <!--  <p><strong>Design No:</strong> ${renderText(product.designNo)}</p> -->
-                                <p><strong>Gross:</strong> ${renderText(product.gross)} gm</p>
-                                <p><strong>Net:</strong> ${renderText(product.net)} gm</p>
-                                <p><strong>Stones:</strong> ${renderText(product.stones)} ct</p>
-                                <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
-                                <p><strong>Pearls:</strong> ${renderText(product.pearlsGm)} gm</p>
-                                <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
-                                <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
-                                <p><strong>Mozonite:</strong> ${renderText(product.mozonite)}</p>
-                                <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
-                                ${extrasBlock}
-                                <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
-                            `;
-                            break;
-                        default:
-                            productDetailsHTML += '<p>Category not recognized.</p>';
-                    }
-                        // Add other categories as needed
-                        productDetailsHTML += '</div>';
-                        
-
-                        document.getElementById('productDetailsContainer').innerHTML = productDetailsHTML;
-                        refreshVerificationStatus(product.productId);
-
-                        function refreshVerificationStatus(productId) {
-                            const isVerified = product.verificationStatus === 1;
-
-
-                            const statusEl = document.getElementById('verificationStatus');
-                            if (statusEl) {
-                                statusEl.innerHTML = isVerified
-                                    ? `<span class="verified">✔ Verified</span>`
-                                    : `<span class="unverified">✘ Unverified</span>`;
-                            }
-                        }
-
-                     // Wire up checkbox and dynamic price rendering
-                        const toggleEl = document.getElementById('withFieldsToggle');
-                        const priceValueEl = document.getElementById('priceValue');
-
-                        function currentPrice(useWithFields) {
-                            // Use priceWithFields when requested; fall back to price if null/undefined
-                            return useWithFields ? (product.priceWithFields ?? product.price) : product.price;
-                        }
-
-                     // Replace your existing renderPrice() with this version
-                        function renderPrice() {
-                          const value = currentPrice(toggleEl ? toggleEl.checked : false); // priceWithFields or price
-                          const rounded = roundNearestInt(value); // nearest integer rounding (.5 rounds up) [web:21][web:76]
-                          // If rounded is null (non-finite), show a placeholder; otherwise, format for INR grouping
-                          priceValueEl.textContent = rounded === null ? 'No value' : inrInteger.format(rounded); // grouping via Intl [web:30]
-                        }
-
-                     // Add these helpers above renderPrice (inside the same <script> block)
-                        function roundNearestInt(v) {
-                          const n = Number(v);
-                          return Number.isFinite(n) ? Math.round(n) : null; // 1.4→1, 1.5→2 [web:21][web:76]
-                        }
-
-                        const inrInteger = new Intl.NumberFormat('en-IN'); // 12,34,567 style [web:30]
-
-
-                        if (toggleEl) {
-                            toggleEl.addEventListener('change', renderPrice);
-                        }
-                        // Initial render
-                        renderPrice();
-                }
-                
-
-        loadProductDetails();
-    </script>    
+  // Clear previous handler and set new one with callback
+  btn.onclick = null;  // Remove any old handlers
+  btn.addEventListener('click', () => {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
     
+    // ✅ Auto-redirect ONLY after OK click
+    if (onOkCallback) {
+      setTimeout(onOkCallback, 100);  // Small delay for smooth UX
+    }
+  });
+
+  try { btn.focus(); } catch (e) {}
+}
+
+
+function setupVerifyButton() {
+  const verifyBtn = document.getElementById('verifyBtnInline');
+  const modal = document.getElementById('verifyModal');
+  const modalBody = document.getElementById('verifyModalBody');
+  const btnClose = document.getElementById('verifyModalClose');
+  const btnModify = document.getElementById('verifyModalModify');
+  const btnConfirm = document.getElementById('verifyModalConfirm');
+  const btnSold = document.getElementById('markAsSoldBtn');
+  const btnEnquiry = document.getElementById('logEnquiryBtn');
+	
+//Global customer name storage
+  let customerNameInput = null;
+  let currentCustomerName = '';
+
+  
+  if (!verifyBtn) return;
+
+  // refresh button state (enabled/disabled and label)
+// ✅ KEEP VERIFY BUTTON ALWAYS CLICKABLE - just change label
+function refresh() {
+  if (!window.currentProduct) {
+    verifyBtn.style.display = 'none';
+    return;
+  }
+  verifyBtn.style.display = '';
+  const isVerified = Number(window.currentProduct.verificationStatus) === 1;
+  // ✅ NEVER disable verifyBtn - always clickable
+  verifyBtn.textContent = isVerified ? 'Already Verified' : 'Verify Product';
+}
+
+
+//✅ PERFECTLY ALIGNED & STYLED Customer Input
+function openModalForProduct() {
+  const p = window.currentProduct;
+  if (!p) return;
+  const isVerified = Number(p.verificationStatus) === 1;
+  const designNo = p.designNo || '';
+  
+  let bodyHtml = `
+    <div style="margin-bottom: 12px;">
+      <p style="margin: 0 0 8px 0; font-weight: 600;"><strong>Item:</strong> ${p.item ?? 'Unknown'}</p>
+      <p style="margin: 0 0 12px 0; font-weight: 600;"><strong>Design No:</strong> ${p.orders?.orderId ?? ''}/${p.designNo ?? ''}</p>
+      <p class="modal-info" style="margin: 0 0 16px 0;"><strong>Status:</strong> <span style="color: ${isVerified ? '#10b981' : '#ef4444'}">${isVerified ? 'Verified' : 'Not Verified'}</span></p>
+    </div>
+  `;
+  
+  // ✅ PERFECT CUSTOMER INPUT - FULL WIDTH & CENTERED
+  bodyHtml += `
+    <div style="
+      margin: 0 0 20px 0;
+      padding: 16px 14px;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0,0, 0.1), 0 2px 4px -1px rgba(0, 0,0, 0.06);
+    ">
+      <label style="
+        font-weight: 700;
+        color: #1e293b;
+        display: block;
+        margin: 0 0 10px 0;
+        font-size: 15px;
+        line-height: 1.4;
+      ">👤 Customer Name <span style="color: #ef4444; font-size: 16px;">*</span></label>
+      <input type="text" 
+             id="customerNameInput" 
+             placeholder="Enter customer name (used for Mark as Sold, or Log Enquiry)" 
+             style="
+               width: 100%;
+               min-height: 44px;
+               padding: 12px 16px;
+               border: 2px solid #e2e8f0;
+               border-radius: 8px;
+               font-size: 16px;
+               font-family: inherit;
+               background: #ffffff;
+               box-sizing: border-box;
+               outline: none;
+               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+             "
+             value="${currentCustomerName}"
+             autocomplete="name">
+    </div>
+  `;
+  
+  bodyHtml += `
+    <p class="modal-info" style="
+      margin: 0;
+      padding: 12px;
+      background: ${isVerified ? '#dcfce7' : '#fef3c7'};
+      border-left: 4px solid ${isVerified ? '#10b981' : '#f59e0b'};
+      border-radius: 6px;
+      font-size: 14px;
+    ">
+      ${isVerified 
+        ? '✅ Product is verified. You may still modify, mark as sold, or log enquiry.' 
+        : 'Enter customer name above for actions: Mark as Sold, or Log Enquiry.'}
+    </p>
+  `;
+
+  modalBody.innerHTML = bodyHtml;
+  
+  // ✅ Store input reference & add focus effects
+  customerNameInput = document.getElementById('customerNameInput');
+  if (customerNameInput) {
+    customerNameInput.focus();
+    
+    // Smooth focus/blur effects
+    customerNameInput.addEventListener('focus', () => {
+      customerNameInput.style.borderColor = '#3b82f6';
+      customerNameInput.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+      customerNameInput.style.transform = 'translateY(-1px)';
+    });
+    
+    customerNameInput.addEventListener('blur', () => {
+      customerNameInput.style.borderColor = '#e2e8f0';
+      customerNameInput.style.boxShadow = 'none';
+      customerNameInput.style.transform = 'translateY(0)';
+    });
+    
+    customerNameInput.addEventListener('input', (e) => {
+      currentCustomerName = e.target.value.trim();
+    });
+  }
+  
+  btnConfirm.disabled = isVerified;
+  btnConfirm.dataset.designNo = designNo;
+  btnModify.dataset.designNo = designNo;
+
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+
+  // single-click wiring (remove previous listeners if any)
+  verifyBtn.onclick = openModalForProduct;
+
+  // ensure modal close handlers exist (won't duplicate)
+  if (btnClose && !btnClose._closeBound) {
+    btnClose._closeBound = true;
+    btnClose.addEventListener('click', () => {
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+    });
+  }
+  if (modal && !modal._outsideBound) {
+    modal._outsideBound = true;
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+//✅ CLEAN VERIFY HANDLER - disable modal buttons only
+  if (btnConfirm && !btnConfirm._verifyHandlerAttached) {
+    btnConfirm._verifyHandlerAttached = true;
+    btnConfirm.addEventListener('click', async function () {
+      const p = window.currentProduct;
+      if (!p) return;
+      
+      const designNo = String(p.designNo || '').trim();
+      if (!designNo) {
+        showModal('Missing design number for verification.', () => {
+          window.location.href = '/view-product';
+        });
+        return;
+      }
+      
+      // ✅ Disable ONLY MODAL buttons during API
+      [btnConfirm, btnModify, btnSold, btnEnquiry].forEach(b => b.disabled = true);
+      
+      try {
+        const res = await fetch(`/verify/${encodeURIComponent(designNo)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ verificationStatus: 1 })
+        });
+        
+        if (res.status === 404) throw new Error('Product not found');
+        if (!res.ok && res.status !== 204) throw new Error('Verification failed');
+        
+        // Update UI but DON'T disable main verify button
+        p.verificationStatus = 1;
+        const statusEl = document.getElementById('verificationStatus');
+        if (statusEl) statusEl.innerHTML = '<span class="verified">✔ Verified</span>';
+        refresh(); // Updates label to "Already Verified" but keeps clickable
+        
+        showModal('Product marked as verified.', () => {
+          window.location.href = '/view-product';
+        });
+        
+      } catch (err) {
+        console.error('Verification failed:', err);
+        showModal('Failed to mark as verified. See console.', () => {
+          window.location.href = '/view-product';
+        });
+        // Re-enable modal buttons only
+        [btnConfirm, btnModify, btnSold, btnEnquiry].forEach(b => b.disabled = false);
+      }
+    });
+  }
+
+
+  // Modify handler (attach once)
+  if (btnModify && !btnModify._modifyHandlerAttached) {
+    btnModify._modifyHandlerAttached = true;
+    btnModify.addEventListener('click', () => {
+      const p = window.currentProduct;
+      if (!p) return;
+      const designNo = p.designNo || '';
+      sessionStorage.setItem('returnUrl', window.location.href);
+      sessionStorage.setItem('returnDesignNo', String(designNo));
+      sessionStorage.setItem('returnContext', 'verify');
+      sessionStorage.setItem('returnToViewPage', 'true');
+      sessionStorage.setItem('modifyDesignNo', String(designNo));
+      const url = new URL('/modify-product', location.origin);
+      url.searchParams.set('designNo', designNo);
+      url.searchParams.set('returnUrl', window.location.href);
+      url.searchParams.set('returnDesignNo', designNo);
+      url.searchParams.set('returnContext', 'verify');
+      location.href = url.toString();
+    });
+  }
+
+//Mark as Sold handler (attach once)
+  if (btnSold && !btnSold._soldHandlerAttached) {
+    btnSold._soldHandlerAttached = true;
+    btnSold.addEventListener('click', async function() {
+      const p = window.currentProduct;
+      if (!p) {
+        modal.style.display = 'none';
+        return;
+      }
+      
+      const customerName = customerNameInput ? customerNameInput.value.trim() || 'Customer from Product Details' : 'Customer from Product Details';
+
+      
+      btnSold.disabled = true;
+      btnEnquiry.disabled = true;
+      btnConfirm.disabled = true;
+      btnModify.disabled = true;
+      
+      try {
+        const snapshot = {
+          price: p.price,
+          priceWithFields: p.priceWithFields,
+          estimateSnapshot: { total: p.priceWithFields || p.price }
+        };
+        
+        const res = await fetch('/logSale', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: p.productId,
+            designNo: p.designNo,
+            orderId: p.orders ? p.orders.orderId : null,
+            customerName: customerName,
+            imageUrl: p.imageUrl,
+            price: snapshot.price,
+            priceWithFields: snapshot.priceWithFields,
+            estimateSnapshot: snapshot
+          })
+        });
+        
+        if (!res.ok) throw new Error(`Sale logging failed: ${res.status}`);
+        
+        showModal('Product marked as sold successfully!',() => {
+        	  window.location.href = '/view-product';
+        });
+        
+      } catch (err) {
+        console.error('Mark as sold failed:', err);
+        showModal('Failed to mark as sold. See console.',() => {
+        	  window.location.href = '/view-product';
+        });
+        btnSold.disabled = false;
+        btnEnquiry.disabled = false;
+        btnConfirm.disabled = false;
+        btnModify.disabled = false;
+      }
+    });
+  }
+
+  // Log Enquiry handler (attach once)
+  if (btnEnquiry && !btnEnquiry._enquiryHandlerAttached) {
+    btnEnquiry._enquiryHandlerAttached = true;
+    btnEnquiry.addEventListener('click', async function() {
+      const p = window.currentProduct;
+      if (!p) {
+        modal.style.display = 'none';
+        return;
+      }
+      
+      const customerName = customerNameInput ? customerNameInput.value.trim() || 'Customer from Product Details' : 'Customer from Product Details';
+
+      btnEnquiry.disabled = true;
+      btnSold.disabled = true;
+      btnConfirm.disabled = true;
+      btnModify.disabled = true;
+      
+      try {
+        const snapshot = {
+          price: p.price,
+          priceWithFields: p.priceWithFields,
+          estimateSnapshot: { total: p.priceWithFields || p.price }
+        };
+        
+        const res = await fetch('/logEnquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: p.productId,
+            designNo: p.designNo,
+            customerName: customerName,
+            imageUrl: p.imageUrl,
+            price: snapshot.price,
+            priceWithFields: snapshot.priceWithFields,
+            estimateSnapshot: snapshot
+          })
+        });
+        
+        if (!res.ok) throw new Error(`Enquiry logging failed: ${res.status}`);
+        
+        showModal('Enquiry logged successfully!',() => {
+        	  window.location.href = '/view-product';
+        });
+        
+        
+      } catch (err) {
+        console.error('Log enquiry failed:', err);
+        showModal('Failed to log enquiry. See console.',() => {
+        	  window.location.href = '/view-product';
+        });
+        btnEnquiry.disabled = false;
+        btnSold.disabled = false;
+        btnConfirm.disabled = false;
+        btnModify.disabled = false;
+      }
+    });
+  }
+
+  
+  // expose refresh to be called externally if needed
+  window.__refreshVerifyButton = refresh;
+
+  // initial refresh
+  refresh();
+}
+
+// --- product loader & renderer (only fixed parts shown) ---
+function loadProductDetails() {
+  if (typeof productFromModel !== "undefined" && productFromModel !== null && Object.keys(productFromModel).length > 0) {
+    renderProduct(productFromModel);
+    return;
+  }
+
+  const designNo = sessionStorage.getItem('productId'); // Retrieve product ID from session storage
+  if (!designNo) {
+    document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
+    return;
+  }
+
+  fetch(`/loadProductDetail/${designNo}`)
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(product => renderProduct(product))
+    .catch(err => {
+      console.error('Error fetching product details:', err);
+      document.getElementById('productDetailsContainer').innerHTML = '<p>Product not found.</p>';
+    });
+}
+
+let currentProduct = null;
+
+function renderProduct(product) {
+  if (!product) {
+    document.getElementById('productDetailsContainer').innerHTML = '<p>No product selected.</p>';
+    return;
+  }
+
+  // set global product reference first
+  currentProduct = product;
+  window.currentProduct = product; // ensure global alias used by setupVerifyButton  
+  
+  const details = {
+    1: 'Diamond', 2: 'Open Setting', 3: 'Plain Gold', 4: 'Vilandi', 5: 'Jadtar',
+    6: 'Jadtar Register',7: 'Jadtar Halfsets',8: 'Jadtar Bangles / Bracelets',
+    9: 'Vilandi Halfsets',10: 'Vilandi Bangles / Bracelets',11: 'Diamond Bangles / Bracelets',
+    12: 'Diamond Pendants / Pendant Sets',13: 'Diamond Halfsets',14: 'OS Halfsets',
+    15: 'OS Bangles / Bracelets',16: 'PG Bangles / Bracelets',17: 'Only Earrings',
+    18: 'Chains',19: 'Diamond Earrings',20: 'Diamond Rings'
+  };
+
+  const renderText = value => value ? value : '<span class="empty-label">No value</span>';
+  function renderTexts(value) {
+	  if (value == null || value === '') return '<span class="empty-label">No value</span>';
+	  const num = Number(value);
+	  if (!Number.isFinite(num)) return value;
+	  return num.toFixed(3);  // Always 8.000, 7.650
+	}
+
+  // Build the full HTML (single, balanced product-top wrapper)
+  let productDetailsHTML = `
+    <div class="product-top">
+      <div class="product-image">
+        <img src="${renderText(product.imageUrl)}" alt="${renderText(product.item)}">
+      </div>
+      <div class="product-qr">
+      <img class="qr-code" src="${renderText(product.qrCodePath)}" alt="QR Code" />
+
+      <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+        <button id="verifyBtnInline"
+                class="verify-btn-inline"
+                type="button">
+          Verify Product
+        </button>
+
+        <button id="estimateBtnInline"
+                class="estimate-btn-inline"
+                type="button">
+          📊 Estimate
+        </button>
+      </div>
+    </div>
+
+    </div>
+
+    <div class="product-details">
+      <h2>${renderText(product.item)}</h2>
+      <p id="verificationStatus"></p>
+      <p><strong>Category:</strong> ${details[product.categoryId] || 'Unknown'}</p>
+      <p><strong>Sub Category:</strong> ${details[product.subCategoryId] || 'Unknown'}</p>
+      <p><strong>Design No:</strong> ${renderText(product.orders ? product.orders.orderId : 'N/A')}/${renderText(product.designNo)}</p>
+      <p><strong>Gold:</strong> ${renderText(product.karat)} Karat</p>
+      <p>
+        <label>
+          <input type="checkbox" id="withFieldsToggle" checked>
+          Price with additional fields
+        </label>
+      </p>
+      <p><strong>Price:</strong> ₹ <span id="priceValue"></span></p>
+      <h3>Additional Details:</h3>
+  `;
+
+  // additional fields handling
+  let hasExtras = false;
+  let extrasHTML = '';
+  if (product.customFields && product.customFields !== '{}') {
+    try {
+      const extras = JSON.parse(product.customFields);
+      const keys = Object.keys(extras);
+      if (keys.length > 0) {
+        hasExtras = true;
+        extrasHTML += '<h4>Additional Fields:</h4><ul>';
+        keys.forEach(key => {
+          const qty = extras[key]?.qty || 'N/A';
+          extrasHTML += `<li><strong>${key}</strong>: ${qty}</li>`;
+        });
+        extrasHTML += '</ul>';
+      }
+    } catch (e) {
+      console.error('Failed to parse customFields:', e);
+    }
+  }
+  const extrasBlock = hasExtras ? extrasHTML : '';
+
+  // category-specific blocks
+  switch (product.categoryId) {
+    case 1: case 11: case 12: case 13:
+      productDetailsHTML += `
+        <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+        <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
+        <p><strong>Pcs:</strong> ${renderText(product.pcs)}</p>
+        <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+        <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+        ${extrasBlock}
+        <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+      `;
+      break;
+    case 2: case 14: case 15:
+      productDetailsHTML += `
+        <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+        <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
+        <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+        <p><strong>Diamonds:</strong> ${renderText(product.diamondsCt)} ct</p>
+        <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+        <p><strong>Pearls:</strong> ${renderTexts(product.pearlsGm)} gm</p>
+        <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+        <p><strong>Other Stones:</strong> ${renderText(product.otherStonesCt)} ct</p>
+        ${extrasBlock}
+        <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+      `;
+      break;
+    case 3: case 16: case 18:
+      productDetailsHTML += `
+        <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+        <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
+        ${extrasBlock}
+        <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+      `;
+      break;
+    case 4: case 9: case 10:
+      productDetailsHTML += `
+        <p><strong>Vilandi:</strong> ${renderText(product.vilandiCt)} ct</p>
+        <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+        <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
+        <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+        <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+        <p><strong>Pearls:</strong> ${renderTexts(product.pearlsGm)} gm</p>
+        <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+        <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
+        <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
+        ${extrasBlock}
+        <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+      `;
+      break;
+    case 5: case 6: case 7: case 8: case 17:
+      productDetailsHTML += `
+        <p><strong>Gross:</strong> ${renderTexts(product.gross)} gm</p>
+        <p><strong>Net:</strong> ${renderTexts(product.net)} gm</p>
+        <p><strong>Stones:</strong> ${renderText(product.stones)}</p>
+        <p><strong>Beads:</strong> ${renderText(product.beadsCt)} ct</p>
+        <p><strong>Pearls:</strong> ${renderTexts(product.pearlsGm)} gm</p>
+        <p><strong>SS Pearl:</strong> ${renderText(product.ssPearlCt)} ct</p>
+        <p><strong>Real Stone:</strong> ₹${renderText(product.realStone)}</p>
+        <p><strong>Mozonite:</strong> ${renderText(product.mozonite)}</p>
+        <p><strong>Fitting:</strong> ₹${renderText(product.fitting)}</p>
+        ${extrasBlock}
+        <p><strong>Remarks:</strong> ${renderText(product.remarks)}</p>
+      `;
+      break;
+    default:
+      productDetailsHTML += '<p>Category not recognized.</p>';
+  }
+
+  // close product-details
+  productDetailsHTML += '</div>';
+
+  // Finally set into DOM once
+  document.getElementById('productDetailsContainer').innerHTML = productDetailsHTML;
+  
+  const estimateBtn = document.getElementById('estimateBtnInline');
+
+  if (estimateBtn) {
+    estimateBtn.onclick = () => {
+      if (!product || !product.productId) {
+        alert('Product not available for estimate.');
+        return;
+      }
+
+      // 🔁 SAME session keys used in View Products page
+      sessionStorage.setItem('productId', product.productId);
+
+      // Optional but consistent with view page
+      sessionStorage.setItem('lastView', 'detail');
+
+      // Redirect to existing estimate flow
+      window.location.href = '/get-estimate';
+    };
+  }
+
+  // refresh verification UI text
+  function refreshVerificationStatus(productId) {
+    const isVerified = product.verificationStatus === 1;
+    const statusEl = document.getElementById('verificationStatus');
+    if (statusEl) {
+      statusEl.innerHTML = isVerified
+        ? `<span class="verified">✔ Verified</span>`
+        : `<span class="unverified">✘ Unverified</span>`;
+    }
+  }
+  
+  refreshVerificationStatus(product.productId);
+
+  // Wire checkbox/price rendering (unchanged)
+  const toggleEl = document.getElementById('withFieldsToggle');
+  const priceValueEl = document.getElementById('priceValue');
+
+  function currentPrice(useWithFields) {
+    return useWithFields ? (product.priceWithFields ?? product.price) : product.price;
+  }
+
+  function roundNearestInt(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  }
+  const inrInteger = new Intl.NumberFormat('en-IN');
+
+  function renderPrice() {
+    const value = currentPrice(toggleEl ? toggleEl.checked : false);
+    const rounded = roundNearestInt(value);
+    priceValueEl.textContent = rounded === null ? 'No value' : inrInteger.format(rounded);
+  }
+
+  if (toggleEl) toggleEl.addEventListener('change', renderPrice);
+  renderPrice();
+
+  // Now wire verify button after DOM insertion
+  setupVerifyButton();
+}
+
+loadProductDetails();
+</script>
+
 <script th:inline="javascript">
   const productFromModel = JSON.parse(/*[[${productJson}]]*/ '{}');
-  renderProduct(productFromModel);
+  // if page rendered with server model, call renderProduct
+  if (productFromModel && Object.keys(productFromModel).length > 0) {
+    renderProduct(productFromModel);
+  }
 </script>
 </body>
+
+
+
 </html>

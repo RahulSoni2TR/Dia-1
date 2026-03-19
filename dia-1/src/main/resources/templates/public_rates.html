@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Latest Rates</title>
+  <link rel="stylesheet" href="/public_rates_style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gold Rates">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="/manifest.json">
+
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <div class="card-header">
+        <h1>Latest Rates</h1>
+        <p class="subtitle" id="ratesDate">--</p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="rates-table">
+          <thead>
+            <tr>
+              <th>Commodity</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody id="ratesBody">
+            <tr>
+              <td colspan="2" class="loading">Loading rates...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note">Rates are excluding GST.</p>
+    </section>
+  </main>
+
+<script>
+const commodityRows = [
+  { label: '22KT', key: '22.00' },
+  { label: '18KT', key: '18.00' },
+  { label: '14KT', key: '14.00' },
+  { label: 'Purchase', key: '22.00' },
+  { label: '24KT', key: '24.00' },
+  { label: 'Silver', key: 'silver' }
+];
+
+function formatPrice(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '-';
+  }
+  return `₹${value}`;
+}
+
+function setDate() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  document.getElementById('ratesDate').textContent = `${dd}/${mm}/${yyyy}`;
+}
+
+async function loadRates() {
+  const tbody = document.getElementById('ratesBody');
+  try {
+    const res = await fetch('/rates');
+    if (!res.ok) {
+      throw new Error('Failed to fetch rates');
+    }
+    const data = await res.json();
+    const ratesMap = new Map(data.map(item => [item.commodity, Number(item.price)]));
+
+    tbody.innerHTML = '';
+    commodityRows.forEach(row => {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      const price = document.createElement('td');
+
+      name.textContent = row.label;
+      price.textContent = formatPrice(ratesMap.get(row.key));
+      price.classList.add('price');
+
+      tr.appendChild(name);
+      tr.appendChild(price);
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error);
+    tbody.innerHTML = '<tr><td colspan="2" class="loading">Unable to load rates.</td></tr>';
+  }
+}
+
+setDate();
+loadRates();
+</script>
+</body>
+</html>

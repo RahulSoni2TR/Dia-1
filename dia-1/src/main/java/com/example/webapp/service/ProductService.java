@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -54,9 +56,11 @@ import com.example.webapp.models.Category;
 import com.example.webapp.models.Orders;
 import com.example.webapp.models.Product;
 import com.example.webapp.models.Rate;
+import com.example.webapp.models.RateHistory;
 import com.example.webapp.repository.CategoryRepository;
 import com.example.webapp.repository.OrderRepository;
 import com.example.webapp.repository.ProductRepository;
+import com.example.webapp.repository.RateHistoryRepository;
 import com.example.webapp.repository.RateRepository;
 import com.example.webapp.repository.VerificationConfigRepository;
 import com.google.zxing.BarcodeFormat;
@@ -77,6 +81,9 @@ public class ProductService {
 
 	@Autowired
 	private RateRepository rateRepository;
+
+	@Autowired
+	private RateHistoryRepository rateHistoryRepository;
 	
 
 	@Autowired
@@ -93,15 +100,25 @@ public class ProductService {
 
     @Value("${app.server.port}")
     private String serverPort;
+    
+    @Value("${app.base-url}")
+    private String baseUrl;
 
+    @Value("${app.qr-dir}")
+    private String qrDir;
 
-//	@Autowired
-//	private AmazonS3 s3Client;
-//
-//	private final String bucketName = "elasticbeanstalk-ap-south-1-012676044441"; // Replace with your bucket name
-//	private final String region = "ap-south-1"; // Replace with your AWS region (e.g., "us-east-1")
-	
-	   private static final Map<String, Long> nameToIdMap = new HashMap<>();
+    @Value("${app.qr-public-path}")
+    private String qrPublicPath;
+
+    @Value("${save.uploads.path}")
+    private String uploadDir;
+    
+    @Value("${delete.baseUploadDir.path}")
+    private String baseUploadDir;
+
+    private final DataFormatter dataFormatter = new DataFormatter();
+
+   private static final Map<String, Long> nameToIdMap = new HashMap<>();
 
 	    static {
 	        nameToIdMap.put("Jadtar Register", 6L);
@@ -151,6 +168,10 @@ public class ProductService {
 	        Product product = productToDeleteOpt.get();
 	        Orders order = product.getOrders();
 
+	        // 1) Delete files from disk (best-effort)
+	        deleteFileIfExists(product.getImageUrl());
+	        deleteFileIfExists(product.getQrCodePath());
+	        
 	        if (order != null) {
 	            // Break bidirectional link
 	            product.setOrders(null);             // Break reference in Product
@@ -166,6 +187,26 @@ public class ProductService {
 	    }
 	}
 
+	private void deleteFileIfExists(String publicPath) {
+	    if (publicPath == null || publicPath.isEmpty()) return;
+
+	    // Extract just the file name (unavailable.jpg, QR_xxx.png, etc.)
+	    String fileName = publicPath.substring(publicPath.lastIndexOf('/') + 1);
+System.out.println(fileName);
+	    // ✅ Do not delete the default placeholder image
+	    if (fileName.contains("unavailable")) {
+	        return;
+	    }
+
+	    Path path = Paths.get(baseUploadDir + publicPath.replace("/", File.separator));
+
+	    try {
+	        Files.deleteIfExists(path);
+	    } catch (IOException e) {
+	        e.printStackTrace(); // or use logger
+	    }
+	}
+
 
 	public String modifyProduct(int a, String s, String b, String n) {
 		return "p";
@@ -176,12 +217,17 @@ public class ProductService {
 	}
 
 	public List<Product> findProductsByCategoryId(Long categoryId) {
-		return productRepository.findByCategoryId(categoryId);
+		return productRepository.findByCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(categoryId);
 	}
 
 	public Optional<Product> findProductById(String productId) {
 		return productRepository.findByDesignNo(productId);
 	}
+	
+	public List<Product> getProductsByDesignNos(List<String> designNos) {
+	    return productRepository.findByDesignNoIn(designNos);
+	}
+
 
 	public Optional<Product> findProductFromId(Long productId) {
 		return productRepository.findById(productId);
@@ -200,7 +246,6 @@ public class ProductService {
 		Optional<Product> alProduct = productRepository.findByDesignNo(updatedProduct.getDesignNo());
 		if (alProduct.isPresent()) {
 			Product alreadyProduct = alProduct.get();
-			// Product existProduct = existingProductOpt.get();
 			if (!alreadyProduct.getDesignNo().equals(productId)) {
 				// System.out.println("came inside");
 				throw new IllegalArgumentException("Design number already exists for a different product");
@@ -254,88 +299,46 @@ public class ProductService {
 		        existingProduct.setOrders(newOrder);
 		    }
 
-		   existingProduct.setCustomFields(updatedProduct.getCustomFields());		    
+			existingProduct.setItem(updatedProduct.getItem());
+			existingProduct.setPrice(updatedProduct.getPrice());
+			existingProduct.setRemarks(updatedProduct.getRemarks());
+			existingProduct.setImageUrl(updatedProduct.getImageUrl());
+			existingProduct.setCategoryId(updatedProduct.getCategoryId());
+			existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
+		   existingProduct.setCustomFields(updatedProduct.getCustomFields());
+			existingProduct.setLabour(updatedProduct.getLabour());
+			existingProduct.setLabourAll(updatedProduct.getLabourAll());
+			existingProduct.setLabourP(updatedProduct.getLabourP());
+			existingProduct.setGross(updatedProduct.getGross());
+			existingProduct.setNet(updatedProduct.getNet());
+			existingProduct.setKarat(updatedProduct.getKarat());
+			existingProduct.setDesignNo(updatedProduct.getDesignNo());
 			if (updatedProduct.getCategoryId() == 1) {
-				existingProduct.setItem(updatedProduct.getItem());
-				existingProduct.setPrice(updatedProduct.getPrice());
-				existingProduct.setRemarks(updatedProduct.getRemarks());
-				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-				existingProduct.setGross(updatedProduct.getGross());
-				existingProduct.setNet(updatedProduct.getNet());
+
 				existingProduct.setPcs(updatedProduct.getPcs());
-				existingProduct.setDiaWeight(updatedProduct.getDiaWeight());
-				existingProduct.setLabour(updatedProduct.getLabour());
-				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-				existingProduct.setKarat(updatedProduct.getKarat());
+				existingProduct.setDiamondsCt(updatedProduct.getDiamondsCt());
+				existingProduct.setDiaRt(updatedProduct.getDiaRt());
+				existingProduct.setOtherStonesCt(updatedProduct.getOtherStonesCt());
+				existingProduct.setOtherStonesRt(updatedProduct.getOtherStonesRt());
 			}
 			if (updatedProduct.getCategoryId() == 2) {
-				existingProduct.setItem(updatedProduct.getItem());
-				existingProduct.setPrice(updatedProduct.getPrice());
-				existingProduct.setRemarks(updatedProduct.getRemarks());
-				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-				existingProduct.setNet(updatedProduct.getNet());
-				existingProduct.setGross(updatedProduct.getGross());
 				existingProduct.setVilandiCt(updatedProduct.getVilandiCt());
 				existingProduct.setvRate(updatedProduct.getvRate());
 				existingProduct.setDiamondsCt(updatedProduct.getDiamondsCt());
+				existingProduct.setDiaRt(updatedProduct.getDiaRt());
 				existingProduct.setBeadsCt(updatedProduct.getBeadsCt());
 				existingProduct.setBdRate(updatedProduct.getBdRate());
 				existingProduct.setPearlsGm(updatedProduct.getPearlsGm());
 				existingProduct.setPrlRate(updatedProduct.getPrlRate());
 				existingProduct.setStones(updatedProduct.getStones());
 				existingProduct.setOthers(updatedProduct.getOthers());
-				existingProduct.setLabour(updatedProduct.getLabour());
-				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-				existingProduct.setKarat(updatedProduct.getKarat());
 				existingProduct.setSsPearlCt(updatedProduct.getSsPearlCt());
 				existingProduct.setSsRate(updatedProduct.getSsRate());
+				existingProduct.setOtherStonesCt(updatedProduct.getOtherStonesCt());
+				existingProduct.setOtherStonesRt(updatedProduct.getOtherStonesRt());
 			}
-			if (updatedProduct.getCategoryId() == 3) {
-				existingProduct.setItem(updatedProduct.getItem());
-				existingProduct.setPrice(updatedProduct.getPrice());
-				existingProduct.setRemarks(updatedProduct.getRemarks());
-				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-				existingProduct.setNet(updatedProduct.getNet());
-				existingProduct.setGross(updatedProduct.getGross());
-				existingProduct.setDesignNo(updatedProduct.getDesignNo());
-				existingProduct.setLabour(updatedProduct.getLabour());
-				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-				existingProduct.setKarat(updatedProduct.getKarat());
-			}
-//			if (updatedProduct.getCategoryId() == 4) {
-//				existingProduct.setItem(updatedProduct.getItem());
-//				existingProduct.setPrice(updatedProduct.getPrice());
-//				existingProduct.setRemarks(updatedProduct.getRemarks());
-//				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-//				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-//				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-//				existingProduct.setNet(updatedProduct.getNet());
-//				existingProduct.setDesignNo(updatedProduct.getDesignNo());
-//				existingProduct.setDiaRt(updatedProduct.getDiaRt());
-//				existingProduct.setPcs(updatedProduct.getPcs());
-//				existingProduct.setDiamondsCt(updatedProduct.getDiamondsCt());
-//				existingProduct.setLabour(updatedProduct.getLabour());
-//				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-//				existingProduct.setKarat(updatedProduct.getKarat());
-//				existingProduct.setOtherStonesCt(updatedProduct.getOtherStonesCt());
-//				existingProduct.setOtherStonesRt(updatedProduct.getOtherStonesRt());
-//			}
+
 			if (updatedProduct.getCategoryId() == 4) {
-				existingProduct.setItem(updatedProduct.getItem());
-				existingProduct.setPrice(updatedProduct.getPrice());
-				existingProduct.setRemarks(updatedProduct.getRemarks());
-				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-				existingProduct.setNet(updatedProduct.getNet());
-				existingProduct.setDesignNo(updatedProduct.getDesignNo());
-				existingProduct.setGross(updatedProduct.getGross());
 				existingProduct.setVilandiCt(updatedProduct.getVilandiCt());
 				existingProduct.setvRate(updatedProduct.getvRate());
 				existingProduct.setStones(updatedProduct.getStones());
@@ -350,20 +353,8 @@ public class ProductService {
 				existingProduct.setFitting(updatedProduct.getFitting());
 				existingProduct.setMozonite(updatedProduct.getMozonite());
 				existingProduct.setmRate(updatedProduct.getmRate());
-				existingProduct.setLabour(updatedProduct.getLabour());
-				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-				existingProduct.setKarat(updatedProduct.getKarat());
 			}
 			if (updatedProduct.getCategoryId() == 5) {
-				existingProduct.setItem(updatedProduct.getItem());
-				existingProduct.setPrice(updatedProduct.getPrice());
-				existingProduct.setRemarks(updatedProduct.getRemarks());
-				existingProduct.setImageUrl(updatedProduct.getImageUrl());
-				existingProduct.setCategoryId(updatedProduct.getCategoryId());
-				existingProduct.setSubCategoryId(updatedProduct.getSubCategoryId());
-				existingProduct.setNet(updatedProduct.getNet());
-				existingProduct.setDesignNo(updatedProduct.getDesignNo());
-				existingProduct.setGross(updatedProduct.getGross());
 				existingProduct.setNet(updatedProduct.getNet());
 				existingProduct.setStones(updatedProduct.getStones());
 				existingProduct.setStRate(updatedProduct.getStRate());
@@ -377,16 +368,10 @@ public class ProductService {
 				existingProduct.setFitting(updatedProduct.getFitting());
 				existingProduct.setMozonite(updatedProduct.getMozonite());
 				existingProduct.setmRate(updatedProduct.getmRate());
-				existingProduct.setLabour(updatedProduct.getLabour());
-				existingProduct.setLabourAll(updatedProduct.getLabourAll());
-				existingProduct.setKarat(updatedProduct.getKarat());
 			}
 			
-			//	String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
-			String qrUrl = "https://say-comfort-statute-toilet.trycloudflare.com" + "/loadProductByDesignNo/" + existingProduct.getDesignNo();
+			String qrUrl = baseUrl + "/loadProductByDesignNo/" + existingProduct.getDesignNo();
 
-			// 2. Define save location
-			String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
 			try {
 				Files.createDirectories(Paths.get(qrDir));
 			} catch (IOException e) {
@@ -404,7 +389,7 @@ public class ProductService {
 				e.printStackTrace();
 			}
 			
-			String qr_path="/uploads/qr_codes/" + qrFileName;
+			String qr_path=qrPublicPath + qrFileName;
 			// 4. Save QR path in product
 			existingProduct.setQrCodePath(qr_path);
 
@@ -435,31 +420,12 @@ public class ProductService {
         config.setVerificationDays(days);
         settingRepository.save(config);
     }
-/*
-	 * local image store 
-	 */
-/*
- * private String saveImageFile(MultipartFile imageFile) { try { // Specify the
- * directory to save the images String uploadDir =
- * "C:\\Users\\Admin\\Downloads\\uploads\\"; // Update to your desired upload
- * directory Files.createDirectories(Paths.get(uploadDir));
- * 
- * // Define the path where the file will be saved Path filePath =
- * Paths.get(uploadDir + imageFile.getOriginalFilename());
- * 
- * // Save the file imageFile.transferTo(filePath.toFile());
- * 
- * // Construct a URL to access the image String imageUrl =
- * "http://localhost:8081/" + imageFile.getOriginalFilename(); // Adjust based
- * on your context return imageUrl; } catch (IOException e) {
- * e.printStackTrace(); return null; } }
- */
+
 	
 	@PostMapping("/upload-image")
 	public String saveImageFile(@RequestParam("imageFile") MultipartFile imageFile) {
 	    try {
 	        // Save directory
-	        String uploadDir = "C:/Users/Admin/Downloads/uploads/";
 	        Files.createDirectories(Paths.get(uploadDir));
 
 	        // Get file extension
@@ -486,33 +452,8 @@ public class ProductService {
 	}
 
 
-
-	// public String saveImageFile(MultipartFile file) {
-	// 	File fileObj = convertMultiPartFileToFile(file);
-	// 	String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-	// 	s3Client.putObject(
-	// 			new PutObjectRequest(bucketName, fileName, fileObj).withCannedAcl(CannedAccessControlList.PublicRead));
-	// 	fileObj.delete();
-	// 	return s3Client.getUrl(bucketName, fileName).toString();
-	// }
-
-	// private File convertMultiPartFileToFile(MultipartFile file) {
-	// 	File convertedFile = new File(file.getOriginalFilename());
-	// 	try (FileOutputStream fos = new FileOutputStream(convertedFile)) {
-	// 		fos.write(file.getBytes());
-	// 	} catch (IOException e) {
-	// 		System.out.print("Error converting multipartFile to file");
-	// 	}
-	// 	return convertedFile;
-	// }
-
 	public Page<Product> findByCategory(List<Integer> categories, Pageable pageable, String searchTerm) {
-//		if (searchTerm != null && !searchTerm.isEmpty()) {
-//	        searchTerm = "%" + searchTerm + "%";
-//	    } else {
-//	        searchTerm = null;
-//	    }
-		
+
 		if (categories == null || categories.isEmpty()) {
 	        return productRepository.findProductsWithoutCategoryAndName(searchTerm, pageable);
 	    }
@@ -524,10 +465,6 @@ public class ProductService {
 				    .collect(Collectors.toList());
 		  return  productRepository.findBysubCategoryIdInAndItemContainingIgnoreCase(categoryLongs,searchTerm, pageable);
 		}
-
-//		if(categories.contains(categories))
-//		System.out.println("Final categories passed to repo: " + categories);
-//		System.out.println("search term: " + searchTerm);
 
 	    return productRepository.findByCategoryIdInAndItemContainingIgnoreCase(categories,searchTerm, pageable);
 	}
@@ -558,14 +495,27 @@ public class ProductService {
 		    return categoryRepository.findAll();
 	}
 	
+	@Transactional
 	public String updatePrices(Map<String, BigDecimal> prices) {
 		prices.forEach((commodity, price) -> {
 			if (price != null && price.compareTo(BigDecimal.ZERO) > 0) {
-				Rate rate = rateRepository.findByCommodity(commodity).orElse(new Rate()); // Create new Rate if
-																							// commodity doesn't exist
+				Optional<Rate> existingRate = rateRepository.findByCommodity(commodity);
+				BigDecimal oldPrice = existingRate.map(Rate::getPrice).orElse(null);
+				if (oldPrice != null && oldPrice.compareTo(price) == 0) {
+					return; // No change, skip rate/history update
+				}
+				Rate rate = existingRate.orElseGet(Rate::new);
 				rate.setCommodity(commodity);
 				rate.setPrice(price);
-				rateRepository.save(rate);
+				Rate savedRate = rateRepository.save(rate);
+
+				RateHistory history = new RateHistory();
+				history.setRate(savedRate);
+				history.setCommodity(commodity);
+				history.setOldPrice(oldPrice);
+				history.setNewPrice(price);
+				history.setUpdatedAt(LocalDateTime.now());
+				rateHistoryRepository.save(history);
 			} else {
 				// Handle invalid price (optional logging or feedback)
 				System.out.println("Invalid price for commodity: " + commodity);
@@ -578,25 +528,28 @@ public class ProductService {
 		return rateRepository.findAll();
 	}
 
-	public Page<Product> getFilteredProducts(Long categoryId, LocalDateTime startDate, LocalDateTime endDate, int page,
-			int size) {
-		Pageable pageable = PageRequest.of(page, size);
-		// System.out.println(startDate);
-		// System.out.println(endDate);
-		return productRepository.findProductsByCategoryAndDateRange(categoryId, startDate, endDate, pageable);
-	}
-	
-	public List<Product> getAllProductsByCategory(Long categoryId) {
-		 List<Product> products = productRepository.findByCategoryId(categoryId);
-		    return products.stream()
-		                   .filter(p -> p.getDesignNo() != null && !p.getDesignNo().isEmpty())
-		                   .collect(Collectors.toList());
-	}
+	public Page<Product> getFilteredProducts(
+		    Long categoryId,
+		    Long subCategoryId,
+		    LocalDateTime startDate,
+		    LocalDateTime endDate,
+		    int page,
+		    int size
+		) {
+		    Pageable pageable = PageRequest.of(page, size);
+
+		    if (subCategoryId == null) {
+		        return productRepository.findByCategoryIdAndCreateDateTimeBetweenAndOrdersIsNotNullAndDesignNoIsNotNull(
+		            categoryId, startDate, endDate, pageable);
+		    } else {
+		        return productRepository.findByCategoryIdAndSubCategoryIdAndCreateDateTimeBetweenAndOrdersIsNotNullAndDesignNoIsNotNull(
+		            categoryId, subCategoryId, startDate, endDate, pageable);
+		    }
+		}
 
 
 	public void importProductsFromExcel(MultipartFile file, String categoryName) throws Exception {
 		System.out.println("inside import product");
-		// Set<String> uniqueDesignNos = new HashSet<>();
 		Workbook workbook = null;
 		String category = "";
 		try {
@@ -632,7 +585,7 @@ public class ProductService {
 
 			if (category.equals("Diamond")) {
 				while (rows.hasNext()) {
-					System.out.println("inside rows");
+					System.out.println("inside rows diamond");
 					Row currentRow = rows.next();
 
 					// Skip the header row
@@ -640,10 +593,17 @@ public class ProductService {
 						rowNumber++;
 						continue;
 					}
+					
+					if (isRowEmptyByIndexCell(currentRow)) {
+			            System.out.println("Stopping at row " + rowNumber + " because index cell (0) is empty");
+			            break;
+			        }
+					
 
 					try {
 						Product product = new Product();
-						String designNo = getCellValue(currentRow.getCell(1));
+						String designNo = dataFormatter.formatCellValue(currentRow.getCell(1));
+
 
 						// Check if the designNo is unique
 						if (designNo != null && !designNo.trim().isEmpty()) {
@@ -690,29 +650,24 @@ public class ProductService {
 						    product.setOrders(order);
 						}
 
-						
-//						product.setOrderRef(order);
 						product.setCategoryId(parseInt(categoryName));
 						product.setParentCategoryId(parseLong(categoryName));
 						product.setImageUrl(
 								"\\uploads\\unavailable.jpg");
 						product.setDesignNo(designNo);
 						product.setItem(getCellValue(currentRow.getCell(3)));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-					//	System.out.println(getCellValue(currentRow.getCell(6)));
+						product.setGross(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(4)))));
+						product.setNet(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(5)))));
 						product.setPcs(parseInt(getCellValue(currentRow.getCell(6))));
-					//	System.out.println(parseBigDecimal(getCellValue(currentRow.getCell(7))));
 						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(7))));
 						product.setRemarks(getCellValue(currentRow.getCell(8)));
 						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(9))));
 						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(10))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(11))));
-						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(12))));
-						String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
-
+						product.setLabourP(parseBigDecimal(getCellValue(currentRow.getCell(11))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(12))));
+						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(13))));
+						String qrUrl = baseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
 						// 2. Define save location
-						String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
 						Files.createDirectories(Paths.get(qrDir));
 						String qrFileName = "QR_" + product.getDesignNo() + ".png";
 						String qrFilePath = qrDir + qrFileName;
@@ -737,7 +692,7 @@ public class ProductService {
 
 			if (category.equals("Open Setting")) {
 				while (rows.hasNext()) {
-					System.out.println("inside rows");
+					System.out.println("inside rows open setting");
 					Row currentRow = rows.next();
 
 					// Skip the header row
@@ -745,10 +700,17 @@ public class ProductService {
 						rowNumber++;
 						continue;
 					}
+					
+					if (isRowEmptyByIndexCell(currentRow)) {
+			            System.out.println("Stopping at row " + rowNumber + " because index cell (0) is empty");
+			            break;
+			        }
+					
 
 					try {
 						Product product = new Product();
-						String designNo = getCellValue(currentRow.getCell(1));
+						String designNo = dataFormatter.formatCellValue(currentRow.getCell(1));
+
 
 						// Check if the designNo is unique
 						if (designNo != null && !designNo.trim().isEmpty()) {
@@ -796,31 +758,29 @@ public class ProductService {
 						}
 
 						
-//						product.setOrderRef(order);
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"\\uploads\\unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
 						product.setParentCategoryId(parseLong(categoryName));
 						product.setItem(getCellValue(currentRow.getCell(3)));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setGross(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(4)))));
+						product.setNet(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(5)))));
 						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
 						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(7))));
 						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setPearlsGm(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(9)))));
 						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(10))));
 						product.setOtherStonesCt(parseBigDecimal(getCellValue(currentRow.getCell(11))));
 						product.setRemarks(getCellValue(currentRow.getCell(12)));
 						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(13))));
 						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(14))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(15))));
-						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(16))));
+						product.setLabourP(parseBigDecimal(getCellValue(currentRow.getCell(15))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(16))));
+						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(17))));
 
-						String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
-
+						String qrUrl = baseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
 						// 2. Define save location
-						String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
 						Files.createDirectories(Paths.get(qrDir));
 						String qrFileName = "QR_" + product.getDesignNo() + ".png";
 						String qrFilePath = qrDir + qrFileName;
@@ -847,7 +807,7 @@ public class ProductService {
 
 			if (category.equals("Plain Gold")) {
 				while (rows.hasNext()) {
-					System.out.println("inside rows");
+					System.out.println("inside rows plain gold");
 					Row currentRow = rows.next();
 
 					// Skip the header row
@@ -855,10 +815,17 @@ public class ProductService {
 						rowNumber++;
 						continue;
 					}
+					
+					if (isRowEmptyByIndexCell(currentRow)) {
+			            System.out.println("Stopping at row " + rowNumber + " because index cell (0) is empty");
+			            break;
+			        }
+					
 
 					try {
 						Product product = new Product();
-						String designNo = getCellValue(currentRow.getCell(1));
+						String designNo = dataFormatter.formatCellValue(currentRow.getCell(1));
+
 
 						// Check if the designNo is unique
 						if (designNo != null && !designNo.trim().isEmpty()) {
@@ -905,24 +872,22 @@ public class ProductService {
 						    product.setOrders(order);
 						}
 
-					//	order.setAssignedProduct(product);
-//						product.setOrderRef(order);
 						product.setDesignNo(designNo);
 						product.setImageUrl(
 								"\\uploads\\unavailable.jpg");
 						product.setCategoryId(parseInt(categoryName));
 						product.setParentCategoryId(parseLong(categoryName));
 						product.setItem(getCellValue(currentRow.getCell(3)));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(7))));
-						product.setRemarks(getCellValue(currentRow.getCell(8)));
-						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(9))));
-						String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
-
+						product.setGross(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(4)))));
+						product.setNet(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(5)))));
+						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(6))));
+						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setLabourP(parseBigDecimal(getCellValue(currentRow.getCell(8))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(9))));
+						product.setRemarks(getCellValue(currentRow.getCell(10)));
+						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(11))));
+						String qrUrl = baseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
 						// 2. Define save location
-						String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
 						Files.createDirectories(Paths.get(qrDir));
 						String qrFileName = "QR_" + product.getDesignNo() + ".png";
 						String qrFilePath = qrDir + qrFileName;
@@ -945,95 +910,9 @@ public class ProductService {
 
 			}
 
-//			if (category.equals("Diamond Earrings")) {
-//				while (rows.hasNext()) {
-//					System.out.println("inside rows");
-//					Row currentRow = rows.next();
-//
-//					// Skip the header row
-//					if (rowNumber == 0) {
-//						rowNumber++;
-//						continue;
-//					}
-//
-//					try {
-//						Product product = new Product();
-//						String designNo = getCellValue(currentRow.getCell(1));
-//
-//						// Check if the designNo is unique
-//						if (designNo != null && !designNo.trim().isEmpty()) {
-//							while (productRepository.existsByDesignNo(designNo)) { // Add method to check uniqueness
-//								designNo = generateRandomDesignNo();
-//							}
-//						} else {
-//							// Generate a random design number if none is provided
-//							designNo = generateRandomDesignNo();
-//						}
-//						String orderId = getCellValue(currentRow.getCell(2));
-//						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
-//						Orders order;
-//						if (orderOpt.isPresent()) {
-//						    Orders existingOrder = orderOpt.get();
-//						    
-//						    if (existingOrder.isAssigned()) {
-//						        // Existing order is already assigned, generate a new unique one
-//						        String newOrderId = generateUniqueOrderIdForCategory(4);
-//						        
-//						        order = new Orders();
-//						        order.setOrderId(newOrderId);
-//						        order.setCategoryId(4);
-//						        order.setAssigned(true);
-//						        order.setAssignedProduct(product);
-//						        product.setOrders(order);
-//						       
-//						    } else {
-//						        // Existing order is not assigned, reuse it
-//						        order = existingOrder;
-//						        order.setAssigned(true);
-//						        order.setCategoryId(4);
-//						        order.setAssignedProduct(product);
-//						        product.setOrders(order);
-//						        
-//						    }
-//						} else {
-//						    // Create a fresh order with the provided ID
-//						    order = new Orders();
-//						    order.setOrderId(orderId);
-//						    order.setCategoryId(4);
-//						    order.setAssigned(true);
-//						    order.setAssignedProduct(product);
-//						    product.setOrders(order);
-//						}
-//						
-//					//	product.setOrders(order);
-//						product.setDesignNo(designNo);
-//						product.setImageUrl(
-//								"https://elasticbeanstalk-ap-south-1-012676044441.s3.ap-south-1.amazonaws.com/unavailable.jpg");
-//						product.setCategoryId(parseInt(categoryName));
-//						product.setItem(getCellValue(currentRow.getCell(3)));
-//						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-//						product.setPcs(parseInt(getCellValue(currentRow.getCell(5))));
-//						product.setDiamondsCt(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-//						product.setRemarks(getCellValue(currentRow.getCell(7)));
-//						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(8))));
-//						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-//						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(10))));
-//				//		order.setAssignedProduct(product);
-//						System.out.println("product detail " + product);
-//						products.add(product);
-//					} catch (Exception e) {
-//						System.err.println("Error parsing row number " + rowNumber + ": " + e.getMessage());
-//						e.printStackTrace(); // Log stack trace for debugging
-//					}
-//
-//					rowNumber++;
-//				}
-//
-//			}
-
 			if (category.equals("Vilandi")) {
 				while (rows.hasNext()) {
-					System.out.println("inside rows");
+					System.out.println("inside rows vilandi");
 					Row currentRow = rows.next();
 
 					// Skip the header row
@@ -1042,23 +921,28 @@ public class ProductService {
 						continue;
 					}
 
+					if (isRowEmptyByIndexCell(currentRow)) {
+			            System.out.println("Stopping at row " + rowNumber + " because index cell (0) is empty");
+			            break;
+			        }
+					
 					try {
 						Product product = new Product();
 						// product.setId(parseLong(getCellValue(currentRow.getCell(0)))); // Uncomment
 						// if needed
-						String designNo = getCellValue(currentRow.getCell(1));
+						String designNo = dataFormatter.formatCellValue(currentRow.getCell(1));
+
 
 						// Check if the designNo is unique
 						if (designNo != null && !designNo.trim().isEmpty()) {
 							while (productRepository.existsByDesignNo(designNo)) {
-								System.out.println("inside design validation before " + designNo);// Add method to check
-																									// uniqueness
+
 								designNo = generateRandomDesignNo();
-								System.out.println("inside design validation after " + designNo);
+
 							}
 						} else {
 							// Generate a random design number if none is provided
-							System.out.println("inside design validation else");
+						
 							designNo = generateRandomDesignNo();
 						}
 						String orderId = getCellValue(currentRow.getCell(2));
@@ -1104,12 +988,12 @@ public class ProductService {
 						product.setItem(getCellValue(currentRow.getCell(3)));
 						product.setVilandiCt(parseBigDecimal(getCellValue(currentRow.getCell(4))));
 						product.setvRate(parseBigDecimal(getCellValue(currentRow.getCell(5))));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(6))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(7))));
+						product.setGross(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(6)))));
+						product.setNet(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(7)))));
 						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(8))));
 						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(9))));
 						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(10))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(11))));
+						product.setPearlsGm(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(11)))));
 						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(12))));
 						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(13))));
 						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(14))));
@@ -1119,13 +1003,12 @@ public class ProductService {
 						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(18))));
 						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(19))));
 						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(20))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(21))));
-						product.setRemarks(getCellValue(currentRow.getCell(22)));
-						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(23))));
-						String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
+						product.setLabourP(parseBigDecimal(getCellValue(currentRow.getCell(21))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(22))));
+						product.setRemarks(getCellValue(currentRow.getCell(23)));
+						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(24))));
+						String qrUrl = baseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
 
-						// 2. Define save location
-						String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
 						Files.createDirectories(Paths.get(qrDir));
 						String qrFileName = "QR_" + product.getDesignNo() + ".png";
 						String qrFilePath = qrDir + qrFileName;
@@ -1150,7 +1033,7 @@ public class ProductService {
 
 			if (category.equals("Jadtar")) {
 				while (rows.hasNext()) {
-					System.out.println("inside rows");
+					System.out.println("inside rows jadtar");
 					Row currentRow = rows.next();
 
 					// Skip the header row
@@ -1159,11 +1042,17 @@ public class ProductService {
 						continue;
 					}
 
+					if (isRowEmptyByIndexCell(currentRow)) {
+			            System.out.println("Stopping at row " + rowNumber + " because index cell (0) is empty");
+			            break;
+			        }
+					
 					try {
 						Product product = new Product();
 						// product.setId(parseLong(getCellValue(currentRow.getCell(0)))); // Uncomment
 						// if needed
-						String designNo = getCellValue(currentRow.getCell(1));
+						String designNo = dataFormatter.formatCellValue(currentRow.getCell(1));
+
 
 						// Check if the designNo is unique
 						if (designNo != null && !designNo.trim().isEmpty()) {
@@ -1175,6 +1064,7 @@ public class ProductService {
 							designNo = generateRandomDesignNo();
 						}
 						String orderId = getCellValue(currentRow.getCell(2));
+						System.out.println("outside order id is "+orderId);
 						Optional<Orders> orderOpt = orderRepository.findByOrderId(orderId);
 						Orders order;
 						if (orderOpt.isPresent()) {
@@ -1185,6 +1075,7 @@ public class ProductService {
 						        String newOrderId = generateUniqueOrderIdForCategory(6);
 						        
 						        order = new Orders();
+						        System.out.println("new order id is "+orderId);
 						        order.setOrderId(newOrderId);
 						        order.setCategoryId(6);
 						        order.setAssigned(true);
@@ -1192,6 +1083,7 @@ public class ProductService {
 						        product.setOrders(order);
 						       
 						    } else {
+						    	System.out.println("already existing not assigned order id is "+orderId);
 						        // Existing order is not assigned, reuse it
 						        order = existingOrder;
 						        order.setAssigned(true);
@@ -1202,6 +1094,7 @@ public class ProductService {
 						    }
 						} else {
 						    // Create a fresh order with the provided ID
+							System.out.println("freshly created order id is "+orderId);
 						    order = new Orders();
 						    order.setOrderId(orderId);
 						    order.setCategoryId(6);
@@ -1215,13 +1108,13 @@ public class ProductService {
 						product.setCategoryId(parseInt(categoryName));
 						product.setParentCategoryId(parseLong(categoryName));
 						product.setItem(getCellValue(currentRow.getCell(3)));
-						product.setGross(parseBigDecimal(getCellValue(currentRow.getCell(4))));
-						product.setNet(parseBigDecimal(getCellValue(currentRow.getCell(5))));
+						product.setGross(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(4)))));
+						product.setNet(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(5)))));
 						product.setStones(parseBigDecimal(getCellValue(currentRow.getCell(6))));
 						product.setStRate(parseBigDecimal(getCellValue(currentRow.getCell(7))));
 						product.setBeadsCt(parseBigDecimal(getCellValue(currentRow.getCell(8))));
 						product.setBdRate(parseBigDecimal(getCellValue(currentRow.getCell(9))));
-						product.setPearlsGm(parseBigDecimal(getCellValue(currentRow.getCell(10))));
+						product.setPearlsGm(scaleTo3(parseBigDecimal(getCellValue(currentRow.getCell(10)))));
 						product.setPrlRate(parseBigDecimal(getCellValue(currentRow.getCell(11))));
 						product.setSsPearlCt(parseBigDecimal(getCellValue(currentRow.getCell(12))));
 						product.setSsRate(parseBigDecimal(getCellValue(currentRow.getCell(13))));
@@ -1231,13 +1124,11 @@ public class ProductService {
 						product.setmRate(parseBigDecimal(getCellValue(currentRow.getCell(17))));
 						product.setLabour(parseBigDecimal(getCellValue(currentRow.getCell(18))));
 						product.setLabourAll(parseBigDecimal(getCellValue(currentRow.getCell(19))));
-						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(20))));
-						product.setRemarks(getCellValue(currentRow.getCell(21)));
-						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(22))));
-					//	String qrUrl = "http://" + serverHost + ":" + serverPort + "/loadProductByDesignNo/" + product.getDesignNo();
-						String qrUrl = "https://9c5c8c9b2049.ngrok-free.app" + "/loadProductByDesignNo/" + product.getDesignNo();
-						// 2. Define save location
-						String qrDir = "C:/Users/Admin/Downloads/uploads/qr_codes/";
+						product.setLabourP(parseBigDecimal(getCellValue(currentRow.getCell(20))));
+						product.setKarat(parseBigDecimal(getCellValue(currentRow.getCell(21))));
+						product.setRemarks(getCellValue(currentRow.getCell(22)));
+						product.setSubCategoryId(getIdForName(getCellValue(currentRow.getCell(23))));
+						String qrUrl = baseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
 						Files.createDirectories(Paths.get(qrDir));
 						String qrFileName = "QR_" + product.getDesignNo() + ".png";
 						String qrFilePath = qrDir + qrFileName;
@@ -1273,54 +1164,169 @@ public class ProductService {
 		}
 	}
 	
+	private BigDecimal scaleTo3(BigDecimal value) {
+	    return value == null ? null : value.setScale(3, RoundingMode.HALF_UP);
+	}
 
-    public Page<Product> searchWithoutCategory(String searchTerm, String searchBy, Pageable pageable) {
-        String mode = (searchBy == null ? "name" : searchBy).toLowerCase(Locale.ROOT);
-        String term = searchTerm == null ? "" : searchTerm;
-
-        return switch (mode) {
-            case "design" -> productRepository.findByDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(term, "",pageable);
-            case "order"  -> productRepository.findByOrders_OrderIdContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(term, "",pageable);
-            case "name"   -> productRepository.findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(term,"", pageable);
-            default       -> productRepository.findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(term,"", pageable);
-        };
-    }
+	
+	private boolean isRowEmptyByIndexCell(Row row) {
+	    if (row == null) return true;
+	    String indexVal = getCellValue(row.getCell(0));  // column 0
+	    return indexVal == null || indexVal.trim().isEmpty();
+	}
 
 
-    public Page<Product> searchByCategory(List<Integer> categories, String searchTerm, String searchBy, Pageable pageable) {
-        String mode = (searchBy == null ? "name" : searchBy).toLowerCase(Locale.ROOT);
-        String term = searchTerm == null ? "" : searchTerm;
+	public Page<Product> searchWithoutCategory(
+	        String searchTerm,
+	        String searchBy,
+	        Pageable pageable
+	) {
+	    String mode = (searchBy == null ? "name" : searchBy).toLowerCase();
+	    String term = searchTerm == null ? "" : searchTerm;
 
-        boolean isSubCategory = categories.size() == 1 && subCategoryExists(categories.get(0));
+	    return switch (mode) {
 
-        if (isSubCategory) {
-        	
-        	List<Long> subCategoryIdsLong = categories.stream()
-                    .map(Long::valueOf)
-                    .toList();
-        	
-            switch (mode) {
-                case "design":
-                    return productRepository.findByDesignNoContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, subCategoryIdsLong,"", pageable);
-                case "order":
-                    return productRepository.findByOrders_OrderIdContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, subCategoryIdsLong,"", pageable);
-                case "name":
-                default:
-                    return productRepository.findByItemContainingIgnoreCaseAndSubCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, subCategoryIdsLong,"", pageable);
-            }
+	        case "design" ->
+	            productRepository
+	                .findByDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, "", pageable);
+
+	        case "name" ->
+	            productRepository
+	                .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, "", pageable);
+
+	        case "all" ->
+	            productRepository
+	                .findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, term, "", pageable);
+	        case "order" ->
+	        productRepository
+	            .findByOrders_OrderIdContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                term, "", pageable
+	            );
+	        default ->
+	            productRepository
+	                .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, "", pageable);
+	    };
+	}
+
+	public Page<Product> searchByCategory(
+	        List<Integer> categories,
+	        String searchTerm,
+	        String searchBy,
+	        Pageable pageable
+	) {
+	    String mode = (searchBy == null ? "name" : searchBy).toLowerCase(Locale.ROOT);
+	    String term = (searchTerm == null) ? "" : searchTerm.trim();
+
+	    boolean isSubCategory =
+	            categories.size() == 1 && subCategoryExists(categories.get(0));
+
+	    /* ================= SUB CATEGORY ================= */
+	    if (isSubCategory) {
+
+	        Long subCatId = categories.get(0).longValue();
+
+	        switch (mode) {
+
+	            case "designno":
+	                return productRepository
+	                    .findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                        subCatId, term, "", pageable);
+
+	            case "design":
+	                if (!term.matches("\\d+")) {
+	                    return Page.empty(pageable);
+	                }
+	                return productRepository.findByDesignNo(
+	                    Long.valueOf(term), pageable);
+
+	            case "all":
+	                if (term.isBlank()) {
+	                    return productRepository
+	                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                            subCatId, "", "", pageable);
+	                }
+
+	                if (term.matches("\\d+")) {
+	                    return productRepository.searchByNameOrDesign(
+	                        term, Long.valueOf(term), pageable);
+	                }
+
+	                return productRepository
+	                    .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                        subCatId, term, "", pageable);
+
+	            case "order":
+	                return productRepository
+	                    .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                        term, categories, "", pageable);
+
+	            case "name":
+	            default:
+	                return productRepository
+	                    .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+	                        subCatId, term, "", pageable);
+	        }
+	    }
+
+	    /* ================= CATEGORY ================= */
+	    switch (mode) {
+
+	        case "designno":
+	            return productRepository
+	                .findByDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, categories, "", pageable);
+
+	        case "design":
+	            if (!term.matches("\\d+")) {
+	                return Page.empty(pageable);
+	            }
+	            return productRepository.findByDesignNo(
+	                Long.valueOf(term), pageable);
+
+	        case "order":
+	            return productRepository
+	                .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, categories, "", pageable);
+
+	        case "all":
+	            if (term.isBlank()) {
+	                return productRepository
+	                    .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                        "", categories, "", pageable);
+	            }
+
+	            if (term.matches("\\d+")) {
+	                return productRepository.searchByNameOrDesign(
+	                    term, Long.valueOf(term), pageable);
+	            }
+
+	            return productRepository
+	                .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, categories, "", pageable);
+
+	        case "name":
+	        default:
+	            return productRepository
+	                .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+	                    term, categories, "", pageable);
+	    }
+	}
+    public List<Product> getAllProductsByCategory(Long categoryId, Long subCategoryId) {
+        List<Product> products;
+        if (subCategoryId == null) {
+            products = productRepository. findByCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(categoryId);
         } else {
-        
-        	switch (mode) {
-            case "design":
-                return productRepository.findByDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, categories,"", pageable);
-            case "order":
-                return productRepository.findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, categories,"", pageable);
-            case "name":
-            default:
-                return productRepository.findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(term, categories,"", pageable);
+            products = productRepository.findByCategoryIdAndSubCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(categoryId, subCategoryId);
         }
-        }
+        return products.stream()
+                       .filter(p -> p.getDesignNo() != null && !p.getDesignNo().isEmpty())
+                       .collect(Collectors.toList());
     }
+
 
     @Transactional
     public Product updateVerificationByDesignNo(String designNo, int status) {
@@ -1447,6 +1453,17 @@ public class ProductService {
 		return orderRepository.findByCategoryIdAndIsAssignedFalse(categoryId);
 	}
 	
+	
+	// Multiple categories (NEW)
+	public List<Orders> findByCategoryIdsAndIsAssignedFalse(List<Integer> categoryIds){
+		return orderRepository.findByCategoryIdsAndIsAssignedFalse(categoryIds);
+	}
+
+	// All unassigned
+	public List<Orders> findAllByIsAssignedFalse(){
+		return orderRepository.findAllByIsAssignedFalse();
+	}
+	
 	public String generateUniqueOrderIdForCategory(Integer categoryId) {
 	    String prefix = "";
 
@@ -1469,5 +1486,33 @@ public class ProductService {
 	    return newOrderId;
 	}
 
+	@Transactional
+	public int applyBatchUpdate(Long categoryId, Map<String, String> updates) {
+		if (categoryId == null) {
+			throw new IllegalArgumentException("Category ID is required");
+		}
+		if (updates == null || updates.isEmpty()) {
+			throw new IllegalArgumentException("No updates provided");
+		}
 
+		List<Product> products = productRepository.findByCategoryIdAndOrdersIsNotNullAndDesignNoIsNotNull(categoryId);
+		if (products.isEmpty()) {
+			return 0;
+		}
+
+		for (Product product : products) {
+			BatchUpdateMapper.applyUpdates(product, updates);
+		}
+
+		productRepository.saveAll(products);
+		return products.size();
+	}
+
+	public List<RateHistory> getRateHistory(String commodity, LocalDateTime start, LocalDateTime end) {
+		if (start != null && end != null) {
+			return rateHistoryRepository
+					.findByCommodityAndUpdatedAtBetweenOrderByUpdatedAtDesc(commodity, start, end);
+		}
+		return rateHistoryRepository.findByCommodityOrderByUpdatedAtDesc(commodity);
+	}
 }

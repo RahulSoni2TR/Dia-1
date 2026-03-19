@@ -251,8 +251,20 @@ public Integer getVerificationStatus() {
     @Column(name = "labour_all")
     private BigDecimal labourAll;
     
+    @Column(name = "labour_p")
+    private BigDecimal labourP;
     
-    @Column(name = "karat")
+    
+    public BigDecimal getLabourP() {
+		return labourP;
+	}
+
+	public void setLabourP(BigDecimal labourP) {
+		this.labourP = labourP;
+	}
+
+
+	@Column(name = "karat")
     private BigDecimal karat;
     
 

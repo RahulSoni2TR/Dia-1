@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.example.webapp.entity.EnquiryLog;
 
-public interface EnquiryLogRepository extends JpaRepository<EnquiryLog, Long> {
+public interface EnquiryLogRepository extends JpaRepository<EnquiryLog, Integer> {
 	
 	Page<EnquiryLog> findByDesignNoContainingIgnoreCaseOrCustomerNameContainingIgnoreCase(
             String designNo, String customerName, Pageable pageable);

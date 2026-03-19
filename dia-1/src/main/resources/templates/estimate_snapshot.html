@@ -7,6 +7,21 @@
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col items-center py-10">
 
+
+<!-- 🟢 Added: Controls bar with Font Size dropdown -->
+<div class="flex justify-between w-full max-w-3xl mb-4 px-2 items-center gap-2 flex-wrap">
+  <div class="flex items-center gap-2">
+    <!-- 🟢 Font size dropdown -->
+    <label for="fontSizeSelect" class="text-sm font-medium">Font Size:</label>
+    <select id="fontSizeSelect" class="border rounded px-2 py-1 text-sm">
+      <option value="12">Small</option>
+      <option value="14" selected>Normal</option>
+      <option value="16">Medium</option>
+      <option value="18">Large</option>
+      <option value="20">Extra Large</option>
+    </select>
+  </div>
+
 <div class="flex justify-between w-full max-w-3xl mb-4 px-2">
   <button onclick="history.back()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
     ← Back
@@ -33,27 +48,71 @@ if(snapshotStr){
     let rowsHtml = "";
 
     // Table rows from lines
-    (estimate.lines || []).forEach(line => {
-      if(line.amount && line.amount > 0){
-        rowsHtml += `
-          <tr>
-            <td class="border px-4 py-2">${line.description}</td>
-            <td class="border px-4 py-2">${line.qty}</td>
-            <td class="border px-4 py-2">₹ ${Number(line.rate).toLocaleString()}</td>
-            <td class="border px-4 py-2">₹ ${Number(line.amount).toLocaleString()}</td>
-          </tr>`;
-      }
-    });
+  (estimate.lines || []).forEach(line => {
+  if (!line.amount || line.amount <= 0) return;
+
+  const desc = String(line.description || "").toLowerCase();
+
+  // gm logic (Gold, Labour, Pearls)
+  const needsGm =
+    desc.includes("gold") ||
+    desc.includes("labour") ||
+    desc === "pearls"; // exactly Pearls → gm, not ct
+
+  // ct logic (Beads, SS Pearls, Vilandi, Diamonds, Other Stones)
+  const needsCt =
+    desc.includes("beads") ||
+    desc.includes("ss pearls") ||
+    desc.includes("vilandi") ||
+    desc.includes("diamonds") ||
+    desc.includes("other stones");
+
+  let qtyDisplay = line.qty ?? "";
+
+  const numQty = Number(qtyDisplay);
+  if (Number.isFinite(numQty)) {
+    if (needsGm) {
+      // 3 decimals + gm
+      qtyDisplay = numQty.toFixed(3) + " gm";
+    } else if (needsCt) {
+      // 2 decimals + ct
+      qtyDisplay = numQty.toFixed(2) + " ct";
+    }
+  }
+
+  rowsHtml += `
+	  <tr>
+	    <td class="border px-4 py-2">${line.description}</td>
+	    <td class="border px-4 py-2">${qtyDisplay}</td>
+	    <td class="border px-4 py-2">${Number(line.rate).toLocaleString()}</td>
+	    <td class="border px-4 py-2">${Number(line.amount).toLocaleString()}</td>
+	  </tr>`;
+
+});
+
 
     // Special items from estimateParts: Realstone & Fitting
     const parts = estimate.estimateParts || {};
+    const labourAlreadyInLines = (estimate.lines || []).some(
+    		  line => line.description?.toLowerCase() === "labour"
+    		);
+    if (!labourAlreadyInLines && parts.labour && parts.labour > 0) {
+    	rowsHtml += `
+    		  <tr>
+    		    <td class="border px-4 py-2">Labour Charges</td>
+    		    <td class="border px-4 py-2"></td>
+    		    <td class="border px-4 py-2"></td>
+    		    <td class="border px-4 py-2">${Number(parts.labour).toLocaleString()}</td>
+    		  </tr>`;
+
+      }
     if(parts.realStone && parts.realStone > 0){
       rowsHtml += `
         <tr>
           <td class="border px-4 py-2">Realstone</td>
           <td class="border px-4 py-2"></td>
           <td class="border px-4 py-2"></td>
-          <td class="border px-4 py-2">₹ ${Number(parts.realStone).toLocaleString()}</td>
+          <td class="border px-4 py-2"> ${Number(parts.realStone).toLocaleString()}</td>
         </tr>`;
     }
     if(parts.fitting && parts.fitting > 0){
@@ -62,7 +121,7 @@ if(snapshotStr){
           <td class="border px-4 py-2">Fitting</td>
           <td class="border px-4 py-2"></td>
           <td class="border px-4 py-2"></td>
-          <td class="border px-4 py-2">₹ ${Number(parts.fitting).toLocaleString()}</td>
+          <td class="border px-4 py-2"> ${Number(parts.fitting).toLocaleString()}</td>
         </tr>`;
     }
 
@@ -85,10 +144,27 @@ if(snapshotStr){
         <td class="border px-4 py-2" colspan="3">Total</td>
         <td class="border px-4 py-2">₹ ${Number(estimate.totals?.grandTotal || 0).toLocaleString()}</td>
       </tr>`;
+      
+      // 🟢 Format date from clientTimestamp
+      const formattedDate = estimate.clientTimestamp
+        ? new Date(estimate.clientTimestamp).toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })
+        : 'N/A';
+
+          const customerSection = `
+        	  <div class="flex justify-between items-center mb-4 text-gray-600">
+        	    <p><strong>Customer:</strong> ${estimate.customerName || 'N/A'}</p>
+        	    <p><strong>Date:</strong> ${formattedDate}</p>
+        	  </div>
+        	`;
+
 
     document.getElementById("estimateContainer").innerHTML = `
       <h2 class="text-xl font-bold text-center mb-2">Estimate for ${estimate.item || ''}</h2>
       <h3 class="text-md text-center mb-4">Design No: ${estimate.orderId || ''}/${estimate.designNo || ''}</h3>
+      ${customerSection}
       <table class="w-full border-collapse border">
         <thead class="bg-gray-100">
           <tr>
@@ -101,6 +177,16 @@ if(snapshotStr){
         <tbody>${rowsHtml}</tbody>
       </table>
     `;
+    
+      // 🟢 Font size change logic
+    const fontSizeSelect = document.getElementById("fontSizeSelect");
+    const estimateContainer = document.getElementById("estimateContainer");
+    fontSizeSelect.addEventListener("change", () => {
+      const size = fontSizeSelect.value + "px";
+      estimateContainer.style.fontSize = size;
+    });
+    // Initialize default font size
+    estimateContainer.style.fontSize = fontSizeSelect.value + "px";
 
     // Download PDF button
     document.getElementById("downloadBtn").addEventListener("click", () => {

@@ -48,6 +48,10 @@
         </div>
     </div>
 
+    <footer class="page-footer">
+        <span>&copy; 2026 Jewellery Store. All rights reserved.</span>
+    </footer>
+
     <script>
     
     function loadCategoryName(categoryId) {
@@ -79,25 +83,27 @@
             type: 'GET',
             success: function(product) {
                 const productDetailsDiv = document.getElementById('productDetails');
-
+                const gross3 = Number(product.gross ?? 0).toFixed(3);
+                const net3   = Number(product.net ?? 0).toFixed(3);
                 // Show basic product info first
                 productDetailsDiv.innerHTML = `
                     <p>Product Name: ${product.item}</p>
-                    <p>Price: ₹${product.price ? product.price.toFixed(2) : ''}</p>
-                    <p>Stock Quantity: ${product.stockQuantity}</p>
-                    <p>Category: Loading...</p>
-                    <p>Sub Category: Loading...</p>
-                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Product Image" />` : ''}
+                    <p>Gross: ${gross3} gm</p>
+                    <p>Net: ${net3} gm</p>
+                    <p id="createDate">Create Date & Time: ${product.createDateTime}</p>
+                    <p id="categoryField">Category: Loading...</p>
+                    <p id="subCategoryField">Sub Category: Loading...</p>
+                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Product Image" class="product-image" />` : ''}
                 `;
 
-                // Fetch and update category name
                 loadCategoryName(product.parentCategoryId, function(categoryName) {
-                    productDetailsDiv.querySelector('p:nth-child(4)').innerText = `Category: ${categoryName}`;
+                    const catP = productDetailsDiv.querySelector('#categoryField');
+                    if (catP) catP.innerText = `Category: ${categoryName}`;
                 });
 
-                // Fetch and update subcategory name
                 loadCategoryName(product.subCategoryId, function(subCategoryName) {
-                    productDetailsDiv.querySelector('p:nth-child(5)').innerText = `Sub Category: ${subCategoryName}`;
+                    const subP = productDetailsDiv.querySelector('#subCategoryField');
+                    if (subP) subP.innerText = `Sub Category: ${subCategoryName}`;
                 });
             },
             error: function() {
