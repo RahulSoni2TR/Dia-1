@@ -27,9 +27,9 @@ body {
 
 /* Main content container takes available space */
 .container {
-  max-width: 5000px;                /* Adjust as needed */
+  max-width: 1200px;                /* Adjust as needed */
   margin: 40px auto;               /* Center horizontally with vertical margin */
-  padding: 30px 40px;
+  padding: 30px 40px 30px 40px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
@@ -165,6 +165,7 @@ tbody td {
   justify-content: center;
   gap: 20px; /* Adds spacing between buttons */
   margin: 20px 0;
+  padding: auto;
 }
 
 .button-container button {
@@ -306,14 +307,18 @@ tbody td {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  flex-wrap: nowrap;          /* 🔥 DO NOT WRAP */
+  gap: 20px;
+
+  flex-wrap: wrap;        /* ✅ allow wrapping */
+  padding: 0 20px;        /* ✅ side spacing */
 }
 
-#modeButtons button {
-  min-width: 220px;           /* 👈 SAME WIDTH FOR ALL */
-  height: 44px;
-  white-space: nowrap;        /* prevent text wrap */
+#modeButtons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px 30px;
 }
 
 #modeButtons button:disabled {

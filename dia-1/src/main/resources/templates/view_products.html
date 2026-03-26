@@ -28,6 +28,8 @@
       <option value="priceDesc">Price: High to Low</option>
       <option value="recent">Most Recent</option>
       <option value="old">Old Products</option>
+      <option value="verifiedFirst">Verified First</option>
+      <option value="unverifiedFirst">Unverified First</option>
     </select>
     <button id="filterButton">Apply</button>
     <button id="resetFilters" class="secondary">Reset</button>
@@ -35,6 +37,10 @@
     <label style="margin-left:10px; display:inline-flex; gap:5px;">
       <input type="checkbox" id="togglePriceWithFields" checked/>
       Show prices including additional fields
+    </label>
+    <label style="margin-left:10px; display:inline-flex; gap:5px;">
+      <input type="checkbox" id="showVerifiedOnly"/>
+      Show verified products only
     </label>
     <input type="hidden" id="categoryFilter">
   </section>
@@ -90,6 +96,7 @@
     let lastSortBy = '';
     let lastSearchBy = 'name';
     let isListView = false;
+    let lastVerifiedOnly = false;
 
     const subCategories = {
       "Jadtar": [
@@ -171,9 +178,9 @@
 
     document.addEventListener("DOMContentLoaded", renderCategories);
 
-    // Core loader: category, searchTerm, sortBy, searchBy, reset
-    function loadProducts(category = '', searchTerm = '', sortBy = '', searchBy = 'name', reset = false) {
-      if (reset || category !== lastCategory || searchTerm !== lastSearchTerm || sortBy !== lastSortBy || searchBy !== lastSearchBy) {
+    // Core loader: category, searchTerm, sortBy, searchBy, reset, verifiedOnly
+    function loadProducts(category = '', searchTerm = '', sortBy = '', searchBy = 'name', reset = false, verifiedOnly = false) {
+      if (reset || category !== lastCategory || searchTerm !== lastSearchTerm || sortBy !== lastSortBy || searchBy !== lastSearchBy || verifiedOnly !== lastVerifiedOnly) {
         currentPage = 0;
         document.getElementById('productGrid').innerHTML = '';
       }
@@ -184,7 +191,8 @@
         category,
         searchTerm,
         sortBy,
-        searchBy
+        searchBy,
+        verifiedOnly: String(verifiedOnly)
       });
 
       fetch(`/product/load?${params.toString()}`)
@@ -197,12 +205,14 @@
               productGrid.innerHTML = '<p>No products found.</p>';
             }
             document.getElementById('loadMoreButton').style.display = 'none';
-            // Update state so subsequent actions still carry searchBy
+            // Update state so subsequent actions still carry searchBy and verifiedOnly
             lastCategory = category;
             lastSearchTerm = searchTerm;
             lastSortBy = sortBy;
             lastSearchBy = searchBy;
+            lastVerifiedOnly = verifiedOnly;
             sessionStorage.setItem('lastSearchBy', searchBy);
+            sessionStorage.setItem('lastVerifiedOnly', verifiedOnly);
             return;
           }
 
@@ -270,19 +280,21 @@ console.log(isVerified);
           document.getElementById('loadMoreButton').style.display =
             currentPage * productsPerPage >= data.totalCount ? 'none' : 'block';
 
-          // Persist state including searchBy
+          // Persist state including searchBy and verifiedOnly
           lastCategory = category;
           lastSearchTerm = searchTerm;
           lastSortBy = sortBy;
           lastSearchBy = searchBy;
+          lastVerifiedOnly = verifiedOnly;
           sessionStorage.setItem('lastSearchBy', searchBy);
+          sessionStorage.setItem('lastVerifiedOnly', verifiedOnly);
         })
         .catch(err => console.error("Error loading products:", err));
     }
 
-    // Load More (must carry searchBy)
+    // Load More (must carry searchBy and verifiedOnly)
     document.getElementById('loadMoreButton').addEventListener('click', () => {
-      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy);
+      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy, false, lastVerifiedOnly);
     });
 
     // Category & subcategory clicks (compute combined ids)
@@ -304,43 +316,50 @@ console.log(isVerified);
 
       document.getElementById('categoryFilter').value = selectedCategory;
       const searchBy = document.getElementById('searchBy').value;
+      const verifiedOnly = document.getElementById('showVerifiedOnly').checked;
       loadProducts(
         selectedCategory,
         document.getElementById('searchInput').value.trim(),
         document.getElementById('sortFilter').value,
         searchBy,
-        true
+        true,
+        verifiedOnly
       );
     });
 
     // Apply Filters
     document.getElementById('filterButton').addEventListener('click', () => {
       const searchBy = document.getElementById('searchBy').value;
+      const verifiedOnly = document.getElementById('showVerifiedOnly').checked;
       loadProducts(
         document.getElementById('categoryFilter').value,
         document.getElementById('searchInput').value.trim(),
         document.getElementById('sortFilter').value,
         searchBy,
-        true
+        true,
+        verifiedOnly
       );
     });
 
     // Sort change
     document.getElementById('sortFilter').addEventListener('change', function () {
-      loadProducts(lastCategory, lastSearchTerm, this.value, lastSearchBy, true);
+      const verifiedOnly = document.getElementById('showVerifiedOnly').checked;
+      loadProducts(lastCategory, lastSearchTerm, this.value, lastSearchBy, true, verifiedOnly);
     });
 
-    // Reset filters (also reset searchBy/UI)
+    // Reset filters (also reset searchBy/UI and verifiedOnly)
     document.getElementById('resetFilters').addEventListener('click', () => {
       sessionStorage.removeItem('lastCategory');
       sessionStorage.removeItem('lastSearchTerm');
       sessionStorage.removeItem('lastSortBy');
       sessionStorage.removeItem('lastView');
       sessionStorage.removeItem('lastSearchBy');
+      sessionStorage.removeItem('lastVerifiedOnly');
 
       document.getElementById('categoryFilter').value = '';
       document.getElementById('searchInput').value = '';
       document.getElementById('sortFilter').value = '';
+      document.getElementById('showVerifiedOnly').checked = false;
       const searchByEl = document.getElementById('searchBy');
       searchByEl.value = 'name';
       document.getElementById('searchInput').placeholder = 'Search by Product Name';
@@ -350,7 +369,7 @@ console.log(isVerified);
       if (allOption) allOption.classList.add('active');
 
       currentPage = 0;
-      loadProducts('', '', '', 'name', true);
+      loadProducts('', '', '', 'name', true, false);
     });
 
     // View Toggle
@@ -359,7 +378,7 @@ console.log(isVerified);
       document.getElementById('productGrid').classList.remove('list-view');
       document.getElementById('gridViewBtn').classList.add('active');
       document.getElementById('listViewBtn').classList.remove('active');
-      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy, true);
+      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy, true, lastVerifiedOnly);
     });
 
     document.getElementById('listViewBtn').addEventListener('click', () => {
@@ -367,7 +386,7 @@ console.log(isVerified);
       document.getElementById('productGrid').classList.add('list-view');
       document.getElementById('listViewBtn').classList.add('active');
       document.getElementById('gridViewBtn').classList.remove('active');
-      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy, true);
+      loadProducts(lastCategory, lastSearchTerm, lastSortBy, lastSearchBy, true, lastVerifiedOnly);
     });
 
     // Product View & Estimate
@@ -418,11 +437,13 @@ console.log(isVerified);
       const savedSearch = sessionStorage.getItem('lastSearchTerm') || '';
       const savedSort = sessionStorage.getItem('lastSortBy') || '';
       const savedView = sessionStorage.getItem('lastView');
+      const savedVerifiedOnly = sessionStorage.getItem('lastVerifiedOnly') === 'true';
 
       // Restore UI
       document.getElementById('categoryFilter').value = savedCategory;
       document.getElementById('searchInput').value = savedSearch;
       document.getElementById('sortFilter').value = savedSort;
+      document.getElementById('showVerifiedOnly').checked = savedVerifiedOnly;
 
       // Placeholder reflecting saved mode
       const si = document.getElementById('searchInput');
@@ -450,7 +471,7 @@ console.log(isVerified);
       }
 
       // Single initial load using restored filters
-      loadProducts(savedCategory, savedSearch, savedSort, savedSearchBy, true);
+      loadProducts(savedCategory, savedSearch, savedSort, savedSearchBy, true, savedVerifiedOnly);
 
       // Enter to Apply
       document.getElementById('searchInput').addEventListener('keypress', function (e) {
@@ -472,14 +493,16 @@ console.log(isVerified);
       si.placeholder = map[this.value] || map.name;
     });
 
-    // Toggle price display mode — keep current filters and searchBy
-    document.getElementById('togglePriceWithFields').addEventListener('change', () => {
+    // Toggle verified only filter
+    document.getElementById('showVerifiedOnly').addEventListener('change', () => {
+      const verifiedOnly = document.getElementById('showVerifiedOnly').checked;
       loadProducts(
         document.getElementById('categoryFilter').value,
         document.getElementById('searchInput').value.trim(),
         document.getElementById('sortFilter').value,
         document.getElementById('searchBy').value,
-        true
+        true,
+        verifiedOnly
       );
     });
 
@@ -555,12 +578,14 @@ console.log(isVerified);
         sessionStorage.removeItem('lastSortBy');
         sessionStorage.removeItem('lastView');
         sessionStorage.removeItem('lastSearchBy');
+        sessionStorage.removeItem('lastVerifiedOnly');
         sessionStorage.removeItem('productId');
 
         // Reset checkboxes/filters instantly (optional for visual consistency before redirect)
         document.getElementById('categoryFilter').value = '';
         document.getElementById('searchInput').value = '';
         document.getElementById('sortFilter').value = '';
+        document.getElementById('showVerifiedOnly').checked = false;
         document.getElementById('searchBy').value = 'name';
 
         // Now go back to home

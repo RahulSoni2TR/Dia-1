@@ -368,6 +368,8 @@ System.out.println(fileName);
 				existingProduct.setFitting(updatedProduct.getFitting());
 				existingProduct.setMozonite(updatedProduct.getMozonite());
 				existingProduct.setmRate(updatedProduct.getmRate());
+				existingProduct.setVilandiCt(updatedProduct.getVilandiCt());
+				existingProduct.setvRate(updatedProduct.getvRate());
 			}
 			
 			String qrUrl = baseUrl + "/loadProductByDesignNo/" + existingProduct.getDesignNo();
@@ -495,34 +497,83 @@ System.out.println(fileName);
 		    return categoryRepository.findAll();
 	}
 	
-	@Transactional
-	public String updatePrices(Map<String, BigDecimal> prices) {
-		prices.forEach((commodity, price) -> {
-			if (price != null && price.compareTo(BigDecimal.ZERO) > 0) {
-				Optional<Rate> existingRate = rateRepository.findByCommodity(commodity);
-				BigDecimal oldPrice = existingRate.map(Rate::getPrice).orElse(null);
-				if (oldPrice != null && oldPrice.compareTo(price) == 0) {
-					return; // No change, skip rate/history update
-				}
-				Rate rate = existingRate.orElseGet(Rate::new);
-				rate.setCommodity(commodity);
-				rate.setPrice(price);
-				Rate savedRate = rateRepository.save(rate);
+@Transactional
+public String updatePrices(Map<String, BigDecimal> prices) {
 
-				RateHistory history = new RateHistory();
-				history.setRate(savedRate);
-				history.setCommodity(commodity);
-				history.setOldPrice(oldPrice);
-				history.setNewPrice(price);
-				history.setUpdatedAt(LocalDateTime.now());
-				rateHistoryRepository.save(history);
-			} else {
-				// Handle invalid price (optional logging or feedback)
-				System.out.println("Invalid price for commodity: " + commodity);
-			}
-		});
-		return "Prices updated successfully";
-	}
+    // ✅ Karat percentage mapping
+    Map<String, BigDecimal> KARAT_PERCENT = Map.of(
+        "24.00", new BigDecimal("1.00"),
+        "22.00", new BigDecimal("0.9167"),
+        "18.00", new BigDecimal("0.76"),
+        "14.00", new BigDecimal("0.60"),
+        "10.00", new BigDecimal("0.40")
+    );
+
+    // ✅ Track user-provided fields (for audit)
+    Set<String> userProvided = new HashSet<>(prices.keySet());
+
+    // ✅ If 24KT present → auto calculate others
+    BigDecimal base24 = prices.get("24.00");
+
+    if (base24 != null && base24.compareTo(BigDecimal.ZERO) > 0) {
+
+        for (Map.Entry<String, BigDecimal> entry : KARAT_PERCENT.entrySet()) {
+
+            String karat = entry.getKey();
+
+            // ❗ Skip if user already provided (manual override)
+            if (userProvided.contains(karat)) continue;
+
+            BigDecimal percent = entry.getValue();
+
+            // 👉 Calculate from 24KT
+            BigDecimal calculated = base24.multiply(percent);
+
+            // ✅ ROUND TO NEAREST 10
+            calculated = calculated
+                    .divide(BigDecimal.TEN, 0, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.TEN);
+
+            prices.put(karat, calculated);
+        }
+    }
+
+    // ✅ SAVE + HISTORY
+    prices.forEach((commodity, price) -> {
+
+        if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("Invalid price for commodity: " + commodity);
+            return;
+        }
+
+        Optional<Rate> existingRate = rateRepository.findByCommodity(commodity);
+        BigDecimal oldPrice = existingRate.map(Rate::getPrice).orElse(null);
+
+        // ✅ Skip if no change
+        if (oldPrice != null && oldPrice.compareTo(price) == 0) {
+            return;
+        }
+
+        // ✅ Save/update rate
+        Rate rate = existingRate.orElseGet(Rate::new);
+        rate.setCommodity(commodity);
+        rate.setPrice(price);
+
+        Rate savedRate = rateRepository.save(rate);
+
+        // ✅ Save history
+        RateHistory history = new RateHistory();
+        history.setRate(savedRate);
+        history.setCommodity(commodity);
+        history.setOldPrice(oldPrice);
+        history.setNewPrice(price);
+        history.setUpdatedAt(LocalDateTime.now());
+
+        rateHistoryRepository.save(history);
+    });
+
+    return "Prices updated successfully";
+}
 
 	public List<Rate> findAll() {
 		return rateRepository.findAll();
@@ -1179,6 +1230,7 @@ System.out.println(fileName);
 	public Page<Product> searchWithoutCategory(
 	        String searchTerm,
 	        String searchBy,
+			boolean verifiedOnly,
 	        Pageable pageable
 	) {
 	    String mode = (searchBy == null ? "name" : searchBy).toLowerCase();
@@ -1186,29 +1238,50 @@ System.out.println(fileName);
 
 	    return switch (mode) {
 
-	        case "design" ->
-	            productRepository
-	                .findByDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, "", pageable);
+	               case "design" ->
+            verifiedOnly
+                ? productRepository
+                    .findByDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, 1, "", pageable)
+                : productRepository
+                    .findByDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                        term, "", pageable);
 
-	        case "name" ->
-	            productRepository
-	                .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, "", pageable);
+        case "name" ->
+            verifiedOnly
+                ? productRepository
+                    .findByItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, 1, "", pageable)
+                : productRepository
+                    .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                        term, "", pageable);
 
-	        case "all" ->
-	            productRepository
-	                .findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, term, "", pageable);
-	        case "order" ->
-	        productRepository
-	            .findByOrders_OrderIdContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                term, "", pageable
-	            );
-	        default ->
-	            productRepository
-	                .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, "", pageable);
+        case "all" ->
+            verifiedOnly
+                ? productRepository
+                    .findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, term, 1, "", pageable)
+                : productRepository
+                    .findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                        term, term, "", pageable);
+
+        case "order" ->
+            verifiedOnly
+                ? productRepository
+                    .findByOrders_OrderIdContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, 1, "", pageable)
+                : productRepository
+                    .findByOrders_OrderIdContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                        term, "", pageable);
+
+        default ->
+            verifiedOnly
+                ? productRepository
+                    .findByItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, 1, "", pageable)
+                : productRepository
+                    .findByItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                        term, "", pageable);
 	    };
 	}
 
@@ -1216,6 +1289,7 @@ System.out.println(fileName);
 	        List<Integer> categories,
 	        String searchTerm,
 	        String searchBy,
+			boolean verifiedOnly,
 	        Pageable pageable
 	) {
 	    String mode = (searchBy == null ? "name" : searchBy).toLowerCase(Locale.ROOT);
@@ -1229,91 +1303,143 @@ System.out.println(fileName);
 
 	        Long subCatId = categories.get(0).longValue();
 
-	        switch (mode) {
+      switch (mode) {
 
-	            case "designno":
-	                return productRepository
-	                    .findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                        subCatId, term, "", pageable);
+            case "designno":
+                return verifiedOnly
+                    ? productRepository
+                        .findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, 1, "", pageable)
+                    : productRepository
+                        .findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, "", pageable);
 
-	            case "design":
-	                if (!term.matches("\\d+")) {
-	                    return Page.empty(pageable);
-	                }
-	                return productRepository.findByDesignNo(
-	                    Long.valueOf(term), pageable);
+            case "design":
+                if (!term.matches("\\d+")) {
+                    return Page.empty(pageable);
+                }
+                return verifiedOnly
+                    ? productRepository
+                        .findByDesignNoAndVerificationStatus(Long.valueOf(term), 1, pageable)
+                    : productRepository
+                        .findByDesignNo(Long.valueOf(term), pageable);
 
-	            case "all":
-	                if (term.isBlank()) {
-	                    return productRepository
-	                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                            subCatId, "", "", pageable);
-	                }
+            case "all":
+                if (term.isBlank()) {
+                    return verifiedOnly
+                        ? productRepository
+                            .findBySubCategoryIdAndItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                                subCatId, "", 1, "", pageable)
+                        : productRepository
+                            .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                                subCatId, "", "", pageable);
+                }
 
-	                if (term.matches("\\d+")) {
-	                    return productRepository.searchByNameOrDesign(
-	                        term, Long.valueOf(term), pageable);
-	                }
+                if (term.matches("\\d+")) {
+                    return verifiedOnly
+                        ? productRepository
+                            .searchByNameOrDesignAndVerificationStatus(term, Long.valueOf(term), 1, pageable)
+                        : productRepository
+                            .searchByNameOrDesign(term, Long.valueOf(term), pageable);
+                }
 
-	                return productRepository
-	                    .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                        subCatId, term, "", pageable);
+                return verifiedOnly
+                    ? productRepository
+                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, 1, "", pageable)
+                    : productRepository
+                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, "", pageable);
 
-	            case "order":
-	                return productRepository
-	                    .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                        term, categories, "", pageable);
+            case "order":
+                return verifiedOnly
+                    ? productRepository
+                        .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                            term, categories, 1, "", pageable)
+                    : productRepository
+                        .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                            term, categories, "", pageable);
 
-	            case "name":
-	            default:
-	                return productRepository
-	                    .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
-	                        subCatId, term, "", pageable);
-	        }
-	    }
+            case "name":
+            default:
+                return verifiedOnly
+                    ? productRepository
+                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, 1, "", pageable)
+                    : productRepository
+                        .findBySubCategoryIdAndItemContainingIgnoreCaseAndDesignNoIsNotNullAndDesignNoNot(
+                            subCatId, term, "", pageable);
+        }
+    }
 
-	    /* ================= CATEGORY ================= */
-	    switch (mode) {
+	      /* ================= CATEGORY ================= */
+    switch (mode) {
 
-	        case "designno":
-	            return productRepository
-	                .findByDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, categories, "", pageable);
+        case "designno":
+            return verifiedOnly
+                ? productRepository
+                    .findByDesignNoContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, 1, "", pageable)
+                : productRepository
+                    .findByDesignNoContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, "", pageable);
 
-	        case "design":
-	            if (!term.matches("\\d+")) {
-	                return Page.empty(pageable);
-	            }
-	            return productRepository.findByDesignNo(
-	                Long.valueOf(term), pageable);
+        case "design":
+            if (!term.matches("\\d+")) {
+                return Page.empty(pageable);
+            }
+            return verifiedOnly
+                ? productRepository
+                    .findByDesignNoAndVerificationStatus(Long.valueOf(term), 1, pageable)
+                : productRepository
+                    .findByDesignNo(Long.valueOf(term), pageable);
 
-	        case "order":
-	            return productRepository
-	                .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, categories, "", pageable);
+        case "order":
+            return verifiedOnly
+                ? productRepository
+                    .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, 1, "", pageable)
+                : productRepository
+                    .findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, "", pageable);
 
-	        case "all":
-	            if (term.isBlank()) {
-	                return productRepository
-	                    .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                        "", categories, "", pageable);
-	            }
+        case "all":
+            if (term.isBlank()) {
+                return verifiedOnly
+                    ? productRepository
+                        .findByItemContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                            "", categories, 1, "", pageable)
+                    : productRepository
+                        .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                            "", categories, "", pageable);
+            }
 
-	            if (term.matches("\\d+")) {
-	                return productRepository.searchByNameOrDesign(
-	                    term, Long.valueOf(term), pageable);
-	            }
+            if (term.matches("\\d+")) {
+                return verifiedOnly
+                    ? productRepository
+                        .searchByNameOrDesignAndVerificationStatus(term, Long.valueOf(term), 1, pageable)
+                    : productRepository
+                        .searchByNameOrDesign(term, Long.valueOf(term), pageable);
+            }
 
-	            return productRepository
-	                .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, categories, "", pageable);
+            return verifiedOnly
+                ? productRepository
+                    .findByItemContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, 1, "", pageable)
+                : productRepository
+                    .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, "", pageable);
 
-	        case "name":
-	        default:
-	            return productRepository
-	                .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
-	                    term, categories, "", pageable);
-	    }
+        case "name":
+        default:
+            return verifiedOnly
+                ? productRepository
+                    .findByItemContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, 1, "", pageable)
+                : productRepository
+                    .findByItemContainingIgnoreCaseAndCategoryIdInAndDesignNoIsNotNullAndDesignNoNot(
+                        term, categories, "", pageable);
+    }
 	}
     public List<Product> getAllProductsByCategory(Long categoryId, Long subCategoryId) {
         List<Product> products;

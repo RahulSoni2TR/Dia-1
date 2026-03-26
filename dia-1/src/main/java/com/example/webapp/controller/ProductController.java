@@ -430,7 +430,10 @@ public class ProductController {
 				@RequestParam(value = "osLabourP", required = false) BigDecimal osLabourP,
 				@RequestParam(value = "chainLabourP", required = false) BigDecimal chainLabourP,
 				 @RequestParam(value = "vilandiLabourP", required = false) BigDecimal vilandiLabourP,
-				 @RequestParam(value = "jadtarLabourP", required = false) BigDecimal jadtarLabourP) {
+				 @RequestParam(value = "jadtarLabourP", required = false) BigDecimal jadtarLabourP,
+				@RequestParam(value = "jadvilandi", required = false) BigDecimal jadvilandi,
+				@RequestParam(value = "jadvilandiRate", required = false) BigDecimal jadvilandiRate
+				) {
 
 		try {
 			Product product = new Product();
@@ -553,6 +556,8 @@ public class ProductController {
 				product.setLabour(jadtarLabour);
 				product.setLabourAll(jadtarLabourAll);
 				product.setLabourP(jadtarLabourP);
+				product.setVilandiCt(jadvilandi);
+				product.setvRate(jadvilandiRate);
 			}
 
 			Orders order;
@@ -827,120 +832,148 @@ public class ProductController {
 	            @RequestParam(required = false, defaultValue = "") String searchTerm,
 	            @RequestParam(required = false, defaultValue = "name") String searchBy, // <-- new
 	            @RequestParam(required = false) String sortBy,
-	            HttpSession session) {
-System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
-	        if (page < 0 || size <= 0) {
-	            throw new InvalidPaginationException("Page index must be 0 or greater, and size must be greater than 0.");
-	        }
+				@RequestParam(required = false, defaultValue = "false") Boolean verifiedOnly,
+					HttpSession session) {
+	System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
+	System.out.println("sort by is "+sortBy+" and verified only is "+verifiedOnly);
+				if (page < 0 || size <= 0) {
+					throw new InvalidPaginationException("Page index must be 0 or greater, and size must be greater than 0.");
+				}
 
-	        // Parse category ids (comma-separated) -> List<Integer>
-	        List<Integer> categories = null;
-	        if (category != null && !category.isBlank()) {
-	            categories = Arrays.stream(category.split(","))
-	                    .map(String::trim)
-	                    .map(Integer::valueOf)
-	                    .toList();
-	        }
+				// Parse category ids (comma-separated) -> List<Integer>
+				List<Integer> categories = null;
+				if (category != null && !category.isBlank()) {
+					categories = Arrays.stream(category.split(","))
+							.map(String::trim)
+							.map(Integer::valueOf)
+							.toList();
+				}
 
-	        // Reset pagination when filters change (searchTerm/category/searchBy)
-	        try {
-				/*
-				 * String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
-				 * 
-				 * @SuppressWarnings("unchecked") List<Integer> prevCategory = (List<Integer>)
-				 * session.getAttribute("prevCategory"); String prevSearchBy = (String)
-				 * session.getAttribute("prevSearchBy");
-				 */
-	            boolean filtersChanged = false;
-	            if (!Objects.equals(searchTerm, session.getAttribute("prevSearchTerm"))) {
-	                filtersChanged = true;
-	            }
-	            if (!Objects.equals(categories, session.getAttribute("prevCategory"))) {
-	                filtersChanged = true;
-	            }
-	            if (!Objects.equals(searchBy, session.getAttribute("prevSearchBy"))) {
-	                filtersChanged = true;
-	            }
+				// Reset pagination when filters change (searchTerm/category/searchBy)
+				try {
+					/*
+					* String prevSearchTerm = (String) session.getAttribute("prevSearchTerm");
+					* 
+					* @SuppressWarnings("unchecked") List<Integer> prevCategory = (List<Integer>)
+					* session.getAttribute("prevCategory"); String prevSearchBy = (String)
+					* session.getAttribute("prevSearchBy");
+					*/
+					boolean filtersChanged = false;
+					if (!Objects.equals(searchTerm, session.getAttribute("prevSearchTerm"))) {
+						filtersChanged = true;
+					}
+					if (!Objects.equals(categories, session.getAttribute("prevCategory"))) {
+						filtersChanged = true;
+					}
+					if (!Objects.equals(searchBy, session.getAttribute("prevSearchBy"))) {
+						filtersChanged = true;
+					}
 
-	            if (filtersChanged && page == 0) {
-	                // Only reset page if it's first page (optional)
-	                page = 0;
-	            }
+					if (filtersChanged && page == 0) {
+						// Only reset page if it's first page (optional)
+						page = 0;
+					}
 
-	            session.setAttribute("prevSearchTerm", searchTerm);
-	            session.setAttribute("prevCategory", categories);
-	            session.setAttribute("prevSearchBy", searchBy);
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	            throw new SessionHandlingException("Error accessing session attributes.");
-	        }
+					session.setAttribute("prevSearchTerm", searchTerm);
+					session.setAttribute("prevCategory", categories);
+					session.setAttribute("prevSearchBy", searchBy);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new SessionHandlingException("Error accessing session attributes.");
+				}
 
-	        // Build Sort from sortBy flag
-	        Sort sort = Sort.unsorted();
-	        if ("old".equalsIgnoreCase(sortBy)) {
-	            sort = Sort.by(Sort.Order.asc("createDateTime"));
-	        } else if ("recent".equalsIgnoreCase(sortBy)) {
-	            sort = Sort.by(Sort.Order.desc("createDateTime"));
-	        } else if ("nameAsc".equalsIgnoreCase(sortBy)) {
-	            sort = Sort.by(Sort.Order.asc("item"));
-	        } else if ("nameDesc".equalsIgnoreCase(sortBy)) {
-	            sort = Sort.by(Sort.Order.desc("item"));
-	        } else if ("none".equalsIgnoreCase(sortBy) || sortBy == null || sortBy.isEmpty()) {
-	            sort = Sort.unsorted();
-	        }
-	        PageRequest pageable = PageRequest.of(page, size, sort);
+				// Build Sort from sortBy flag
+				Sort sort = Sort.unsorted();
+				if ("old".equalsIgnoreCase(sortBy)) {
+					sort = Sort.by(Sort.Order.asc("createDateTime"));
+				} else if ("recent".equalsIgnoreCase(sortBy)) {
+					sort = Sort.by(Sort.Order.desc("createDateTime"));
+				} else if ("nameAsc".equalsIgnoreCase(sortBy)) {
+					sort = Sort.by(Sort.Order.asc("item"));
+				} else if ("nameDesc".equalsIgnoreCase(sortBy)) {
+					sort = Sort.by(Sort.Order.desc("item"));
+				} else if ("none".equalsIgnoreCase(sortBy) || sortBy == null || sortBy.isEmpty()) {
+					sort = Sort.unsorted();
+				} else if ("verifiedFirst".equalsIgnoreCase(sortBy)) {
+    sort = Sort.by(Sort.Order.desc("verificationStatus"));
+} 
+else if ("unverifiedFirst".equalsIgnoreCase(sortBy)) {
+    sort = Sort.by(Sort.Order.asc("verificationStatus"));
+} 
+				PageRequest pageable = PageRequest.of(page, size, sort);
 
-	        System.out.println("cateogries "+categories);
-	        // Execute search based on presence of category filter and searchBy
-	        Page<Product> products;
-	        System.out.println("Pageable: " + pageable);
+				System.out.println("cateogries "+categories);
+				// Execute search based on presence of category filter and searchBy
+				Page<Product> products;
+				System.out.println("Pageable: " + pageable);
 
-	        if (categories == null) {
-	            products = productService.searchWithoutCategory(searchTerm, searchBy, pageable);
-	        } else {
-	            products = productService.searchByCategory(categories, searchTerm, searchBy, pageable);
-	        }
+				if (categories == null) {
+					products = productService.searchWithoutCategory(searchTerm, searchBy, verifiedOnly, pageable);
+				} else {
+					products = productService.searchByCategory(categories, searchTerm, searchBy, verifiedOnly, pageable);
+				}
 
-	        if (products.isEmpty()) {
-	            throw new ProductNotFoundException("No products found for the given filters.");
-	        }
+				if (products.isEmpty()) {
+					throw new ProductNotFoundException("No products found for the given filters.");
+				}
 
-	        // Rates/price calculation (unchanged)
-	        List<Rate> rates = productService.getAllRates();
-	        RateWrapper rateWrapper = new RateWrapper();
-	        for (Rate rate : rates) {
-	            switch (rate.getCommodity().toLowerCase()) {
-	                case "diamond" -> rateWrapper.diamondPrice = rate.getPrice();
-	                case "gst" -> rateWrapper.gst = rate.getPrice();
-	                case "silver" -> rateWrapper.silver = rate.getPrice();
-	            }
-	        }
+				// Rates/price calculation (unchanged)
+				List<Rate> rates = productService.getAllRates();
+				RateWrapper rateWrapper = new RateWrapper();
+				for (Rate rate : rates) {
+					switch (rate.getCommodity().toLowerCase()) {
+						case "diamond" -> rateWrapper.diamondPrice = rate.getPrice();
+						case "gst" -> rateWrapper.gst = rate.getPrice();
+						case "silver" -> rateWrapper.silver = rate.getPrice();
+					}
+				}
 
-	        Estimate e = new Estimate();
-	        
-	        int verificationFreqcy = getVerificationFrequency(); // get from DB
-	    //    LocalDateTime now = LocalDateTime.now();
+				Estimate e = new Estimate();
+				
+				int verificationFreqcy = getVerificationFrequency(); // get from DB
+			//    LocalDateTime now = LocalDateTime.now();
 
-	        products.forEach(product -> {
-	            List<BigDecimal> prices = calculateProductPrice(product, rateWrapper, e, rates);
-	            product.setPrice(prices.get(0));
-	            product.setPriceWithFields(prices.get(1));
-	            // Verification logic
-	            boolean verified = isProductVerified(product, verificationFreqcy);
-	            if (verified) {
-	            	//System.out.println("verified");
-	            	  product.setVerificationStatus(1);
-	            	} else {
-	            		//System.out.println("unverified");
-	            		// preserve -1; set 0 only if not -1
-	            	  if (product.getVerificationStatus()!=-1) {
-	            	    product.setVerificationStatus(0);
-	            	  }
-	            	}
-	        });
+				List<Product> processedProducts = new ArrayList<>();
 
-	        return ResponseEntity.ok(new ProductPage(products.getContent(), products.getTotalElements()));
-	    }
+for (Product product : products.getContent()) {
+
+    List<BigDecimal> prices = calculateProductPrice(product, rateWrapper, e, rates);
+    product.setPrice(prices.get(0));
+    product.setPriceWithFields(prices.get(1));
+
+    boolean verified = isProductVerified(product, verificationFreqcy);
+
+    if (verified) {
+        product.setVerificationStatus(1);
+    } else {
+        if (product.getVerificationStatus() != -1) {
+            product.setVerificationStatus(0);
+        }
+    }
+
+    // ✅ FINAL FILTER (THIS WAS MISSING)
+    if (!verifiedOnly || product.getVerificationStatus() == 1) {
+        processedProducts.add(product);
+    }
+}
+
+// ✅ SORT BY VERIFIED (NEW)
+if ("verifiedFirst".equalsIgnoreCase(sortBy)) {
+    processedProducts.sort((p1, p2) ->
+        Integer.compare(p2.getVerificationStatus(), p1.getVerificationStatus())
+    );
+} 
+else if ("unverifiedFirst".equalsIgnoreCase(sortBy)) {
+    processedProducts.sort((p1, p2) ->
+        Integer.compare(p1.getVerificationStatus(), p2.getVerificationStatus())
+    );
+}
+				long totalCount = verifiedOnly
+        ? processedProducts.size()   // filtered count
+        : products.getTotalElements();
+
+return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
+			}
 
 	 public static boolean isProductVerified(Product product, int verificationFrequencyDays) {
 	        if (product == null) return false;
@@ -1130,7 +1163,10 @@ System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
 			@RequestParam(value = "ssosPearlCt", required = false) BigDecimal ssosPearlCt,
 			@RequestParam(value = "ssosPearllbl", required = false) BigDecimal ssosPearllbl,
 			@RequestParam(value = "customFields", required = false) String customFieldsJson,
-			 @RequestParam(value = "labourPer", required = false) BigDecimal labourPer) {
+			 @RequestParam(value = "labourPer", required = false) BigDecimal labourPer,
+			@RequestParam(value = "jadvilandi", required = false) BigDecimal jadvilandi,
+			@RequestParam(value = "jadvilandiRate", required = false) BigDecimal jadvilandiRate
+			) {
 
 		if (id == null || id.isEmpty()) {
 			throw new ProductUpdateException("Product ID cannot be null or empty.");
@@ -1208,6 +1244,8 @@ System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
 			updatedProduct.setFitting(jfitting);
 			updatedProduct.setMozonite(jmoz);
 			updatedProduct.setmRate(jmRate);
+			updatedProduct.setVilandiCt(jadvilandi);
+			updatedProduct.setvRate(jadvilandiRate);
 		}
 		Product updated = productService.updateProduct(id, updatedProduct, imageFile,productOrderid);
 
@@ -1624,201 +1662,167 @@ System.out.println("we are inside generateFoldedTagsPdf");
 		    return out.toByteArray();
 		}
 
-		private void drawSingleTag(
-		        PDPageContentStream cs,
-		        PDDocument doc,
-		        PDFont font,
-		        PDFont boldFont,   // ✅ new
-		        Product p,
-		        float x,
-		        float y,
-		        float fontSize
-		)
- throws IOException {
+private void drawSingleTag(
+        PDPageContentStream cs,
+        PDDocument doc,
+        PDFont font,
+        PDFont boldFont,
+        Product p,
+        float x,
+        float y,
+        float fontSize
+) throws IOException {
 
-		    /* ================= BORDER ================= */
-		//    cs.addRect(x, y - mm(TAG_H_MM), mm(TAG_W_MM), mm(TAG_H_MM));
-		 //   cs.stroke();
+    float padding = 3f;
+    float lineGap = fontSize + 1.5f;
 
-		    /* ================= UPPER TEXT BOX ================= */
-		    float padding = 3f;
+    float upperBoxY = y - padding;
 
-		    float upperBoxX = x + padding;
-		    float upperBoxY = y - padding;
-		    float upperBoxW = mm(TAG_W_MM) - padding * 2;
-		    float upperBoxH = mm(FOLD_MM) - padding * 2;
+    List<String> lines = new ArrayList<>();
 
-		    List<String> lines = new ArrayList<>();
+    // ===== BASE DATA =====
+    lines.add("G - " + p.getGross() + "  N - " + p.getNet() + " (" + fmtRate(p.getKarat()) + "K)");
 
-		    lines.add("G - " + p.getGross() + "  N - " + p.getNet() + " ("+fmtRate(p.getKarat())+"K)");
+    if (p.getDiamondsCt() != null && p.getDiaRt() != null)
+        lines.add("Diamond- " + p.getDiamondsCt() + " - ₹" + fmtRate(p.getDiaRt()));
 
-		    if (p.getDiamondsCt() != null && p.getDiaRt() != null)
-		        lines.add("Diamond- " + p.getDiamondsCt()
-		            + " - ₹" + fmtRate(p.getDiaRt()));
-		    
+    if (p.getStones() != null && p.getStRate() != null)
+        lines.add("Stones- " + fmtBRate(p.getStones()) + " - ₹" + fmtRate(p.getStRate()));
 
-		    if (p.getStones() != null && p.getStRate() != null)
-		        lines.add("Stones- " + fmtBRate(p.getStones())
-		            + " - ₹" + fmtRate(p.getStRate()));
+    if (p.getVilandiCt() != null && p.getvRate() != null)
+        lines.add("Vilandi- " + p.getVilandiCt() + " - ₹" + fmtRate(p.getvRate()));
 
-		    if (p.getVilandiCt() != null && p.getvRate() != null)
-		        lines.add("Vilandi- " + p.getVilandiCt()
-		            + " - ₹" + fmtRate(p.getvRate()));
+    if (p.getBeadsCt() != null && p.getBdRate() != null)
+        lines.add("Beads- " + p.getBeadsCt() + " - ₹" + fmtRate(p.getBdRate()));
 
-		    if (p.getBeadsCt() != null && p.getBdRate() != null)
-		        lines.add("Beads- " + p.getBeadsCt()
-		            + " - ₹" + fmtRate(p.getBdRate()));
+    if (p.getPearlsGm() != null && p.getPrlRate() != null)
+        lines.add("Pearls- " + p.getPearlsGm() + " - ₹" + fmtRate(p.getPrlRate()));
 
-		    if (p.getPearlsGm() != null && p.getPrlRate() != null)
-		        lines.add("Pearls- " + p.getPearlsGm()
-		            + " - ₹" + fmtRate(p.getPrlRate()));
+    if (p.getSsPearlCt() != null && p.getSsRate() != null)
+        lines.add("SS Pearl- " + p.getSsPearlCt() + " - ₹" + fmtRate(p.getSsRate()));
 
-		    if (p.getSsPearlCt() != null && p.getSsRate() != null)
-		        lines.add("SS Pearl- " + p.getSsPearlCt()
-		            + " - ₹" + fmtRate(p.getSsRate()));
+    if (p.getOtherStonesCt() != null && p.getOtherStonesRt() != null)
+        lines.add("Other Stones-" + p.getOtherStonesCt() + " - ₹" + fmtRate(p.getOtherStonesRt()));
 
-		    if (p.getOtherStonesCt() != null && p.getOtherStonesRt() != null)
-		        lines.add("Other Stones-" + p.getOtherStonesCt()
-		            + " - ₹" + fmtRate(p.getOtherStonesRt()));
+	    if (p.getMozonite() != null && p.getmRate() != null)
+        lines.add("Mozonite-" + p.getMozonite() + " - ₹" + fmtRate(p.getmRate()));
 
-		    String customFieldsJson = p.getCustomFields();
-			if (customFieldsJson != null && !customFieldsJson.isEmpty() && !customFieldsJson.equals("{}")) {
-				try {
-					ObjectMapper mapper = new ObjectMapper();
-					Map<String, Map<String, String>> extras = mapper.readValue(
-							customFieldsJson, new TypeReference<Map<String, Map<String, String>>>() {});
+    // ===== CUSTOM FIELDS =====
+    String customFieldsJson = p.getCustomFields();
+    if (customFieldsJson != null && !customFieldsJson.isEmpty() && !customFieldsJson.equals("{}")) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Map<String, String>> extras = mapper.readValue(
+                    customFieldsJson,
+                    new TypeReference<Map<String, Map<String, String>>>() {}
+            );
 
-					extras.forEach((name, values) -> {
-						String qtyRaw = values.getOrDefault("qty", "");
-						String rateRaw = values.getOrDefault("rate", "");
-						BigDecimal qty = qtyRaw.isBlank() ? null : new BigDecimal(qtyRaw);
-						BigDecimal rate = rateRaw.isBlank() ? null : new BigDecimal(rateRaw);
-						String qtyText = qty == null ? "" : fmtRate(qty);
-						String rateText = rate == null ? "" : fmtRate(rate);
+            extras.forEach((name, values) -> {
+                String qty = values.getOrDefault("qty", "");
+                String rate = values.getOrDefault("rate", "");
 
-						if (!qtyText.isEmpty() || !rateText.isEmpty()) {
-							StringBuilder extraLine = new StringBuilder();
-							extraLine.append(name).append("-");
-							if (!qtyText.isEmpty()) {
-								extraLine.append(" ").append(qtyText);
-							}
-							if (!rateText.isEmpty()) {
-								extraLine.append(" - ₹").append(rateText);
-							}
-							lines.add(extraLine.toString());
-						}
-					});
-				} catch (Exception ex) {
-					System.err.println("Error parsing custom fields for tag: " + ex.getMessage());
-				}
-			}
+                if (!qty.isBlank() || !rate.isBlank()) {
+                    lines.add(name + "- " + qty + " - ₹" + rate);
+                }
+            });
 
-		    StringBuilder sb = new StringBuilder();
+        } catch (Exception ex) {
+            System.err.println("Error parsing custom fields: " + ex.getMessage());
+        }
+    }
 
-		    if (p.getFitting() != null) {
-		        sb.append("Ft - ₹").append(fmtRate(p.getFitting()));
-		    }
+    // ===== FITTING / REAL STONE =====
+    if (p.getFitting() != null || p.getRealStone() != null) {
+        StringBuilder sb = new StringBuilder();
 
-		    if (p.getRealStone() != null) {
-		        if (sb.length() > 0) sb.append(" ");
-		        sb.append("RS - ₹").append(fmtRate(p.getRealStone()));
-		    }
+        if (p.getFitting() != null)
+            sb.append("Ft - ₹").append(fmtRate(p.getFitting()));
 
-		    if (sb.length() > 0) {
-		        lines.add(sb.toString());
-		    }
+        if (p.getRealStone() != null) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append("RS - ₹").append(fmtRate(p.getRealStone()));
+        }
 
+        lines.add(sb.toString());
+    }
 
+    // ===== SPLIT =====
+    List<String> upperLines = new ArrayList<>();
+    List<String> lowerLines = new ArrayList<>();
 
-		    /* ---------- CLIP TO UPPER BOX ---------- */
-		    cs.saveGraphicsState();
-		    cs.addRect(upperBoxX, upperBoxY - upperBoxH, upperBoxW, upperBoxH);
-		    cs.clip();
-		 //   cs.endPath();
+    for (int i = 0; i < lines.size(); i++) {
+        if (i < 7) upperLines.add(lines.get(i));
+        else lowerLines.add(lines.get(i));
+    }
 
-		    /* ---------- DRAW ROTATED TEXT INSIDE BOX ---------- */
-		    cs.beginText();
+    // ================= UPPER =================
+    float textX = x + mm(TAG_W_MM) / 2 + 18;
 
-		    cs.setTextMatrix(
-		            Matrix.getRotateInstance(
-		                -Math.PI / 2,
-		                x + mm(TAG_W_MM) / 2 + 18,
-		                upperBoxY
-		            )
-		    );
+    cs.beginText();
+    cs.setTextMatrix(Matrix.getRotateInstance(-Math.PI / 2, textX, upperBoxY));
 
-		    // 🔥 Dynamic spacing based on font size
-		    float lineGap = fontSize + 1.5f;
+    for (int i = 0; i < upperLines.size(); i++) {
+        cs.setFont(i == 0 ? boldFont : font, fontSize);
+        cs.showText(upperLines.get(i));
+        cs.newLineAtOffset(0, -lineGap);
+    }
 
-		    for (int i = 0; i < lines.size(); i++) {
+    cs.endText();
 
-		        if (i == 0) {
-		            cs.setFont(boldFont, fontSize);   // ✅ First line bold
-		        } else {
-		            cs.setFont(font, fontSize);       // Normal lines
-		        }
+    // ================= FOLD =================
+    cs.moveTo(x + 2, y - mm(FOLD_MM));
+    cs.lineTo(x + mm(TAG_W_MM) - 2, y - mm(FOLD_MM));
+    cs.stroke();
 
-		        cs.showText(lines.get(i));
-		        cs.newLineAtOffset(0, -lineGap);
-		    }
+    // ================= LOWER =================
 
-		    cs.endText();
+    float currentY = y - mm(FOLD_MM) - mm(3);
 
-		    cs.restoreGraphicsState();
+    // ===== QR CALC =====
+    float qrMargin = 0.5f;
+    float qrSize = mm(TAG_W_MM - qrMargin * 2);
+    float qrBottomY = y - mm(TAG_H_MM) + mm(qrMargin);
+    float qrTopY = qrBottomY + qrSize + mm(2);
 
-		    /* ================= FOLD LINE ================= */
-		    cs.moveTo(x + 2, y - mm(FOLD_MM));
-		    cs.lineTo(x + mm(TAG_W_MM) - 2, y - mm(FOLD_MM));
-		    cs.stroke();
+    cs.beginText();
+    cs.setFont(font, fontSize);
 
-		    /* ================= LOWER ORDER / DESIGN ================= */
-		    
-		    float qrSafeGap = mm(7);
+    cs.setTextMatrix(
+            Matrix.getRotateInstance(
+                    -Math.PI / 2,
+                    textX,   // SAME COLUMN (fix alignment)
+                    currentY
+            )
+    );
 
-		    float lowerCenterY =
-		            y - mm(FOLD_MM)
-		            - ( (mm(TAG_H_MM) - mm(FOLD_MM) - mm(TAG_W_MM)) / 2 )
-		            + qrSafeGap;
+    // 🔥 LOWER LINES
+    for (String line : lowerLines) {
 
+        if (currentY <= qrTopY + lineGap) break;
 
-		    cs.beginText();
-		    cs.setFont(font, fontSize);
+        cs.showText(line);
+        cs.newLineAtOffset(0, -lineGap);
+        currentY -= lineGap;
+    }
 
-		    cs.setTextMatrix(
-		        Matrix.getRotateInstance(
-		            -Math.PI / 2,
-		            x + mm(TAG_W_MM) / 2 + 12.6f,   // same horizontal center
-		            lowerCenterY
-		        )
-		    );
-		   
-		    cs.showText(p.getOrders().getOrderId() + "/" + p.getDesignNo());
-		    cs.endText();
-		    
-			String qrUrl = baseUrl + "/loadProductByDesignNo/" + p.getDesignNo();
+    // 🔥 ORDER TEXT (same flow, no gap)
+    if (currentY > qrTopY + lineGap) {
+        cs.showText(p.getOrders().getOrderId() + "/" + p.getDesignNo());
+    }
 
-		    byte[] qrPng = generateQrPngBytes(qrUrl);
-		    PDImageXObject qrImg =
-		            PDImageXObject.createFromByteArray(doc, qrPng, "qr");
+    cs.endText();
 
-		 // ---------- QR SIZE CONTROL ----------
-		    float qrMargin = 0.5f; // mm (safe scanner margin)
+    // ================= QR =================
+    String qrUrl = baseUrl + "/loadProductByDesignNo/" + p.getDesignNo();
 
-		    float qrSize = mm(TAG_W_MM - qrMargin * 2);
+    byte[] qrPng = generateQrPngBytes(qrUrl);
+    PDImageXObject qrImg =
+            PDImageXObject.createFromByteArray(doc, qrPng, "qr");
 
-		    float qrX = x + mm(qrMargin);
-		    float qrY = y - mm(TAG_H_MM) + mm(qrMargin);
+    float qrX = x + mm(qrMargin);
 
-		    // ---------- DRAW QR ----------
-		    cs.drawImage(
-		        qrImg,
-		        qrX,
-		        qrY,
-		        qrSize,
-		        qrSize
-		    );
-
-		}
+    cs.drawImage(qrImg, qrX, qrBottomY, qrSize, qrSize);
+}
 
 
 		private static String fmtRate(BigDecimal v) {

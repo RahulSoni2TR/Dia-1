@@ -174,4 +174,86 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     		    long subCategoryId, String term, String notValue, Pageable pageable
     		);
      
+                // NAME
+Page<Product> findByItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String item, int verificationStatus, String empty, Pageable pageable);
+
+// DESIGN
+Page<Product> findByDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String designNo, int verificationStatus, String empty, Pageable pageable);
+
+// ORDER
+Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String orderId, int verificationStatus, String empty, Pageable pageable);
+
+// ALL
+Page<Product>
+findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String item,
+        String designNo,
+        int verificationStatus,
+        String empty,
+        Pageable pageable
+);
+
+Page<Product> findByItemContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String item, List<Integer> categoryIds, int verificationStatus, String empty, Pageable pageable);
+
+Page<Product> findByDesignNoContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String designNo, List<Integer> categoryIds, int verificationStatus, String empty, Pageable pageable);
+
+Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String orderId, List<Integer> categoryIds, int verificationStatus, String empty, Pageable pageable);
+
+Page<Product>
+findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String item,
+        String designNo,
+        List<Integer> categoryIds,
+        int verificationStatus,
+        String empty,
+        Pageable pageable
+);
+
+Page<Product> findBySubCategoryIdAndItemContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        long subCategoryId, String term, int verificationStatus, String notValue, Pageable pageable);
+
+Page<Product> findBySubCategoryIdAndDesignNoContainingIgnoreCaseAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        long subCategoryId, String term, int verificationStatus, String notValue, Pageable pageable);
+
+Page<Product> findByOrders_OrderIdContainingIgnoreCaseAndSubCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String orderId, List<Long> subCategoryIds, int verificationStatus, String empty, Pageable pageable);
+
+Page<Product>
+findByItemContainingIgnoreCaseOrDesignNoContainingIgnoreCaseAndSubCategoryIdInAndVerificationStatusAndDesignNoIsNotNullAndDesignNoNot(
+        String item,
+        String designNo,
+        List<Long> subCategoryIds,
+        int verificationStatus,
+        String empty,
+        Pageable pageable
+);
+Page<Product> findByDesignNoAndVerificationStatus(
+        Long designNo,
+        int verificationStatus,
+        Pageable pageable
+);
+
+@Query("""
+    SELECT p FROM Product p
+    WHERE
+      (
+        LOWER(p.item) LIKE LOWER(CONCAT('%', :term, '%'))
+        OR p.designNo = :designNo
+      )
+      AND p.verificationStatus = :status
+      AND p.designNo IS NOT NULL
+      AND p.designNo <> ''
+""")
+Page<Product> searchByNameOrDesignAndVerificationStatus(
+        @Param("term") String term,
+        @Param("designNo") Long designNo,
+        @Param("status") int status,
+        Pageable pageable
+);
 }

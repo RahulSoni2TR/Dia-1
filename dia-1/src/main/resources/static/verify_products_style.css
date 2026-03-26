@@ -27,6 +27,7 @@ header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-left: 58px;
 }
 
 .back-btn {
@@ -55,7 +56,7 @@ header > .back-btn {
 }
 
 header .header-top {
-  display: flex;
+  display: fixed;
   align-items: center;
   gap: 6px;
 }

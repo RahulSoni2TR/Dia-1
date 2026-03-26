@@ -53,7 +53,7 @@ public class LogService {
 	    public void logEnquiry(LogRequest request) {
 		 Product product = productRepository.findById(request.getProductId())
 			      .orElseThrow(() -> new RuntimeException("Product not found"));
-		 //	System.out.println("request is "+request);
+		System.out.println("request is "+request);
 			  EnquiryLog log = new EnquiryLog();
 			  log.setProductId(product.getProductId());
 			  log.setDesignNo(product.getDesignNo());

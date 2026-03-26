@@ -17,6 +17,7 @@
     <h1>Please update the product name</h1>
     <h4>Please update the Design No</h4>
 
+    <div class="table-wrapper">
     <table class="estimate-table">
         <thead>
             <tr id="header_row">
@@ -119,6 +120,7 @@
             </tr>
         </tbody>
     </table>
+    </div>
 
 
     <div style="margin-top: 15px;">
@@ -157,9 +159,18 @@
         <button id="print-pdf">Print Estimate</button>
     </div>
 
-    <div style="margin-top: 20px; text-align: center;">
+    <div style="margin-top:15px; text-align:center;">
+    <button id="addRowBtn">+ Add Row</button>
+</div>
+
+    <!-- ✅ ADD HERE -->
+<div style="margin-top: 15px; text-align:center;">
+    <button id="enableEdit">Enable Edit</button>
+    <button id="resetEstimate">Reset</button>
+     <div style="margin-top: 20px; text-align: center;">
         <a href="/view-product" class="back-button">Back to View Products</a>
     </div>
+</div>
 
     <div style="margin-top: 20px; text-align: center;">
         <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 20px;">
@@ -168,6 +179,7 @@
         </label>
     </div>
 </div>
+
 
 <!-- Modal for download options -->
 <div id="downloadModal" class="modal">
@@ -191,6 +203,9 @@
 let estimate;
 let product;
 let rate;
+let editableEstimate = {};
+let originalEstimate = {};
+let isEditMode = false;
 
 document.addEventListener("DOMContentLoaded", function() {
     const productId = sessionStorage.getItem('productId');
@@ -199,9 +214,13 @@ document.addEventListener("DOMContentLoaded", function() {
     fetch(`/getEstimate/${productId}`)
         .then(response => response.json())
         .then(data => {
+          
             product = data.object1;
             estimate = data.object2;
+            originalEstimate = JSON.parse(JSON.stringify(data.object2));
+editableEstimate = JSON.parse(JSON.stringify(data.object2));
             rate = data.object3;
+            
 
             const productKarat = product.karat;
             const formattedKarat = productKarat !== null ? productKarat.toFixed(2) : "0.00";
@@ -340,8 +359,17 @@ document.addEventListener("DOMContentLoaded", function() {
                     5: ["gold_row", "stones_row", "beads_row", "pearls_row", "sspearls_row", "moz_row", "realSt_row", "fitting_row", "labour_row","labourAmt_row", "gst_row", "total_row", "header_row"]
                 };
 
-                const allRows = document.querySelectorAll('tbody tr');
-                allRows.forEach(row => row.style.display = 'none');
+               const allRows = document.querySelectorAll('tbody tr');
+allRows.forEach(row => {
+
+    // ✅ ALWAYS SHOW CUSTOM ROWS
+    if (row.dataset.custom === "true") {
+        row.style.display = "table-row";
+        return;
+    }
+
+    row.style.display = 'none';
+});
 
                 const thead = document.querySelector('thead');
                 if (thead) thead.style.display = 'table-header-group';
@@ -368,6 +396,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 const qty = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
                 const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
                 const amt = parseFloat(amtText.replace(/[^\d.-]/g, ''));
+
+if (row.dataset.custom === "true") {
+    row.style.display = "table-row";
+    return;
+}
 
                 if (qty === 0 || rate === 0 || amt === 0) {
                     row.style.display = "none";
@@ -439,190 +472,168 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function buildDocDefinition() {
-	  // 1 mm = 2.83464567 pt
-	  const mmToPt = (mm) => Math.round(mm * 2.83464567);
 
-	  // Read page size from the existing dropdown
-	  const selectedSize = document.getElementById("page-size-select")?.value || "A4";
+  const mmToPt = (mm) => Math.round(mm * 2.83464567);
 
-	  // Optional orientation select (fallback to portrait if not present)
-	  const selectedOrientation =
-	    document.getElementById("page-orientation-select")?.value || "portrait";
+  const selectedSize = document.getElementById("page-size-select")?.value || "A4";
+  const selectedOrientation =
+    document.getElementById("page-orientation-select")?.value || "portrait";
 
-	  // Uniform 12mm margins on all sides (approx. 34pt)
-	  const pageMargins = [mmToPt(12), mmToPt(12), mmToPt(12), mmToPt(12)];
+  const pageMargins = [mmToPt(12), mmToPt(12), mmToPt(12), mmToPt(12)];
 
-	  // Font size scaling based on page size (same logic as before)
-	  let tableFontSize = 12;
-	  if (selectedSize === "A5" || selectedSize === "A6") {
-	    tableFontSize = 7;
-	  } else if (["A3","A2","A1","A0","Letter"].includes(selectedSize)) {
-	    tableFontSize = 14;
-	  }
+  let tableFontSize = 12;
+  if (selectedSize === "A5" || selectedSize === "A6") {
+    tableFontSize = 7;
+  } else if (["A3","A2","A1","A0","Letter"].includes(selectedSize)) {
+    tableFontSize = 14;
+  }
 
-	  // Build table headers and rows from the current HTML table, skipping zero rows
-	  const table = document.querySelector(".estimate-table");
-	  const headers = [];
-	  const rows = [];
+  const headers = [];
+  const rows = [];
 
-	  table.querySelectorAll("thead th").forEach((cell) => headers.push({
-	    text: cell.textContent,
-	    bold: true,
-	    alignment: 'center',
-	    fillColor: '#f2f2f2',
-	    fontSize: tableFontSize
-	  }));
+  // ✅ HEADERS
+  document.querySelectorAll(".estimate-table thead th").forEach((cell) => {
+    headers.push({
+      text: cell.textContent,
+      bold: true,
+      alignment: "center",
+      fillColor: "#f2f2f2",
+      fontSize: tableFontSize
+    });
+  });
 
-	  const tableRows = table.querySelectorAll("tbody tr");
-	  tableRows.forEach((row, index) => {
-	    if (row.id === 'header_row' || row.classList.contains('total-row')) {
-	      const totalRowData = [];
-	      row.querySelectorAll("td").forEach(cell => {
-	        totalRowData.push({
-	          text: cell.textContent,
-	          alignment: 'center',
-	          bold: true,   
-	          fillColor: '#f2f2f2',
-	          fontSize: tableFontSize
-	        });
-	      });
-	      rows.push(totalRowData);
-	      return;
-	    }
+  // ✅ ROWS
+  document.querySelectorAll(".estimate-table tbody tr").forEach((row, index) => {
 
-	    const qtyText = row.children[1]?.textContent.trim() || "";
-	    const rateText = row.children[2]?.textContent.trim() || "";
-	    const amtText  = row.children[3]?.textContent.trim() || "";
+    if (row.style.display === "none") return;
 
-	    const qty  = parseFloat(qtyText.replace(/[^\d.-]/g, ''));
-	    const rate = parseFloat(rateText.replace(/[^\d.-]/g, ''));
-	    const amt  = parseFloat(amtText.replace(/[^\d.-]/g, ''));
+    const cells = row.querySelectorAll("td");
+    if (cells.length !== 4) return;
 
-	    if (qty === 0 || rate === 0 || amt === 0) return;
+    const rowData = [];
 
-	    const rowData = [];
-	    row.querySelectorAll("td").forEach((cell) => {
-	      rowData.push({
-	        text: cell.textContent,
-	        alignment: 'center',
-	        fontSize: tableFontSize,
-	        fillColor: index % 2 === 0 ? '#ffffff' : '#f9f9f9'
-	      });
-	    });
-	    rows.push(rowData);
-	  });
+    cells.forEach((cell) => {
 
-	  const customerName = document.getElementById('customer-name-input')?.value.trim() || 'Customer Name';
-	  const toggleCheckbox = document.getElementById("toggleIncludeAddons");
+      const input = cell.querySelector("input");
+      const span = cell.querySelector("span");
 
-	  const selectedTotal = toggleCheckbox?.checked
-	    ? Math.round(product?.priceWithFields ?? estimate?.totalWithAdditionalFields ?? estimate?.total ?? 0)
-	    : Math.round(product?.price ?? estimate?.total ?? 0);
+      let value = input ? input.value : cell.textContent.trim();
+      if (input) value = value.trim();
 
-	  const selectedNogst = toggleCheckbox?.checked
-	    ? Math.round(estimate?.estimate_nogst_withfields ?? estimate?.nogsttotal ?? 0)
-	    : Math.round(estimate?.nogsttotal ?? 0);
+      let unit = span ? span.textContent.trim() : "";
 
-	  const selectedgst = toggleCheckbox?.checked
-	    ? Math.round(estimate?.estimate_gst_withfields ?? estimate?.gst ?? 0)
-	    : Math.round(estimate?.gst ?? 0);
+      let finalText;
+      if (unit.includes("₹")) {
+        finalText = `₹ ${value}`;
+      } else if (cell.textContent.includes("₹") && !input) {
+        finalText = cell.textContent.trim();
+      } else {
+        finalText = `${value}${unit ? " " + unit : ""}`;
+      }
 
-	  return {
-	    // These three ensure the PDF carries the same print‑critical settings
-	    pageSize: selectedSize,                 // e.g., 'A4' | 'A5' | 'Letter'
-	    pageOrientation: selectedOrientation,   // 'portrait' | 'landscape'
-	    pageMargins: pageMargins,               // [left, top, right, bottom] in points
+      rowData.push({
+        text: finalText,
+        alignment: "center",
+        fontSize: tableFontSize,
+        fillColor: index % 2 === 0 ? "#ffffff" : "#f9f9f9",
+        bold: row.classList.contains("total-row")
+      });
+    });
 
-	    content: [
-	      {
-	        columns: [
-	          {
-	            text: [
-	              {
-	                text: `Estimate for ${product?.item ?? ''}\n`,
-	                bold: true,
-	                fontSize: tableFontSize + 4
-	              },
-	              {
-	                text: `Design No: ${(product?.orders ? product.orders.orderId : 'N/A')}/${product?.designNo ?? ''}`,
-	                bold: true,
-	                fontSize: tableFontSize + 2
-	              }
-	            ],
-	            alignment: 'center',
-	            margin: [0, 0, 0, 10]
-	          }
-	        ]
-	      },
-	      {
-	      columns: [
-	          {
-	            text: [
-	            	   {
-	         	    	  text: '\n', // just a newline
-	         	    	  margin: [0, 0, 0, 10] // adjust spacing as needed
-	         	    	},
-	      {
-	        text: `Prepared for: ${customerName}\nDate: ${new Date().toLocaleDateString()}`,
-	        margin: [0, 0, 0, 20],
-	        fontSize: tableFontSize + 2
-	      }
-	          ]
-	          }
-	          ]
-	      },
-	      {
-	    	  text: '\n', // just a newline
-	    	  margin: [0, 0, 0, 10] // adjust spacing as needed
-	    	},
-	      {
-	        table: {
-	          headerRows: 1,
-	          widths: ['30%', '20%', '20%', '30%'],
-	          body: [headers, ...rows],
-	        },
-	        layout: {
-	          hLineWidth: () => 0.5,
-	          vLineWidth: () => 0.5,
-	          hLineColor: () => '#cccccc',
-	          vLineColor: () => '#cccccc',
-	          paddingLeft: () => 8,
-	          paddingRight: () => 8,
-	          paddingTop: () => 5,
-	          paddingBottom: () => 5,
-	        },
-	      },
-/* 	      {
-	        text: 'Summary',
-	        bold: true,
-	        fontSize: tableFontSize + 2,
-	        alignment: 'right',
-	        margin: [0, 20, 0, 10]
-	      },
-	      {
-	        table: {
-	          widths: ['70%', '30%'],
-	          body: [
-	            [
-	              { text: 'Total Amount', bold: true, alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
-	              { text: `₹ ${selectedNogst.toFixed(2)}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
-	            ],
-	            [
-	              { text: 'GST (3%)', alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
-	              { text: `₹ ${selectedgst.toFixed(2)}`, alignment: 'right', fillColor: '#f9f9f9', fontSize: tableFontSize }
-	            ],
-	            [
-	              { text: 'Grand Total', bold: true, alignment: 'right', margin: [0,0,10,0], fontSize: tableFontSize },
-	              { text: `₹ ${selectedTotal.toFixed(2)}`, bold: true, alignment: 'right', fillColor: '#f2f2f2', fontSize: tableFontSize }
-	            ]
-	          ]
-	        },
-	        layout: 'noBorders'
-	      } */
-	    ],
-	    defaultStyle: { font: 'Roboto' }
-	  };
-	}
+    rows.push(rowData);
+  });
+
+  // ✅ SNAPSHOT (FINAL SOURCE OF TRUTH)
+  const snapshot = buildEstimateSnapshot();
+  const meta = snapshot.meta || {};
+
+  const selectedTotal = snapshot.totals.grandTotal;
+  const selectedgst = snapshot.totals.gst;
+  const selectedNogst = snapshot.totals.noGst;
+
+  const productName = meta.productName || "";
+  const designNo = meta.designNo || "";
+  const orderId = meta.orderId || "";
+  const customerName = meta.customerName?.trim() || "Walk-in Customer";
+
+  return {
+    pageSize: selectedSize,
+    pageOrientation: selectedOrientation,
+    pageMargins: pageMargins,
+
+    content: [
+      {
+        text: `Estimate for ${productName}`,
+        bold: true,
+        fontSize: tableFontSize + 4,
+        alignment: "center",
+        margin: [0, 0, 0, 5]
+      },
+      {
+        text: `Design No: ${orderId}/${designNo}`,
+        bold: true,
+        fontSize: tableFontSize + 2,
+        alignment: "center",
+        margin: [0, 0, 0, 10]
+      },
+      {
+        text: `Prepared for: ${customerName}\nDate: ${new Date().toLocaleDateString()}`,
+        fontSize: tableFontSize + 1,
+        margin: [0, 0, 0, 10]
+      },
+
+      {
+        table: {
+          headerRows: 1,
+          widths: ["30%", "20%", "20%", "30%"],
+          body: [headers, ...rows]
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
+          paddingLeft: () => 6,
+          paddingRight: () => 6,
+          paddingTop: () => 4,
+          paddingBottom: () => 4
+        }
+      },
+
+      {
+        text: "Summary",
+        bold: true,
+        fontSize: tableFontSize + 2,
+        alignment: "right",
+        margin: [0, 15, 0, 5]
+      },
+      {
+        table: {
+          widths: ["70%", "30%"],
+          body: [
+            [
+              { text: "Subtotal", alignment: "right", fontSize: tableFontSize },
+              { text: `₹ ${selectedNogst}`, alignment: "right", fontSize: tableFontSize }
+            ],
+            [
+              { text: "GST (3%)", alignment: "right", fontSize: tableFontSize },
+              { text: `₹ ${selectedgst}`, alignment: "right", fontSize: tableFontSize }
+            ],
+            [
+              { text: "Grand Total", bold: true, alignment: "right", fontSize: tableFontSize },
+              { text: `₹ ${selectedTotal}`, bold: true, alignment: "right", fontSize: tableFontSize }
+            ]
+          ]
+        },
+        layout: "noBorders"
+      }
+    ],
+
+    defaultStyle: {
+      font: "Roboto"
+    }
+  };
+}
 
 /* -------- End shared builder -------- */
 
@@ -648,7 +659,9 @@ confirmBtn.addEventListener("click", async () => {
 
   const logEnquiry = document.getElementById("chk-enquiry").checked;
   const markSale = document.getElementById("chk-sale").checked;
-  const customerName = document.getElementById("customer-name-input").value.trim();
+  const customerName =
+  document.getElementById("customer-name-input")?.value.trim() ||
+  "Walk-in Customer";
   
   if (!product || !estimate) {
 	    alert("Data not loaded yet, please wait.");
@@ -656,6 +669,15 @@ confirmBtn.addEventListener("click", async () => {
 	  }
   const snapshot = buildEstimateSnapshot();
 
+  console.log("FINAL PAYLOAD:", {
+  productId: product.productId,
+  designNo: product.designNo,
+  orderId: product.orders?.orderId,
+  customerName,
+  price: snapshot.totals.noGst,
+  priceWithFields: snapshot.totals.grandTotal,
+  snapshot
+});
   // Backend calls
   if (logEnquiry) {
     await fetch("/logEnquiry", {
@@ -667,8 +689,8 @@ confirmBtn.addEventListener("click", async () => {
         customerName,
         imageUrl: product.imageUrl,
      // explicit price variants
-        price: snapshot.price,
-        priceWithFields: snapshot.priceWithFields,
+       price: snapshot.totals.noGst,
+priceWithFields: snapshot.totals.grandTotal,
 
         // complete estimate snapshot
         estimateSnapshot: snapshot
@@ -687,8 +709,8 @@ confirmBtn.addEventListener("click", async () => {
         customerName,
         imageUrl: product.imageUrl,
         // explicit price variants
-        price: snapshot.price,
-        priceWithFields: snapshot.priceWithFields,
+       price: snapshot.totals.noGst,
+priceWithFields: snapshot.totals.grandTotal,
 
         // complete estimate snapshot
         estimateSnapshot: snapshot
@@ -739,6 +761,207 @@ function formatWithPrecision(cellText) {
 
     return `${intPart}.${decPart}${unit}`;
 }
+
+function extractUnit(text) {
+    const match = text.match(/[a-zA-Z%₹]+$/);
+    return match ? match[0] : "";
+}
+
+function makeEditable() {
+    const rows = document.querySelectorAll(".estimate-table tbody tr");
+
+    rows.forEach(row => {
+
+        if (row.id === "header_row") return;
+
+        const cells = row.children;
+        if (cells.length < 4) return;
+
+        const qtyCell = cells[1];
+        const rateCell = cells[2];
+        const amtCell = cells[3];
+
+        // Prevent duplicate inputs
+        // Only skip if ALL inputs already exist (editable mode already applied)
+if (
+    qtyCell.querySelector("input") &&
+    rateCell.querySelector("input") &&
+    amtCell.querySelector("input")
+) return;
+
+        const qtyText = qtyCell.textContent.trim();
+        const rateText = rateCell.textContent.trim();
+        const amtText = amtCell.textContent.trim();
+
+        const qtyUnit = extractUnit(qtyText);
+        const rateUnit = extractUnit(rateText);
+
+        const qtyVal = parseFloat(qtyText.replace(/[^\d.-]/g, '')) || 0;
+        const rateVal = parseFloat(rateText.replace(/[^\d.-]/g, '')) || 0;
+        const amtVal = parseFloat(amtText.replace(/[^\d.-]/g, '')) || 0;
+
+        /* ================= TOTAL ROW (SPECIAL) ================= */
+        if (row.classList.contains("total-row")) {
+
+            amtCell.innerHTML = `
+                <span>₹</span>
+                <input type="number" value="${amtVal}" style="width:100px;">
+            `;
+
+            const amtInput = amtCell.querySelector("input");
+
+            amtInput.addEventListener("input", () => {
+                row.dataset.manual = "true";
+                row.style.background = "#d1ffd6"; // green highlight
+            });
+
+            return;
+        }
+
+        /* ================= NORMAL ROWS ================= */
+
+        qtyCell.innerHTML = `
+            <input type="number" value="${qtyVal}" style="width:70px;">
+            <span>${qtyUnit}</span>
+        `;
+
+        rateCell.innerHTML = `
+            <input type="number" value="${rateVal}" style="width:70px;">
+            <span>${rateUnit}</span>
+        `;
+
+        amtCell.innerHTML = `
+            <span>₹</span>
+            <input type="number" value="${amtVal}" style="width:90px;">
+        `;
+
+        const qtyInput = qtyCell.querySelector("input");
+        const rateInput = rateCell.querySelector("input");
+        const amtInput = amtCell.querySelector("input");
+
+        // ✅ IMPORTANT: ensure labourAmt_row works even without qty/rate
+if (row.id === "labourAmt_row") {
+    amtInput.addEventListener("input", () => {
+        row.dataset.manual = "true";
+        recalculateEstimate();
+    });
+}
+
+        qtyInput.addEventListener("input", () => recalculateEstimate());
+        rateInput.addEventListener("input", () => recalculateEstimate());
+
+amtInput.addEventListener("input", () => {
+    row.dataset.manual = "true";
+    recalculateEstimate();
+});
+    });
+}
+
+function recalculateEstimate() {
+    let subtotal = 0;
+
+    const rows = document.querySelectorAll(".estimate-table tbody tr");
+
+    rows.forEach(row => {
+
+        // ❌ Skip non-data rows
+        if (row.id === "header_row") return;
+        if (row.id === "gst_row") return;
+        if (row.classList.contains("total-row")) return;
+        if (row.style.display === "none") return;
+
+        // allow custom rows also
+if (row.dataset.custom === "true") {
+    const amtInput = row.children[3]?.querySelector("input");
+    const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
+    subtotal += amount;
+    return;
+}
+
+        const qtyInput = row.children[1]?.querySelector("input");
+        const rateInput = row.children[2]?.querySelector("input");
+        const amtInput = row.children[3]?.querySelector("input");
+
+        let qty = qtyInput
+            ? parseFloat(qtyInput.value)
+            : parseFloat(row.children[1]?.textContent.replace(/[^\d.-]/g, ''));
+
+        let rate = rateInput
+            ? parseFloat(rateInput.value)
+            : parseFloat(row.children[2]?.textContent.replace(/[^\d.-]/g, ''));
+
+        const hasQty = !isNaN(qty) && qty !== 0;
+        const hasRate = !isNaN(rate) && rate !== 0;
+
+        let amount = 0;
+
+        // ✅ ALWAYS take amount from input (source of truth)
+        if (amtInput) {
+            amount = parseFloat(amtInput.value) || 0;
+        } else {
+            const amtText = row.children[3]?.textContent;
+            amount = parseFloat(amtText.replace(/[^\d.-]/g, '')) || 0;
+        }
+
+        // ✅ Auto-calc ONLY if user has NOT manually edited
+        if (row.dataset.manual !== "true" && hasQty && hasRate) {
+            amount = qty * rate;
+
+            if (amtInput) {
+                amtInput.value = Math.round(amount);
+            } else {
+                row.children[3].textContent = Math.round(amount);
+            }
+        }
+
+        // ✅ Include amount-only rows always
+        const isAmountOnly =
+            row.id === "realSt_row" ||
+            row.id === "fitting_row" ||
+            row.id === "labourAmt_row";
+
+        if (amount === 0 && !isAmountOnly) return;
+
+        subtotal += amount;
+    });
+
+    // ✅ GST calculation
+    const gst = subtotal * 0.03;
+
+    const gstInput = document.getElementById("gst-amt")?.querySelector("input");
+    if (gstInput) {
+        gstInput.value = Math.round(gst);
+    } else {
+        document.getElementById("gst-amt").textContent = Math.round(gst);
+    }
+
+    // ✅ TOTAL calculation
+    const totalRow = document.getElementById("total_row");
+    const totalInput = document.getElementById("total-amt")?.querySelector("input");
+
+    // If user manually edited total → don't override
+    if (totalRow?.dataset.manual === "true") return;
+
+    const total = subtotal + gst;
+
+    if (totalInput) {
+        totalInput.value = Math.round(total);
+    } else {
+        document.getElementById("total-amt").textContent = "₹ " + Math.round(total);
+    }
+}
+
+document.getElementById("resetEstimate").addEventListener("click", () => {
+    location.reload();
+});
+
+document.getElementById("enableEdit").addEventListener("click", () => {
+    if (isEditMode) return; // prevent duplicate
+
+    isEditMode = true;
+    makeEditable();
+});
+
 
 //=== Extra logic specifically to fit everything in single A6 page ===
 const originalBuildDocDefinitionA6 = buildDocDefinition;
@@ -804,85 +1027,142 @@ buildDocDefinition = function () {
 };
 
 function buildEstimateSnapshot() {
-	  // whether addons are included in the current screen
-	  const includeAddons = document.getElementById("toggleIncludeAddons")?.checked === true;
+    const lines = [];
+    let subtotal = 0;
 
-	  // table rows -> capture only visible and non-zero lines
-	  const lines = [];
-	  document.querySelectorAll(".estimate-table tbody tr").forEach((row) => {
-	    if (row.id === "header_row") return;
-	    const tds = row.querySelectorAll("td");
-	    if (tds.length !== 4) return;
+    const rows = document.querySelectorAll(".estimate-table tbody tr");
 
-	    const desc = tds[0].textContent.trim();
-	    const qty  = parseFloat((tds[1].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
-	    const rate = parseFloat((tds[2].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
-	    const amt  = parseFloat((tds[3].textContent || "0").replace(/[^\d.-]/g,"")) || 0;
+    rows.forEach(row => {
 
-	    if (qty === 0 || rate === 0 || amt === 0) return;
-	    lines.push({ description: desc, qty, rate, amount: amt });
-	  });
+        // ❌ Skip header / GST / total
+        if (row.id === "header_row") return;
+        if (row.id === "gst_row") return;
+        if (row.classList.contains("total-row")) return;
 
-	  // prices as displayed
-	  const price = Number(product?.price ?? estimate?.total ?? 0);
-	  const priceWithFields = Number(product?.priceWithFields ?? estimate?.totalWithAdditionalFields ?? price);
-	  const gst = includeAddons
-	    ? Number(estimate?.estimate_gst_withfields ?? estimate?.gst ?? 0)
-	    : Number(estimate?.gst ?? 0);
-	  const total = includeAddons ? priceWithFields : price;
+        // ❌ Skip hidden rows
+        if (row.style.display === "none") return;
 
-	  const payload = {
-	    productId: product?.productId ?? null,
-	    designNo: product?.designNo ?? null,
-	    orderId: product?.orders?.orderId ?? null,
-	    item: product?.item ?? null,
-	    categoryId: product?.categoryId ?? null,
-	    subCategoryId: product?.subCategoryId ?? null,
+        const tds = row.querySelectorAll("td");
+        if (tds.length !== 4) return;
 
-	    // price variants explicitly
-	    price,
-	    priceWithFields,
+        const descInput = tds[0].querySelector("input");
 
-	    // breakdown currently shown
-	    includeAddons,
-	    totals: {
-	      noGst: Number(estimate?.nogsttotal ?? 0),
-	      gst,
-	      grandTotal: Number(Math.round(total)),
-	    },
+const desc = descInput
+    ? descInput.value.trim() || "Custom"
+    : tds[0].textContent.replace("❌", "").trim();
 
-	    // raw estimate parts if needed for server recomputation/audit
-	    estimateParts: {
-	      gold: Number(estimate?.gold ?? 0),
-	      labour: Number(estimate?.labour ?? 0),
-	      stones: Number(estimate?.stones ?? 0),
-	      beads: Number(estimate?.beads ?? 0),
-	      pearls: Number(estimate?.pearls ?? 0),
-	      ssPearls: Number(estimate?.ssPearls ?? 0),
-	      diamonds: Number(estimate?.diamonds ?? 0),
-	      otherStones: Number(estimate?.otherStones ?? 0),
-	      vilandi: Number(estimate?.vilandi ?? 0),
-	      mozo: Number(estimate?.mozo ?? 0),
-	      fitting: Number(estimate?.fitting ?? 0),
-	      realStone: Number(product?.realStone ?? 0)
-	    },
+        const qtyInput = tds[1].querySelector("input");
+        const rateInput = tds[2].querySelector("input");
+        const amtInput = tds[3].querySelector("input");
 
-	    // rendered lines (normalized)
-	    lines,
+        // ✅ Extract qty safely (keeps units intact visually)
+        const qty = qtyInput
+            ? parseFloat(qtyInput.value) || 0
+            : parseFloat(tds[1].textContent.replace(/[^\d.-]/g, '')) || 0;
 
-	    // image and customer context
-	    imageUrl: product?.imageUrl ?? null,
-	    customerName: document.getElementById("customer-name-input")?.value?.trim() || null,
+        // ✅ Extract rate safely
+        const rate = rateInput
+            ? parseFloat(rateInput.value) || 0
+            : parseFloat(tds[2].textContent.replace(/[^\d.-]/g, '')) || 0;
 
-	    // rates context you already loaded (optional but useful)
-	    ratesContext: Array.isArray(rate) ? rate : null,
+        let amount = 0;
 
-	    // timestamp on client (server should also stamp)
-	    clientTimestamp: new Date().toISOString()
-	  };
+        // ✅ SPECIAL CASE: Real Stone & Fitting → always use amount
+        if (row.id === "realSt_row" || row.id === "fitting_row") {
+            amount = amtInput
+                ? parseFloat(amtInput.value) || 0
+                : parseFloat(tds[3].textContent.replace(/[^\d.-]/g, '')) || 0;
+        }
 
-	  return payload;
-	}
+        // ✅ Manual override (user edited amount)
+        else if (row.dataset.manual === "true") {
+            amount = amtInput
+                ? parseFloat(amtInput.value) || 0
+                : parseFloat(tds[3].textContent.replace(/[^\d.-]/g, '')) || 0;
+        }
+
+        // ✅ If editable amount input exists
+        else if (amtInput) {
+            amount = parseFloat(amtInput.value) || 0;
+        }
+
+        // ✅ Default calculation
+        else {
+            amount = qty * rate;
+        }
+
+        // ✅ Always include Real Stone & Fitting
+        const isSpecialRow = row.id === "realSt_row" || row.id === "fitting_row";
+
+        if (amount === 0 && !isSpecialRow) return;
+
+        subtotal += amount;
+
+        lines.push({
+            description: desc,
+            qty: Number(qty.toFixed(3)),
+            rate: Number(rate.toFixed(2)),
+            amount: Math.round(amount)
+        });
+    });
+
+    // ✅ GST from UI (do NOT recalc blindly)
+    const gstInput = document.getElementById("gst-amt")?.querySelector("input");
+
+    const gst = gstInput
+        ? parseFloat(gstInput.value) || 0
+        : parseFloat(document.getElementById("gst-amt")?.textContent.replace(/[^\d.-]/g, '')) || 0;
+
+    // ✅ TOTAL from UI (do NOT double calculate)
+    const totalInput = document.getElementById("total-amt")?.querySelector("input");
+
+    const grandTotal = totalInput
+        ? parseFloat(totalInput.value) || 0
+        : parseFloat(document.getElementById("total-amt")?.textContent.replace(/[^\d.-]/g, '')) || 0;
+
+        console.log("DEBUG SNAPSHOT:", {
+    product,
+    customerInput: document.getElementById("customer-name-input")?.value
+});
+
+return {
+    // ✅ ADD ROOT LEVEL (BACKWARD COMPATIBILITY)
+    item: product?.item || "",
+    designNo: product?.designNo || "",
+    orderId: product?.orders?.orderId || "",
+    customerName:
+        document.getElementById("customer-name-input")?.value.trim() ||
+        "Walk-in Customer",
+    imageUrl: product?.imageUrl || "",
+    productId: product?.productId || null,
+
+    // ✅ KEEP NEW STRUCTURE (for future)
+    meta: {
+        productName: product?.item || "",
+        designNo: product?.designNo || "",
+        orderId: product?.orders?.orderId || "",
+        customerName:
+            document.getElementById("customer-name-input")?.value.trim() ||
+            "Walk-in Customer",
+        imageUrl: product?.imageUrl || "",
+        productId: product?.productId || null
+    },
+
+    lines,
+
+    totals: {
+        noGst: Math.round(subtotal),
+        gst: Math.round(gst),
+        grandTotal: Math.round(grandTotal)
+    },
+
+    price: Math.round(subtotal),
+    priceWithFields: Math.round(grandTotal),
+
+    clientTimestamp: new Date().toISOString()
+};
+}
+
 
 (function() {
 	  let pendingAction = null; // "download" or "print"
@@ -967,7 +1247,9 @@ function buildEstimateSnapshot() {
 
 	    const logEnquiry = document.getElementById("chk-enquiry").checked;
 	    const markSale = document.getElementById("chk-sale").checked;
-	    const customerName = document.getElementById("customer-name-input").value.trim();
+	    const customerName =
+  document.getElementById("customer-name-input")?.value.trim() ||
+  "Walk-in Customer";
 
 	    if (!product || !estimate) {
 	      alert("Data not loaded yet, please wait.");
@@ -980,7 +1262,25 @@ function buildEstimateSnapshot() {
 	    }
 
 	    const snapshot = buildEstimateSnapshot();
+console.log("FINAL PAYLOAD:", {
+  productId: product.productId,
+  designNo: product.designNo,
+  orderId: product.orders?.orderId,
+  customerName,
+  price: snapshot.totals.noGst,
+  priceWithFields: snapshot.totals.grandTotal,
+  snapshot
+});
 
+console.log("FINAL PAYLOAD:", {
+  productId: product.productId,
+  designNo: product.designNo,
+  orderId: product.orders?.orderId,
+  customerName,
+  price: snapshot.totals.noGst,
+  priceWithFields: snapshot.totals.grandTotal,
+  snapshot
+});
 	    // Run backend calls (awaited in sequence, same as your original flow)
 	    try {
 	      if (logEnquiry) {
@@ -992,8 +1292,8 @@ function buildEstimateSnapshot() {
 	            designNo: product.designNo,
 	            customerName,
 	            imageUrl: product.imageUrl,
-	            price: snapshot.price,
-	            priceWithFields: snapshot.priceWithFields,
+	            price: snapshot.totals.noGst,
+priceWithFields: snapshot.totals.grandTotal,
 	            estimateSnapshot: snapshot
 	          })
 	        });
@@ -1009,8 +1309,8 @@ function buildEstimateSnapshot() {
 	            orderId: product.orders ? product.orders.orderId : null,
 	            customerName,
 	            imageUrl: product.imageUrl,
-	            price: snapshot.price,
-	            priceWithFields: snapshot.priceWithFields,
+	            price: snapshot.totals.noGst,
+priceWithFields: snapshot.totals.grandTotal,
 	            estimateSnapshot: snapshot
 	          })
 	        });
@@ -1063,6 +1363,72 @@ function buildEstimateSnapshot() {
 	    printWindow = null;
 	  }, true);
 	})();
+
+document.getElementById("addRowBtn").addEventListener("click", () => {
+
+    const tbody = document.querySelector(".estimate-table tbody");
+    const gstRow = document.getElementById("gst_row");
+
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-custom", "true");
+
+    tr.innerHTML = `
+        <td class="description">
+            <input type="text" placeholder="Description" style="width:100px;">
+            <button class="delete-row">❌</button>
+        </td>
+        <td><input type="number" style="width:70px;"></td>
+        <td><input type="number" style="width:70px;"></td>
+        <td>
+            <span>₹</span>
+            <input type="number" style="width:90px;">
+        </td>
+    `;
+
+       // 👇 INSERT ROW (same as before)
+    tbody.insertBefore(tr, gstRow);
+
+    // ✅ FORCE VISIBILITY (VERY IMPORTANT)
+    tr.style.display = "table-row";
+
+    // ✅ Attach events (for calculation)
+    attachRowEvents(tr);
+
+    // ✅ If edit mode is ON → make editable immediately
+    if (isEditMode) {
+        makeEditable();
+    }
+
+    // ✅ Optional debug
+    console.log("Custom row added:", tr);
+});
+
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("delete-row")) {
+        e.target.closest("tr").remove();
+        recalculateEstimate();
+    }
+});
+
+function attachRowEvents(row) {
+    const inputs = row.querySelectorAll("input");
+
+    inputs.forEach(input => {
+        input.addEventListener("input", () => {
+            row.dataset.manual = "true";
+            recalculateEstimate();
+        });
+    });
+}
+
+document.getElementById("enableEdit").addEventListener("click", () => {
+    if (isEditMode) return;
+
+    isEditMode = true;
+    makeEditable();
+
+    document.getElementById("enableEdit").textContent = "Editing Enabled";
+});
 </script>
 </body>
 </html>
