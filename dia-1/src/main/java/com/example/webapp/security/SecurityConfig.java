@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -40,12 +42,17 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors()
             .and()
             .authorizeHttpRequests()
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**", "/files/**","/uploads/**").permitAll()
+                .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/static/**", "/files/**","/uploads/**").permitAll()
                 // allow public loading of product details (GET)
                 .requestMatchers(HttpMethod.GET,"/get-estimate", "/loadProduct/**", "/load-product/**", "/loadProductByDesignNo/**","/available-order-ids"," \"/getTagsPdf/**\"").permitAll()
                 // allow anonymous updates (PUT) — BE CAREFUL: this opens modification without auth
@@ -58,7 +65,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/logEnquiry").permitAll()
                 .requestMatchers(HttpMethod.POST, "/logSale").permitAll()
                 // keep login/registration public
-                .requestMatchers("/login", "/register", "/logout", "*.css","/get-security-question","/reset-password","/verify-security-answer",
+                .requestMatchers("/login", "/register", "/logout", "/process-login", "*.css","/get-security-question","/reset-password","/verify-security-answer",
                 		"/reset-ns-password","/modify-product",
                 	"proxy-image","/loadProductByDesignNo/**","/load-product/**").permitAll() 
                 .requestMatchers("/add-product", "/remove-product", "/set-price","/available-order-ids","/categories",
@@ -74,7 +81,7 @@ public class SecurityConfig {
             .and()
             .formLogin()
                 .loginPage("/login")
-                .loginProcessingUrl("/process-login")
+                .loginProcessingUrl("/login-process")
                 .defaultSuccessUrl("/home", true)
                 .failureUrl("/login")
             .and()

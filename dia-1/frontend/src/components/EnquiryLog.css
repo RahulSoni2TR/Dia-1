@@ -1,0 +1,262 @@
+.enquiry-log-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #00a86b, #007bff);
+    color: #000;
+}
+
+.log-container {
+    flex-grow: 1;
+    padding: 2.5rem 1.5rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.log-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    color: #000;
+}
+
+/* Header Styling */
+.log-header {
+    background: linear-gradient(90deg, #00a86b, #007bff);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 10px 24px rgba(19, 32, 49, 0.15);
+}
+
+.log-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.log-title i {
+    color: #ccffeb; /* Teal accent for the icon */
+}
+
+/* Specialized Buttons */
+.btn-back {
+    position: absolute;
+    left: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #f5ab04; /* Consistent with home navigation buttons */
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+}
+.btn-back:hover {
+    background-color: #d99a03;
+    transform: translateY(-50%) translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-reset {
+    background-color: #4b5563; /* gray-600 */
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+.btn-reset:hover {
+    background-color: #374151; /* gray-700 */
+}
+
+.reset-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+/* Filter Section Alignment */
+.filter-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #fff;
+    height: 42px;
+}
+
+.filter-input-group input {
+    flex: 1;
+    border: none;
+    padding: 0 1rem;
+    outline: none;
+    color: #000;
+}
+
+.filter-select {
+    height: 42px;
+    padding: 0 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    background-color: #fff;
+    color: #000;
+    outline: none;
+}
+
+/* Table Alignment Fixes */
+.table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.enquiry-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+    color: #000;
+}
+
+.enquiry-table th {
+    background-color: #f9fafb;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 2px solid #e5e7eb;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.enquiry-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+    color: #000;
+}
+
+/* Column Width Fixes */
+.col-index { width: 50px; }
+.col-image { width: 80px; }
+.col-design { width: 120px; }
+.col-date { width: 180px; }
+.col-actions { width: 160px; text-align: center; }
+
+.product-thumbnail {
+    height: 48px;
+    width: 48px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Action Button Alignment */
+.action-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.action-btn-group button {
+    width: 100%;
+    white-space: nowrap;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-view-prod { background-color: #2563eb; color: white; }
+.btn-view-prod:hover { background-color: #1d4ed8; }
+
+.btn-view-est { background-color: #059669; color: white; }
+.btn-view-est:hover { background-color: #047857; }
+
+.btn-remove { background-color: #dc2626; color: white; }
+.btn-remove:hover { background-color: #b91c1c; }
+
+/* Pagination Fix */
+.pagination-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.btn-pagination:disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.btn-pagination-prev {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.btn-pagination-prev:hover:not(:disabled) {
+    background-color: #1d4ed8;
+}
+
+.btn-pagination-next {
+    background-color: #059669;
+    color: #ffffff;
+}
+
+.btn-pagination-next:hover:not(:disabled) {
+    background-color: #047857;
+}

@@ -90,12 +90,12 @@
 
 <footer class="bg-teal-700 py-4 mt-8">
   <div class="max-w-7xl mx-auto px-6 flex justify-between text-sm text-teal-100">
-    <span>&copy; 2025 MyCompany. All rights reserved.</span>
-    <span>Powered by Spring Boot + Thymeleaf</span>
+    <span>&copy; 2025 Jewellery Store Manager. All rights reserved.</span>
   </div>
 </footer>
 
 <script>
+console.log("enquiry_log.html script started."); // Added for debugging
 
 let currentSortField = "createdAt";
 let currentSortDir = "desc";
@@ -189,7 +189,7 @@ async function fetchEnquiries() {
   try {
     const res = await fetch(`/api/enquiries?${params.toString()}`);
     const data = await res.json();
-    console.log(data);
+    console.log("Enquiry API response:", data); // More descriptive log
     totalPages = data.totalPages || 1;
     renderTable(data.content || []);
     updatePagination();
@@ -221,6 +221,7 @@ document.querySelectorAll('.sort-header').forEach(header => {
 
 
 function renderTable(enquiries) {
+	  console.log("Rendering table with:", enquiries); // Log what's being rendered
 	  enquiryTableBody.innerHTML = '';
 	  if (!enquiries.length) {
 	    enquiryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">No records found</td></tr>`;

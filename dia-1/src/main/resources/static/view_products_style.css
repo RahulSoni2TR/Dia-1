@@ -160,6 +160,8 @@ h1 {
   box-shadow: 0 10px 24px rgba(20, 32, 48, 0.08);
   overflow: hidden;
   padding: 20px;
+  position: relative;
+  padding-bottom: 24px; /* reserve space for action buttons */
   transition: transform 0.25s ease;
 }
 
@@ -193,6 +195,14 @@ h1 {
   display: flex;
   align-items: flex-start;
   gap: 20px;
+}
+
+/* Ensure list-view cards allow action buttons to be visible and not clipped */
+.product-grid.list-view .product-card,
+.product-list-container .product-card {
+  overflow: visible;
+  min-height: 120px;
+  padding-bottom: 22px; /* ensure space for buttons */
 }
 
 .product-grid.list-view .product-card img {
@@ -270,6 +280,15 @@ h1 {
   margin-top: 12px;
 }
 
+/* Keep buttons above other elements and align to right in list view */
+.product-card .button-container { position: relative; z-index: 3; }
+.product-grid.list-view .button-container,
+.product-list-container .button-container {
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 /* Specific color for Modify and Delete buttons */
 .button-container .modify-product {
   background-color: #ffc107; /* Bootstrap yellow */
@@ -336,12 +355,25 @@ h1 {
   white-space: nowrap; /* Prevents line break inside button */
   gap: 6px; /* Adds spacing between icon and text */
   padding: 8px 12px;
-  min-width: 120px; /* Ensures consistent button width */
+  min-width: 100px; /* Ensures consistent button width */
 }
 
 .button-container button {
-  flex: 1 1 45%; /* 2 buttons per row if needed, responsive */
-  max-width: 48%; /* Prevents overflow on smaller cards */
+  box-sizing: border-box;
+  flex: 0 0 84px; /* slightly smaller fixed width */
+  max-width: 84px;
+  height: 30px; /* slightly smaller fixed height */
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .button-container button {
+    flex: 1 1 48%;
+    max-width: none;
+    height: 32px;
+  }
 }
 
 /* Product Name Styling */

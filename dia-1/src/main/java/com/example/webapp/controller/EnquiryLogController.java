@@ -1,8 +1,6 @@
 package com.example.webapp.controller;
 
-import com.example.webapp.entity.EnquiryLog;
 import com.example.webapp.service.LogService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -54,7 +52,6 @@ public class EnquiryLogController {
         ));
     }
 
-    @Autowired
     public EnquiryLogController(LogService service) {
         this.service = service;
     }

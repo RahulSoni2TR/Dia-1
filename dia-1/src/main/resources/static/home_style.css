@@ -10,7 +10,7 @@ body {
 
 /* Header */
 .header {
-    background: #007bff;
+    background: #0056b3; /* Darker blue to stand out */
     padding: 15px 20px;
     display: flex;
     justify-content: space-between;

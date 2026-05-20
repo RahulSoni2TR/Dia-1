@@ -667,9 +667,9 @@ public class ProductController {
 	
 	// GET current frequency
     @GetMapping("/frequency")
-    public ResponseEntity<Integer> getFrequency() {
+    public ResponseEntity<Map<String, Integer>> getFrequency() {
         int days = productService.getVerificationDays();
-        return ResponseEntity.ok(days);
+        return ResponseEntity.ok(Map.of("frequency", days));
     }
 
     // POST update frequency

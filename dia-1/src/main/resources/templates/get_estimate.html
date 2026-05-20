@@ -872,12 +872,25 @@ function recalculateEstimate() {
 
         // allow custom rows also
 if (row.dataset.custom === "true") {
+
+    const qtyInput = row.children[1]?.querySelector("input");
+    const rateInput = row.children[2]?.querySelector("input");
     const amtInput = row.children[3]?.querySelector("input");
-    const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
+
+    const qty = parseFloat(qtyInput?.value) || 0;
+    const rate = parseFloat(rateInput?.value) || 0;
+
+    let amount = parseFloat(amtInput?.value) || 0;
+
+    // ✅ Auto calculate if NOT manually edited
+    if (row.dataset.manual !== "true" && qty && rate) {
+        amount = qty * rate;
+        amtInput.value = Math.round(amount);
+    }
+
     subtotal += amount;
     return;
 }
-
         const qtyInput = row.children[1]?.querySelector("input");
         const rateInput = row.children[2]?.querySelector("input");
         const amtInput = row.children[3]?.querySelector("input");
@@ -1411,13 +1424,25 @@ document.addEventListener("click", function(e) {
 });
 
 function attachRowEvents(row) {
-    const inputs = row.querySelectorAll("input");
+    const qtyInput = row.children[1].querySelector("input");
+    const rateInput = row.children[2].querySelector("input");
+    const amtInput = row.children[3].querySelector("input");
 
-    inputs.forEach(input => {
-        input.addEventListener("input", () => {
-            row.dataset.manual = "true";
-            recalculateEstimate();
-        });
+    // ✅ Auto calculate when qty or rate changes
+    qtyInput.addEventListener("input", () => {
+        row.dataset.manual = "false"; // allow auto calc
+        recalculateEstimate();
+    });
+
+    rateInput.addEventListener("input", () => {
+        row.dataset.manual = "false"; // allow auto calc
+        recalculateEstimate();
+    });
+
+    // ❗ Only mark manual when user edits amount
+    amtInput.addEventListener("input", () => {
+        row.dataset.manual = "true"; // user override
+        recalculateEstimate();
     });
 }
 

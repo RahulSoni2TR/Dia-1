@@ -147,8 +147,8 @@ body {
 /* ================== PRICE ================== */
 
 .price {
-  font-size: 40px; /* ✅ match silver price */
-  font-weight: 700;
+  font-size: 70px; /* ✅ match silver price */
+  font-weight: 650;
   color: #d4af37;
   text-shadow: 0 2px 8px rgba(212,175,55,0.2);
   transition: transform 0.2s ease;

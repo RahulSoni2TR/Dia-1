@@ -18,13 +18,18 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 
@@ -38,16 +43,19 @@ public class LoginController {
     private CustomUserDetailsService customservice;
 
     @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
     
-    @GetMapping("/login")
+    @GetMapping({"/", "/login"})
     public String loginPage() {
-        return "index"; // Render the login.html page
+        return "forward:/index.html"; // Serve React login page from static assets
     }
     
     @PostMapping("/logout")
     public String logoutPage() {
-        return "index"; // Render the logout.html page
+        return "redirect:/login"; // Redirect to React login page after logout
     }
 
     @GetMapping("/home")
@@ -56,27 +64,35 @@ public class LoginController {
     }
     
     
+    @ResponseBody
     @PostMapping("/process-login")
-    public String processLogin(@RequestParam String username, @RequestParam String password,HttpSession session) {
-        // Retrieve user from the database
-    	System.out.println("login endpoint");
+    public ResponseEntity<Map<String, Object>> processLogin(@RequestParam String username, @RequestParam String password, HttpSession session) {
+        System.out.println("login endpoint");
         User user = userService.findByUsername(username);
-       
-        Iterator<Role> iterator = user.getRoles().iterator();
-        while (iterator.hasNext()) {
-            Role fruit = iterator.next();
-            System.out.println(fruit.getRoleName());
+
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            System.out.println("authentication incomplete: invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Invalid username or password."));
         }
-        
-        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-        	System.out.println("authentication complete");
-        	session.setAttribute("username", user.getUsername());
-        	System.out.println(user.getUsername());
-            return "home";  // Password matches, redirect to home
-        } else {
-        	System.out.println("authentication incomplete");
-            return "index";  // Invalid login, return to login page
-        }
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                SecurityContextHolder.getContext());
+        session.setAttribute("username", user.getUsername());
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getRoleName)
+                .toList();
+
+        System.out.println("authentication complete");
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "username", user.getUsername(),
+                "roles", roles
+        ));
     }
     
 
