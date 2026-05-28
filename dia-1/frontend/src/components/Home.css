@@ -639,6 +639,13 @@
   font-weight: bold;
 }
 
+.estimate-table th:nth-child(2), .estimate-table td:nth-child(2),
+.estimate-table th:nth-child(3), .estimate-table td:nth-child(3),
+.estimate-table th:nth-child(4), .estimate-table td:nth-child(4) {
+  text-align: right;
+}
+
+
 /* Verify Page Two-Panel Layout */
 .verify-main-content {
   display: flex;

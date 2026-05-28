@@ -176,6 +176,7 @@ function populateSubCategories() {
 // Fetch sales logs
 async function fetchSalesLogs() {
     const params = new URLSearchParams();
+    params.append('sort', `${currentSortField},${currentSortDir}`);
     if (searchInput.value) params.append('q', searchInput.value.trim());
     if (categorySelect.value) {
         params.append('categoryIdStr', categoryMap[categorySelect.value]); // numeric ID
@@ -212,7 +213,7 @@ document.querySelectorAll('.sort-header').forEach(header => {
 	    icon.className = currentSortDir === "asc" ? "fas fa-sort-up" : "fas fa-sort-down";
 
 	    currentPage = 1;
-	    fetchEnquiries();
+	    fetchSalesLogs();
 	  });
 	});
 // Render table

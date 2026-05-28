@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './EnquiryLog.css';
+import './SalesLog.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:8080' : '';
 
@@ -57,8 +57,8 @@ const mergeLogPricesIntoProduct = (productSnapshot, logRow) => ({
     : (logRow.priceWithFields ?? logRow.price ?? 0)
 });
 
-function EnquiryLog({ onSwitchPage }) {
-  const [enquiries, setEnquiries] = useState([]);
+function SalesLog({ onSwitchPage }) {
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -70,7 +70,7 @@ function EnquiryLog({ onSwitchPage }) {
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [sort, setSort] = useState({ field: 'createdAt', dir: 'desc' });
 
-  const fetchEnquiries = useCallback(async () => {
+  const fetchSalesLogs = useCallback(async () => {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams({
@@ -80,19 +80,19 @@ function EnquiryLog({ onSwitchPage }) {
     });
 
     if (searchTerm) params.append('q', searchTerm.trim());
-    if (selectedCategory) params.append('categoryId', selectedCategory);
-    if (selectedSubCategory) params.append('subCategoryId', selectedSubCategory);
+    if (selectedCategory) params.append('categoryIdStr', selectedCategory);
+    if (selectedSubCategory) params.append('subCategoryIdStr', selectedSubCategory);
 
     try {
-      const res = await fetch(`${API_BASE}/api/enquiries?${params.toString()}`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/sales-logs?${params.toString()}`, { credentials: 'include' });
       
       const contentType = res.headers.get("content-type");
       if (!res.ok || !contentType || !contentType.includes("application/json")) {
-        throw new Error('Failed to fetch enquiries. Please check if you are logged in.');
+        throw new Error('Failed to fetch sales logs. Please check if you are logged in.');
       }
 
       const data = await res.json();
-      setEnquiries(data.content || []);
+      setLogs(data.content || []);
       setTotalPages(data.totalPages || 1);
     } catch (err) {
       console.error(err);
@@ -103,8 +103,8 @@ function EnquiryLog({ onSwitchPage }) {
   }, [currentPage, searchTerm, selectedCategory, selectedSubCategory, sort]);
 
   useEffect(() => {
-    fetchEnquiries();
-  }, [fetchEnquiries]);
+    fetchSalesLogs();
+  }, [fetchSalesLogs]);
 
   const handleSort = (field) => {
     setSort(prev => ({
@@ -115,10 +115,10 @@ function EnquiryLog({ onSwitchPage }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this enquiry?")) return;
+    if (!window.confirm("Are you sure you want to delete this sale log?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/enquiries/${id}`, { method: 'DELETE', credentials: 'include' });
-      if (res.ok) fetchEnquiries();
+      const res = await fetch(`${API_BASE}/api/sales-logs/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) fetchSalesLogs();
     } catch (err) {
       alert("Delete failed");
     }
@@ -137,15 +137,15 @@ function EnquiryLog({ onSwitchPage }) {
     const page = type === 'product' ? 'product-snapshot' : 'estimate-snapshot';
 
     sessionStorage.setItem(key, JSON.stringify(parseSnapshot(snapshot)));
-    sessionStorage.setItem('returnToPage', 'enquiry-log');
+    sessionStorage.setItem('returnToPage', 'sales-log');
     onSwitchPage(page);
   };
 
   return (
-    <div className="enquiry-log-page font-sans">
+    <div className="sales-log-page font-sans">
       <header className="log-header">
         <h1 className="log-title">
-          <i className="fas fa-database"></i> Product Enquiry Log
+          <i className="fas fa-box-open"></i> Sold Products Log
         </h1>
         <button onClick={() => onSwitchPage('home')} className="btn-back">
           <i className="fas fa-arrow-left"></i> Back
@@ -159,12 +159,12 @@ function EnquiryLog({ onSwitchPage }) {
             <div className="filter-input-group">
               <input 
                 type="text" 
-                placeholder="Search by customer or design no..." 
+                placeholder="Search by design no, order id, or customer..." 
                 className="outline-none"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
               />
-              <div className="bg-teal-600 text-white px-4 h-full flex items-center"><i className="fas fa-search"></i></div>
+              <div className="bg-green-600 text-white px-4 h-full flex items-center"><i className="fas fa-search"></i></div>
             </div>
 
             <select 
@@ -197,19 +197,20 @@ function EnquiryLog({ onSwitchPage }) {
 
           {/* Data Table */}
           <div className="table-wrapper">
-            <table className="enquiry-table">
+            <table className="sales-table">
               <thead>
                 <tr>
                   <th className="col-index">#</th>
                   <th className="col-image">Image</th>
                   <th>Product Name</th>
                   <th className="col-design">Design No</th>
+                  <th className="col-order">Order ID</th>
                   <th>Customer</th>
-                  <th 
+                  <th
                     className="col-date cursor-pointer group"
                     onClick={() => handleSort('createdAt')}
                   >
-                    Created At 
+                    Created At
                     <i className={`ml-1 fas ${sort.field === 'createdAt' ? (sort.dir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-gray-300'}`}></i>
                   </th>
                   <th className="col-actions">Actions</th>
@@ -217,21 +218,19 @@ function EnquiryLog({ onSwitchPage }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan="7" className="text-center py-10 text-gray-500">Loading enquiries...</td></tr>
+                  <tr><td colSpan="8" className="text-center py-10 text-gray-500">Loading sales logs...</td></tr>
                 ) : error ? (
-                  <tr><td colSpan="7" className="text-center py-10 text-red-500 font-medium">{error}</td></tr>
-                ) : enquiries.length === 0 ? (
-                  <tr><td colSpan="7" className="text-center py-10 text-gray-500">No records found</td></tr>
-                ) : enquiries.map((enq, idx) => {
-                  const snapshot = mergeLogPricesIntoProduct(parseSnapshot(enq.productSnapshot), enq);
+                  <tr><td colSpan="8" className="text-center py-10 text-red-500 font-medium">{error}</td></tr>
+                ) : logs.length === 0 ? (
+                  <tr><td colSpan="8" className="text-center py-10 text-gray-500">No records found</td></tr>
+                ) : logs.map((log, idx) => {
+                  const snapshot = mergeLogPricesIntoProduct(parseSnapshot(log.productSnapshot), log);
 
-                  const displayImageUrl = enq.imageUrl || snapshot?.imageUrl;
-                  const finalImageUrl = displayImageUrl?.startsWith('/') 
-                    ? `${API_BASE}${displayImageUrl}` 
-                    : displayImageUrl;
+                  const displayImageUrl = log.imageUrl || snapshot?.imageUrl;
+                  const finalImageUrl = displayImageUrl?.startsWith('/') ? `${API_BASE}${displayImageUrl}` : displayImageUrl;
 
                   return (
-                    <tr key={enq.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                       <td className="col-index font-medium">{idx + 1 + currentPage * 10}</td>
                       <td>
                         {finalImageUrl ? (
@@ -239,23 +238,15 @@ function EnquiryLog({ onSwitchPage }) {
                         ) : <span className="italic opacity-50">No image</span>}
                       </td>
                       <td className="font-semibold">{snapshot?.item || '-'}</td>
-                      <td>{enq.designNo || '-'}</td>
-                      <td>{enq.customerName || '-'}</td>
-                      <td>{new Date(enq.createdAt).toLocaleString()}</td>
+                      <td>{log.designNo || '-'}</td>
+                      <td>{log.orderId || '-'}</td>
+                      <td>{log.customerName || '-'}</td>
+                      <td>{new Date(log.createdAt).toLocaleString()}</td>
                       <td>
                         <div className="action-btn-group">
-                          <button 
-                            onClick={() => handleViewAction('product', snapshot)}
-                            className="btn-view-prod"
-                          >View Product</button>
-                          <button 
-                            onClick={() => handleViewAction('estimate', enq.estimateSnapshot)}
-                            className="btn-view-est"
-                          >View Estimate</button>
-                          <button 
-                            onClick={() => handleDelete(enq.id)}
-                            className="btn-remove"
-                          >Remove</button>
+                          <button onClick={() => handleViewAction('product', snapshot)} className="btn-view-prod">View Product</button>
+                          <button onClick={() => handleViewAction('estimate', log.estimateSnapshot)} className="btn-view-est">View Estimate</button>
+                          <button onClick={() => handleDelete(log.id)} className="btn-remove">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -267,17 +258,9 @@ function EnquiryLog({ onSwitchPage }) {
 
           {/* Pagination */}
           <div className="pagination-bar text-sm text-gray-600">
-            <button 
-              disabled={currentPage === 0} 
-              onClick={() => setCurrentPage(prev => prev - 1)}
-              className="btn-pagination btn-pagination-prev"
-            ><i className="fas fa-chevron-left mr-1"></i> Previous</button>
+            <button disabled={currentPage === 0} onClick={() => setCurrentPage(prev => prev - 1)} className="btn-pagination btn-pagination-prev"><i className="fas fa-chevron-left mr-1"></i> Previous</button>
             <div className="font-medium bg-gray-100 px-3 py-1 rounded-full">Page {currentPage + 1} of {totalPages}</div>
-            <button 
-              disabled={currentPage + 1 >= totalPages} 
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              className="btn-pagination btn-pagination-next"
-            >Next <i className="fas fa-chevron-right ml-1"></i></button>
+            <button disabled={currentPage + 1 >= totalPages} onClick={() => setCurrentPage(prev => prev + 1)} className="btn-pagination btn-pagination-next">Next <i className="fas fa-chevron-right ml-1"></i></button>
           </div>
         </div>
       </main>
@@ -285,4 +268,4 @@ function EnquiryLog({ onSwitchPage }) {
   );
 }
 
-export default EnquiryLog;
+export default SalesLog;

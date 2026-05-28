@@ -163,59 +163,238 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
       });
     }
 
-    const formatCurrency = (value) => `₹${Number(value).toLocaleString('en-IN')}`;
+    const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+    const formatAmount = (value) => Number(value || 0).toLocaleString('en-IN');
     const formatQty = (value) => Number(value) > 0 ? Number(value).toFixed(3) : '';
     const formatRate = (value) => Number(value) > 0 ? Number(value).toFixed(2) : '';
+    const estimateDate = new Date().toLocaleString('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+    const activeLines = snapshot.lines.filter(line => Number(line.amount || 0) > 0);
+    const pdfPageSizes = {
+      A0: { width: 2383.94, height: 3370.39 },
+      A1: { width: 1683.78, height: 2383.94 },
+      A2: { width: 1190.55, height: 1683.78 },
+      A3: { width: 841.89, height: 1190.55 },
+      A4: { width: 595.28, height: 841.89 },
+      A5: { width: 420.94, height: 595.28 },
+      A6: { width: 297.64, height: 420.94 },
+      Letter: { width: 612, height: 792 }
+    };
+    const compactPdf = ['A5', 'A6'].includes(pageSize);
+    const pdfOrientation = compactPdf ? 'landscape' : 'portrait';
+    const selectedPage = pdfPageSizes[pageSize] || pdfPageSizes.A4;
+    const pageWidth = pdfOrientation === 'landscape' ? selectedPage.height : selectedPage.width;
+    const horizontalMargin = compactPdf ? 24 : 36;
+    const contentLineWidth = Math.max(220, pageWidth - horizontalMargin * 2);
 
     const docDef = {
       pageSize: pageSize,
+      pageOrientation: pdfOrientation,
+      pageMargins: [horizontalMargin, 34, horizontalMargin, 34],
       content: [
-        { text: `Estimate for ${product.item}`, style: 'header', alignment: 'center' },
-        { text: `Design No: ${product.orders?.orderId}/${product.designNo}`, alignment: 'center', margin: [0, 5] },
-        { text: `Customer: ${customerName || 'Walk-in Customer'}`, margin: [0, 10] },
+        {
+          columns: [
+            {
+              width: '*',
+              stack: [
+                { text: 'JEWELLERY STORE MANAGER', style: 'brand' },
+                { text: 'Fine Jewellery Estimate', style: 'brandSub' }
+              ]
+            },
+            {
+              width: 'auto',
+              table: {
+                widths: [78, 118],
+                body: [
+                  [{ text: 'Estimate Date', style: 'metaLabel' }, { text: estimateDate, style: 'metaValue' }],
+                  [{ text: 'Design No', style: 'metaLabel' }, { text: `${product.orders?.orderId || ''}/${product.designNo || ''}`, style: 'metaValue' }],
+                  [{ text: 'Customer', style: 'metaLabel' }, { text: customerName || 'Walk-in Customer', style: 'metaValue' }]
+                ]
+              },
+              layout: {
+                hLineColor: () => '#d4af37',
+                vLineColor: () => '#d4af37',
+                hLineWidth: () => 0.6,
+                vLineWidth: () => 0.6,
+                paddingLeft: () => 6,
+                paddingRight: () => 6,
+                paddingTop: () => 4,
+                paddingBottom: () => 4
+              }
+            }
+          ],
+          margin: [0, 0, 0, 18]
+        },
+        {
+          canvas: [{ type: 'line', x1: 0, y1: 0, x2: contentLineWidth, y2: 0, lineWidth: 1, lineColor: '#d4af37' }],
+          margin: [0, 0, 0, 14]
+        },
+        {
+          text: product.item || 'Product Estimate',
+          style: 'estimateTitle'
+        },
+        {
+          text: `Gold purity and product details are calculated as per current saved rates.`,
+          style: 'muted',
+          margin: [0, 0, 0, 14]
+        },
         {
           style: 'tableExample',
           table: {
             headerRows: 1,
-            widths: ['*', 'auto', 'auto', 'auto'],
+            widths: [26, '*', 82, 82, 92],
             body: [
-              [{ text: 'Description', style: 'tableHeader' }, { text: 'Qty', style: 'tableHeader' }, { text: 'Rate', style: 'tableHeader' }, { text: 'Amount', style: 'tableHeader' }],
-              ...snapshot.lines.map(line => [
+              [
+                { text: '#', style: 'tableHeader', alignment: 'center' },
+                { text: 'Description', style: 'tableHeader' },
+                { text: 'Qty', style: 'tableHeader', alignment: 'right' },
+                { text: 'Rate', style: 'tableHeader', alignment: 'right' },
+                { text: 'Amount', style: 'tableHeader', alignment: 'right' }
+              ],
+              ...activeLines.map((line, index) => [
+                { text: String(index + 1), style: 'tableCell', alignment: 'center' },
                 { text: line.description, style: 'tableCell' },
-                { text: formatQty(line.qty), style: 'tableCell' },
-                { text: formatRate(line.rate), style: 'tableCell' },
-                { text: formatCurrency(line.amount), style: 'tableCell' }
-              ]),
-              [{ text: 'Subtotal', colSpan: 3, alignment: 'right', style: 'total' }, {}, {}, { text: formatCurrency(snapshot.totals.noGst), style: 'total' }],
-              [{ text: `GST (${gstRate}%)`, colSpan: 3, alignment: 'right', style: 'total' }, {}, {}, { text: formatCurrency(snapshot.totals.gst), style: 'total' }],
-              [{ text: 'Grand Total', colSpan: 3, alignment: 'right', style: 'total' }, {}, {}, { text: formatCurrency(snapshot.totals.grandTotal), style: 'total' }]
+                { text: formatQty(line.qty), style: 'tableCell', alignment: 'right' },
+                { text: formatRate(line.rate), style: 'tableCell', alignment: 'right' },
+                { text: formatAmount(line.amount), style: 'tableCell', alignment: 'right' }
+              ])
             ]
           },
-          layout: 'lightHorizontalLines'
+          layout: {
+            fillColor: (rowIndex) => rowIndex === 0 ? '#12372f' : (rowIndex % 2 === 0 ? '#f8faf8' : null),
+            hLineColor: () => '#d8e1de',
+            vLineColor: () => '#d8e1de',
+            hLineWidth: (i) => i === 0 || i === 1 ? 0.8 : 0.4,
+            vLineWidth: () => 0.4,
+            paddingLeft: () => 7,
+            paddingRight: () => 7,
+            paddingTop: () => 6,
+            paddingBottom: () => 6
+          },
+          margin: [0, 0, 0, 16]
+        },
+        {
+          columns: [
+            {
+              width: '*',
+              stack: [
+                { text: 'Notes', style: 'sectionLabel' },
+                { text: 'This estimate is generated from product details and current rates. Final billing may vary after physical verification.', style: 'muted' }
+              ],
+              margin: [0, 8, 24, 0]
+            },
+            {
+              width: 240,
+              table: {
+                widths: ['*', 100],
+                body: [
+                  [{ text: 'Subtotal', style: 'summaryLabel' }, { text: formatCurrency(snapshot.totals.noGst), style: 'summaryValue' }],
+                  [{ text: `GST (${gstRate}%)`, style: 'summaryLabel' }, { text: formatCurrency(snapshot.totals.gst), style: 'summaryValue' }],
+                  [{ text: 'Grand Total', style: 'grandLabel' }, { text: formatCurrency(snapshot.totals.grandTotal), style: 'grandValue' }]
+                ]
+              },
+              layout: {
+                fillColor: (rowIndex) => rowIndex === 2 ? '#12372f' : '#fbfaf4',
+                hLineColor: () => '#d4af37',
+                vLineColor: () => '#d4af37',
+                hLineWidth: () => 0.6,
+                vLineWidth: () => 0.6,
+                paddingLeft: () => 8,
+                paddingRight: () => 8,
+                paddingTop: () => 7,
+                paddingBottom: () => 7
+              }
+            }
+          ],
+          margin: [0, 0, 0, 22]
+        },
+        {
+          canvas: [{ type: 'line', x1: 0, y1: 0, x2: contentLineWidth, y2: 0, lineWidth: 0.7, lineColor: '#d4af37' }],
+          margin: [0, 0, 0, 8]
+        },
+        {
+          text: 'Thank you for choosing us. This is a computer-generated estimate.',
+          style: 'footerNote',
+          alignment: 'center'
         }
       ],
       styles: {
-        header: {
-          fontSize: 18,
+        brand: {
+          fontSize: 20,
           bold: true,
-          margin: [0, 0, 0, 10]
+          color: '#12372f',
+          letterSpacing: 0
+        },
+        brandSub: {
+          fontSize: 10,
+          color: '#8a6d1f',
+          margin: [0, 3, 0, 0]
+        },
+        metaLabel: {
+          fontSize: 8,
+          bold: true,
+          color: '#12372f',
+          fillColor: '#fbfaf4'
+        },
+        metaValue: {
+          fontSize: 8,
+          color: '#111827'
+        },
+        estimateTitle: {
+          fontSize: 15,
+          bold: true,
+          color: '#111827',
+          margin: [0, 0, 0, 4]
+        },
+        muted: {
+          fontSize: 8,
+          color: '#6b7280'
         },
         tableExample: {
           margin: [0, 5, 0, 15]
         },
         tableHeader: {
           bold: true,
-          fontSize: Number(fontSize) + 1,
-          color: 'black'
+          fontSize: Math.max(8, Number(fontSize) - 2),
+          color: '#ffffff'
         },
         tableCell: {
-          fontSize: Number(fontSize),
-          color: 'black'
+          fontSize: Math.max(8, Number(fontSize) - 3),
+          color: '#111827'
         },
-        total: {
+        sectionLabel: {
           bold: true,
-          fontSize: Number(fontSize) + 1,
-          color: 'black'
+          fontSize: 10,
+          color: '#12372f',
+          margin: [0, 0, 0, 4]
+        },
+        summaryLabel: {
+          fontSize: 9,
+          color: '#374151',
+          bold: true
+        },
+        summaryValue: {
+          fontSize: 9,
+          color: '#111827',
+          bold: true,
+          alignment: 'right'
+        },
+        grandLabel: {
+          fontSize: 11,
+          color: '#ffffff',
+          bold: true
+        },
+        grandValue: {
+          fontSize: 11,
+          color: '#ffffff',
+          bold: true,
+          alignment: 'right'
+        },
+        footerNote: {
+          fontSize: 8,
+          color: '#6b7280'
         }
       }
     };
@@ -329,7 +508,7 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
                   ) : isEditMode ? (
                     <input type="number" value={row.amt} onChange={e => handleRowChange(realIndex, 'amt', e.target.value)} />
                   ) : (
-                    `₹${Math.round(row.amt || 0).toLocaleString('en-IN')}`
+                    Math.round(row.amt || 0).toLocaleString('en-IN')
                   )}
                 </td>
               </tr>

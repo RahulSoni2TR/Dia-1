@@ -15,6 +15,11 @@ import LoadProduct from './components/LoadProduct.jsx';
 import GetEstimate from './components/GetEstimate.jsx';
 import VerifyProducts from './components/VerifyProducts.jsx';
 import EnquiryLog from './components/EnquiryLog.jsx';
+import SalesLog from './components/SalesLog.jsx';
+import EstimateSnapshot from './components/EstimateSnapshot.jsx';
+import ProductSnapshot from './components/ProductSnapshot.jsx';
+import GenerateReport from './components/GenerateReport.jsx';
+import ImportData from './components/ImportData.jsx';
 import Modal from './components/Modal.jsx'; 
 import './components/Home.css';
 
@@ -59,6 +64,16 @@ function App() {
           <GetEstimate onSwitchPage={setPage} onOpenModal={openModal} />
         ) : page === 'enquiry-log' ? (
           <EnquiryLog onSwitchPage={setPage} />
+        ) : page === 'estimate-snapshot' ? (
+          <EstimateSnapshot onSwitchPage={setPage} />
+        ) : page === 'product-snapshot' ? (
+          <ProductSnapshot onSwitchPage={setPage} />
+        ) : page === 'sales-log' ? (
+          <SalesLog onSwitchPage={setPage} />
+        ) : page === 'generate-report' ? (
+          <GenerateReport onSwitchPage={setPage} />
+        ) : page === 'import-data' ? (
+          <ImportData onSwitchPage={setPage} />
         ) : (
           <main className="home-main">
             {page === 'login' && (
