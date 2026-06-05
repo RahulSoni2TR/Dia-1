@@ -19,6 +19,7 @@ import SalesLog from './components/SalesLog.jsx';
 import EstimateSnapshot from './components/EstimateSnapshot.jsx';
 import ProductSnapshot from './components/ProductSnapshot.jsx';
 import GenerateReport from './components/GenerateReport.jsx';
+import CustomFoldableTags from './components/CustomFoldableTags.jsx';
 import ImportData from './components/ImportData.jsx';
 import Modal from './components/Modal.jsx'; 
 import './components/Home.css';
@@ -72,6 +73,8 @@ function App() {
           <SalesLog onSwitchPage={setPage} />
         ) : page === 'generate-report' ? (
           <GenerateReport onSwitchPage={setPage} />
+        ) : page === 'custom-foldable-tags' ? (
+          <CustomFoldableTags onSwitchPage={setPage} />
         ) : page === 'import-data' ? (
           <ImportData onSwitchPage={setPage} />
         ) : (

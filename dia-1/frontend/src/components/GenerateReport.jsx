@@ -234,7 +234,7 @@ function GenerateReport({ onSwitchPage }) {
     setCurrentPage(0);
     setTotalPages(0);
     if (nextMode === 'CUSTOM-FOLD') {
-      window.location.href = `${API_BASE}/custom-tags`;
+      onSwitchPage('custom-foldable-tags');
     }
   };
 

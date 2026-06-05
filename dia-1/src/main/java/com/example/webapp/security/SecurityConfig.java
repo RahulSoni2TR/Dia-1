@@ -70,6 +70,7 @@ public class SecurityConfig {
                 	"proxy-image","/loadProductByDesignNo/**","/load-product/**").permitAll() 
                 .requestMatchers("/add-product", "/remove-product", "/set-price","/available-order-ids","/categories",
                 		"/getCategoryNameById","/api/enquiries","/enquiries","/sales/logs","/verify","/frequency", "/batch-update").hasRole("ADMIN")
+                .requestMatchers("/api/backups/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/enquiries/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/sales-logs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/rate-history/**").hasRole("ADMIN")
