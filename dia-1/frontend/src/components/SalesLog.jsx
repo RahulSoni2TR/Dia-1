@@ -245,7 +245,13 @@ function SalesLog({ onSwitchPage }) {
                       <td>
                         <div className="action-btn-group">
                           <button onClick={() => handleViewAction('product', snapshot)} className="btn-view-prod">View Product</button>
-                          <button onClick={() => handleViewAction('estimate', log.estimateSnapshot)} className="btn-view-est">View Estimate</button>
+                          <button 
+                            onClick={() => {
+                              sessionStorage.setItem('productFromLog', JSON.stringify(snapshot));
+                              handleViewAction('estimate', log.estimateSnapshot);
+                            }} 
+                            className="btn-view-est"
+                          >View Estimate</button>
                           <button onClick={() => handleDelete(log.id)} className="btn-remove">Delete</button>
                         </div>
                       </td>

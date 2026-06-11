@@ -144,6 +144,7 @@ function SetPrice({ onSwitchPage }) {
             ) : (
               <button className="action-button" style={{width:'100%'}} onClick={handleSave}>Save Changes</button>
             )}
+            <button className="action-button secondary" style={{width:'100%'}} onClick={() => onSwitchPage('price-history')}>Price History</button>
             <button className="action-button secondary" style={{width:'100%'}} onClick={() => onSwitchPage('home')}>Back to Dashboard</button>
           </div>
         </div>

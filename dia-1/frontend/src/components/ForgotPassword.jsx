@@ -18,12 +18,18 @@ function ForgotPassword({ onSwitchPage, onOpenModal }) {
     }
     try {
       const response = await fetch(`${API_BASE}/get-security-question?username=` + encodeURIComponent(forgotUsername), { credentials: 'include' });
+      
+      if (response.status === 404) {
+        onOpenModal('User not found.');
+        return;
+      }
+      
       const data = await response.json();
-      if (data.question) {
+      if (response.ok && data.question) {
         setSecurityQuestion(data.question);
         setForgotState('question');
       } else {
-        onOpenModal('User not found.');
+        onOpenModal('No security question configured for this user. Please contact the administrator.');
       }
     } catch (error) {
       console.error(error);

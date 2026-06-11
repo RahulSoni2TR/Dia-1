@@ -47,19 +47,23 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
 
   useEffect(() => {
     const init = async () => {
+      let fetchedCats = [];
       const res = await fetch(`${API_BASE}/categories`, { credentials: 'include' });
-      if (res.ok) setCategories(await res.json());
+      if (res.ok) {
+        fetchedCats = await res.json();
+        setCategories(fetchedCats);
+      }
 
       const modifyDesignNo = sessionStorage.getItem('modifyDesignNo');
       if (modifyDesignNo) {
         setSearchId(modifyDesignNo);
-        loadProduct(modifyDesignNo);
+        loadProduct(modifyDesignNo, fetchedCats);
       }
     };
     init();
   }, []);
 
-  const loadProduct = async (idToLoad) => {
+  const loadProduct = async (idToLoad, cats = categories) => {
     const id = idToLoad || searchId;
     if (!id) return onOpenModal('Please enter a Design No.');
 
@@ -104,7 +108,7 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
         setExtraFields(Object.entries(extras).map(([name, obj]) => ({ name, qty: obj.qty, rate: obj.rate })));
       }
 
-      const children = categories.filter(c => c.parentId === p.categoryId);
+      const children = cats.filter(c => c.parentId === p.categoryId);
       setSubCategories(children);
       loadAvailableOrderIds(p.categoryId, p.subCategoryId);
       setShowForm(true);
@@ -137,11 +141,15 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
     
     const payload = new FormData();
     payload.append('productOrderid', finalOrderId);
-    Object.keys(formData).forEach(k => { if (formData[k] !== '') payload.append(k, formData[k]); });
+    Object.keys(formData).forEach(k => {
+      if (formData[k] !== '' && formData[k] !== null && formData[k] !== undefined) {
+        payload.append(k, formData[k]);
+      }
+    });
     if (imageFile) payload.append('image', imageFile);
 
     const extras = {};
-    extraFields.forEach(f => { if (f.name) extras[f.name] = { qty: f.qty, rate: f.rate }; });
+    extraFields.forEach(f => { if (f.name) extras[f.name] = { qty: f.qty || '0', rate: f.rate || '0' }; });
     payload.append('customFields', JSON.stringify(extras));
 
     try {

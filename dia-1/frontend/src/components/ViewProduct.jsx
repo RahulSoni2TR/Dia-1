@@ -159,6 +159,10 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
         </select>
         </div>
 
+        <button className="action-button secondary" onClick={() => onSwitchPage('home')} style={{padding: '8px 15px'}}>
+          ← Back
+        </button>
+
         <label className="checkbox-item" style={{color: '#000'}}>
           <input type="checkbox" checked={filters.priceWithFields} onChange={e => setFilters({...filters, priceWithFields: e.target.checked})} />
           Incl. Addons
@@ -225,8 +229,8 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
                   <h4>{p.item}</h4>
                   <p className="card-price">₹{Math.round(filters.priceWithFields ? (p.priceWithFields || p.price) : p.price)}</p>
                   <div className="card-actions">
-                    <button onClick={() => { sessionStorage.setItem('productId', p.productId); onSwitchPage('load-product'); }}>View👁️</button>
-                    <button onClick={() => { sessionStorage.setItem('productId', p.productId); onSwitchPage('get-estimate'); }}>Estimate📊</button>
+                    <button onClick={() => { sessionStorage.setItem('productId', p.productId); sessionStorage.setItem('isDesignNo', 'false'); onSwitchPage('load-product'); }}>View👁️</button>
+                    <button onClick={() => { sessionStorage.setItem('productId', p.productId); sessionStorage.setItem('isDesignNo', 'false'); onSwitchPage('get-estimate'); }}>Estimate📊</button>
                     <button onClick={() => { sessionStorage.setItem('modifyDesignNo', p.designNo); onSwitchPage('modify-product'); }}>Modify📝</button>
                     <button className="del" onClick={() => setDeleteId(p.designNo)}>Delete🗑️</button>
                   </div>

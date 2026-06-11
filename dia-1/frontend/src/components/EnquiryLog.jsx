@@ -249,7 +249,10 @@ function EnquiryLog({ onSwitchPage }) {
                             className="btn-view-prod"
                           >View Product</button>
                           <button 
-                            onClick={() => handleViewAction('estimate', enq.estimateSnapshot)}
+                            onClick={() => {
+                              sessionStorage.setItem('productFromLog', JSON.stringify(snapshot));
+                              handleViewAction('estimate', enq.estimateSnapshot);
+                            }}
                             className="btn-view-est"
                           >View Estimate</button>
                           <button 

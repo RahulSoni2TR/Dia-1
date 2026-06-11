@@ -260,7 +260,7 @@ System.out.println(fileName);
 				updatedProduct.setImageUrl(imageUrl);
 			} else {
 				// If no new image is uploaded, keep the existing image URL
-				existingProduct.setImageUrl(existingProduct.getImageUrl());
+				updatedProduct.setImageUrl(existingProduct.getImageUrl());
 			}
 			
 			

@@ -60,7 +60,7 @@ public class LoginController {
 
     @GetMapping("/home")
     public String home() {
-        return "home";  // Renders the home.html page
+        return "forward:/index.html";  // Forward to React app
     }
     
     
@@ -127,6 +127,19 @@ public class LoginController {
             return ResponseEntity.ok(Collections.singletonMap("question", user.get().getQuestion()));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", "User not found"));
+    }
+
+    @ResponseBody
+    @PostMapping("/verify-credentials")
+    public ResponseEntity<Map<String, Object>> verifyCredentials(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String password = payload.get("password");
+        User user = userService.findByUsername(username);
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Invalid username or password."));
+        }
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @PostMapping("/verify-security-answer")

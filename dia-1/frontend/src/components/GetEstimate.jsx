@@ -22,10 +22,20 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
     const goldRate = r.find(item => item.commodity === karat)?.price || 0;
     const adjGoldRate = goldRate / 10;
 
+    const labourRows = [];
+    if (Number(p.labour || 0) > 0) {
+      labourRows.push({ id: 'labour', desc: 'Labour', qty: Number(p.net || 0), rate: Number(p.labour || 0), amt: Number(e.labour || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] });
+    } else if (Number(p.labourAll || 0) > 0) {
+      labourRows.push({ id: 'labourAmt', desc: 'Labour Amount', qty: null, rate: null, amt: Number(e.labour || 0), unit: '', categoryIds: [1, 2, 3, 4, 5] });
+    } else if (Number(p.labourP || 0) > 0) {
+      labourRows.push({ id: 'labourPer', desc: `Labour (${p.labourP}%)`, qty: null, rate: null, amt: Number(e.labour || 0), unit: '', categoryIds: [1, 2, 3, 4, 5] });
+    } else if (Number(e.labour || 0) > 0) {
+      labourRows.push({ id: 'labour', desc: 'Labour', qty: Number(p.net || 0), rate: Number(p.labour || 0), amt: Number(e.labour || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] });
+    }
+
     const allRows = [ // Ensure all quantities and amounts are numbers
       { id: 'gold', desc: `Gold (${p.karat}KT)`, qty: Number(p.net || 0), rate: Number(adjGoldRate || 0), amt: Number(e.gold || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] },
-      { id: 'labour', desc: 'Labour', qty: Number(p.net || 0), rate: Number(p.labour || 0), amt: Number(e.labour || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] },
-      { id: 'labourAmt', desc: 'Labour Amount', qty: null, rate: null, amt: Number(p.labourAll || 0), unit: '', categoryIds: [1, 2, 3, 4, 5] },
+      ...labourRows,
       { id: 'stones', desc: 'Stones', qty: Number(p.stones || 0), rate: Number(p.stRate || 0), amt: Number(e.stones || 0), unit: 'ct', categoryIds: [2, 4, 5] },
       { id: 'beads', desc: 'Beads', qty: Number(p.beadsCt || 0), rate: Number(p.bdRate || 0), amt: Number(e.beads || 0), unit: 'ct', categoryIds: [2, 4, 5] },
       { id: 'pearls', desc: 'Pearls', qty: Number(p.pearlsGm || 0), rate: Number(p.prlRate || 0), amt: Number(e.pearls || 0), unit: 'gm', categoryIds: [2, 4, 5] },
@@ -416,7 +426,9 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
     <>
       <header className="header">
         <div className="logo">Product <span>Manager</span></div>
-        <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        <div className="logout-container">
+          <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        </div>
       </header>
 
       <main 

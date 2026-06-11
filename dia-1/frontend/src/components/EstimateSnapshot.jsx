@@ -5,6 +5,143 @@ import './Modal.css';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:8080' : '';
 
+const reconstructEstimateFromProduct = (product, parsedEstimate) => {
+  if (!product) return parsedEstimate || {};
+  
+  const subtotal = product.price || parsedEstimate?.price || 0;
+  const grandTotal = product.priceWithFields || parsedEstimate?.priceWithFields || subtotal;
+  
+  // Determine if prices are GST-inclusive
+  const isGstExclusive = subtotal > 0 && Math.abs(grandTotal - subtotal * 1.03) < 5;
+  const isGstInclusive = !isGstExclusive;
+  
+  let subtotalExclGst = subtotal;
+  let grandTotalExclGst = subtotal;
+  let calculatedGst = grandTotal - subtotal;
+  
+  if (isGstInclusive) {
+    subtotalExclGst = subtotal / 1.03;
+    grandTotalExclGst = grandTotal / 1.03;
+    calculatedGst = grandTotal - grandTotalExclGst;
+  }
+  
+  const lines = [];
+  const getAmt = (qty, rate) => (Number(qty || 0) * Number(rate || 0));
+  
+  let stonesAmt = getAmt(product.stones, product.stRate);
+  let beadsAmt = getAmt(product.beadsCt, product.bdRate);
+  let pearlsAmt = getAmt(product.pearlsGm, product.prlRate);
+  let ssPearlsAmt = getAmt(product.ssPearlCt, product.ssRate);
+  let diamondsAmt = getAmt(product.diamondsCt, product.diaRt);
+  let otherStonesAmt = getAmt(product.otherStonesCt, product.otherStonesRt);
+  let vilandiAmt = getAmt(product.vilandiCt, product.vRate);
+  let mozAmt = getAmt(product.mozonite, product.mRate);
+  let realStAmt = Number(product.realStone || 0);
+  let fittingAmt = Number(product.fitting || 0);
+  
+  let customFieldsAmt = 0;
+  const customLines = [];
+  if (product.customFields) {
+    try {
+      const extras = JSON.parse(product.customFields);
+      Object.entries(extras).forEach(([name, val]) => {
+        const qty = parseFloat(val.qty || 0);
+        const rate = parseFloat(val.rate || 0);
+        if (qty > 0 && rate > 0) {
+          const amt = Math.round(qty * rate);
+          customFieldsAmt += amt;
+          customLines.push({
+            description: name,
+            qty: qty,
+            rate: rate,
+            amount: amt
+          });
+        }
+      });
+    } catch (e) {}
+  }
+  
+  let labourAmt = 0;
+  let labourDesc = 'Labour';
+  let labourQty = null;
+  let labourRate = null;
+  
+  const nonGoldExclLabour = stonesAmt + beadsAmt + pearlsAmt + ssPearlsAmt + diamondsAmt + 
+                            otherStonesAmt + vilandiAmt + mozAmt + realStAmt + fittingAmt + 
+                            customFieldsAmt;
+                            
+  if (Number(product.labour || 0) > 0) {
+    labourQty = Number(product.net || 0);
+    labourRate = Number(product.labour || 0);
+    labourAmt = labourQty * labourRate;
+  } else if (Number(product.labourAll || 0) > 0) {
+    labourAmt = Number(product.labourAll || 0);
+    labourDesc = 'Labour Amount';
+  }
+  
+  let goldAmt = 0;
+  if (Number(product.labourP || 0) > 0) {
+    const labourP = Number(product.labourP);
+    const baseAmount = isGstInclusive 
+      ? (subtotalExclGst - (nonGoldExclLabour - customFieldsAmt)) 
+      : (subtotalExclGst - nonGoldExclLabour);
+    goldAmt = Math.max(0, baseAmount / (1 + labourP / 100));
+    labourAmt = goldAmt * labourP / 100;
+    labourDesc = `Labour (${product.labourP}%)`;
+  } else {
+    const nonGoldTotal = nonGoldExclLabour + labourAmt;
+    goldAmt = isGstInclusive 
+      ? Math.max(0, subtotalExclGst - (nonGoldTotal - customFieldsAmt))
+      : Math.max(0, subtotalExclGst - nonGoldTotal);
+  }
+  
+  if (goldAmt > 0 || Number(product.net || 0) > 0) {
+    const net = Number(product.net || 0);
+    lines.push({
+      description: `Gold (${product.karat || 22}KT)`,
+      qty: net,
+      rate: net > 0 ? Math.round((goldAmt / net) * 100) / 100 : 0,
+      amount: Math.round(goldAmt)
+    });
+  }
+  
+  if (labourAmt > 0) {
+    lines.push({
+      description: labourDesc,
+      qty: labourQty,
+      rate: labourRate,
+      amount: Math.round(labourAmt)
+    });
+  }
+  
+  if (stonesAmt > 0) lines.push({ description: 'Stones', qty: Number(product.stones), rate: Number(product.stRate), amount: Math.round(stonesAmt) });
+  if (beadsAmt > 0) lines.push({ description: 'Beads', qty: Number(product.beadsCt), rate: Number(product.bdRate), amount: Math.round(beadsAmt) });
+  if (pearlsAmt > 0) lines.push({ description: 'Pearls', qty: Number(product.pearlsGm), rate: Number(product.prlRate), amount: Math.round(pearlsAmt) });
+  if (ssPearlsAmt > 0) lines.push({ description: 'SS Pearls', qty: Number(product.ssPearlCt), rate: Number(product.ssRate), amount: Math.round(ssPearlsAmt) });
+  if (diamondsAmt > 0) lines.push({ description: 'Diamonds', qty: Number(product.diamondsCt), rate: Number(product.diaRt), amount: Math.round(diamondsAmt) });
+  if (otherStonesAmt > 0) lines.push({ description: 'Other Stones', qty: Number(product.otherStonesCt), rate: Number(product.otherStonesRt), amount: Math.round(otherStonesAmt) });
+  if (vilandiAmt > 0) lines.push({ description: 'Vilandi', qty: Number(product.vilandiCt), rate: Number(product.vRate), amount: Math.round(vilandiAmt) });
+  if (mozAmt > 0) lines.push({ description: 'Mozonite', qty: Number(product.mozonite), rate: Number(product.mRate), amount: Math.round(mozAmt) });
+  if (realStAmt > 0) lines.push({ description: 'Real St', qty: null, rate: null, amount: Math.round(realStAmt) });
+  if (fittingAmt > 0) lines.push({ description: 'Fitting', qty: null, rate: null, amount: Math.round(fittingAmt) });
+  
+  lines.push(...customLines);
+  
+  return {
+    item: product.item || parsedEstimate?.item || 'N/A',
+    designNo: product.designNo || parsedEstimate?.designNo || '',
+    orderId: product.orders?.orderId || parsedEstimate?.orderId || '',
+    customerName: product.customerName || parsedEstimate?.customerName || 'N/A',
+    clientTimestamp: parsedEstimate?.clientTimestamp || new Date().toISOString(),
+    lines: lines,
+    totals: {
+      noGst: Math.round(grandTotalExclGst),
+      gst: Math.round(calculatedGst),
+      grandTotal: Math.round(grandTotal)
+    }
+  };
+};
+
 function EstimateSnapshot({ onSwitchPage }) {
   const [estimate, setEstimate] = useState(null);
   const [returnPage, setReturnPage] = useState('enquiry-log');
@@ -15,10 +152,28 @@ function EstimateSnapshot({ onSwitchPage }) {
     
     if (storedEstimate) {
       try {
-        const parsed = JSON.parse(storedEstimate);
+        let parsed = JSON.parse(storedEstimate);
+        if (!parsed || !parsed.lines || parsed.lines.length === 0) {
+          const storedProduct = sessionStorage.getItem('productFromLog');
+          if (storedProduct) {
+            const product = JSON.parse(storedProduct);
+            parsed = reconstructEstimateFromProduct(product, parsed);
+          }
+        }
         setEstimate(parsed);
       } catch (e) {
         console.error('Error parsing estimate:', e);
+      }
+    } else {
+      const storedProduct = sessionStorage.getItem('productFromLog');
+      if (storedProduct) {
+        try {
+          const product = JSON.parse(storedProduct);
+          const reconstructed = reconstructEstimateFromProduct(product, null);
+          setEstimate(reconstructed);
+        } catch (e) {
+          console.error('Error reconstructing from product:', e);
+        }
       }
     }
     

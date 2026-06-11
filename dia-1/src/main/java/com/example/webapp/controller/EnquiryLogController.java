@@ -56,18 +56,9 @@ public class EnquiryLogController {
         this.service = service;
     }
 
-    /**
-     * Thymeleaf page: render the enquiry log page. The page will request data via /api/enquiries by default.
-     */
     @GetMapping("/enquiries")
-    public String enquiriesPage(Model model) {
-        model.addAttribute("categoryMap", CATEGORY_MAP);
-        model.addAttribute("subCategories", SUB_CATEGORIES);
-        // We can optionally pass a first page of data to render server-side; UI can also fetch using AJAX.
-        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var page = service.searchEnquiries(null, null, null, pageable);
-        model.addAttribute("enquiriesPage", page);
-        return "enquiry-log"; // Thymeleaf template name (enquiry-log.html)
+    public String enquiriesPage() {
+        return "forward:/index.html";
     }
 
     /**

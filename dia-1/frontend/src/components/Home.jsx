@@ -94,9 +94,13 @@ function Home({ onSwitchPage, user }) {
     setShowPopup(false);
   };
 
-  const handleLogout = () => {
-    // Handle logout logic, perhaps clear localStorage and switch to login
+  const handleLogout = async () => {
     localStorage.removeItem('user');
+    try {
+      await fetch(`${API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
     onSwitchPage('login');
   };
 

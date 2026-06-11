@@ -1,0 +1,229 @@
+.price-history-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #00a86b, #007bff);
+    color: #000;
+}
+
+.history-container {
+    flex-grow: 1;
+    padding: 2.5rem 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.history-card {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 2.5rem;
+    color: #000;
+}
+
+/* Header Styling */
+.history-header {
+    background: linear-gradient(90deg, #00a86b, #007bff);
+    padding: 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: 120px 1fr 120px;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 10px 24px rgba(19, 32, 49, 0.15);
+}
+
+.history-title {
+    grid-column: 2;
+    text-align: center;
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.history-title i {
+    color: #ccffeb;
+}
+
+/* Controls section */
+.controls-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1.5rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 180px;
+    flex-grow: 1;
+}
+
+.control-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.history-select,
+.history-input-date {
+    height: 42px;
+    padding: 0 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    background-color: #fff;
+    color: #000;
+    outline: none;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.history-select:focus,
+.history-input-date:focus {
+    border-color: #007bff;
+}
+
+.date-range-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-group-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    min-width: 300px;
+    flex-grow: 1;
+}
+
+.btn-control {
+    flex-grow: 1;
+    height: 42px;
+    padding: 0 1.25rem;
+    background-color: #4b5563;
+    color: white;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.btn-control:hover:not(:disabled) {
+    background-color: #374151;
+}
+
+.btn-control.active {
+    background-color: #00a86b;
+}
+
+.btn-control:disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.btn-back {
+    grid-column: 3;
+    justify-self: end;
+    background-color: #f5ab04;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.btn-back:hover {
+    background-color: #d99a03;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Loading & Empty states */
+.history-loading,
+.history-empty {
+    text-align: center;
+    padding: 4rem 1rem;
+    font-size: 1.1rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.history-empty {
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px dashed #ccc;
+}
+
+/* Chart and Table wraps */
+.chart-wrapper {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+    color: #000;
+}
+
+.stats-table th {
+    background-color: #f9fafb;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #000;
+    border-bottom: 2px solid #e5e7eb;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.stats-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+    color: #000;
+}
+
+.text-blue {
+    color: #1e88e5;
+}
+
+.font-bold {
+    font-weight: 700;
+}

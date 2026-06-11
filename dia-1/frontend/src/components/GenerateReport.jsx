@@ -519,7 +519,9 @@ function GenerateReport({ onSwitchPage }) {
     <div className="generate-report-page">
       <header className="header">
         <div className="logo">Product <span>Manager</span></div>
-        <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        <div className="logout-container">
+          <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        </div>
       </header>
 
       <main className="report-shell">

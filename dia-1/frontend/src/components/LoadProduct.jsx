@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:8080' : '';
 
+const categoryMap = {
+  1: 'Diamond', 2: 'Open Setting', 3: 'Plain Gold', 4: 'Vilandi', 5: 'Jadtar',
+  6: 'Jadtar Register', 7: 'Jadtar Halfsets', 8: 'Jadtar Bangles / Bracelets',
+  9: 'Vilandi Halfsets', 10: 'Vilandi Bangles / Bracelets', 11: 'Diamond Bangles / Bracelets',
+  12: 'Diamond Pendants / Pendant Sets', 13: 'Diamond Halfsets', 14: 'OS Halfsets',
+  15: 'OS Bangles / Bracelets', 16: 'PG Bangles / Bracelets', 17: 'Only Earrings',
+  18: 'Chains', 19: 'Diamond Earrings', 20: 'Diamond Rings'
+};
+
 function LoadProduct({ onSwitchPage, onOpenModal }) {
   const [product, setProduct] = useState(null);
   const [includeAddons, setIncludeAddons] = useState(true);
@@ -9,7 +18,12 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
   const [customerName, setCustomerName] = useState('');
 
   useEffect(() => {
-    const productId = sessionStorage.getItem('productId');
+    let productId = null;
+    try {
+      productId = sessionStorage.getItem('productId');
+    } catch (e) {
+      console.warn('Cannot read sessionStorage:', e);
+    }
     if (!productId) {
       onOpenModal('No product selected.');
       onSwitchPage('view-product');
@@ -20,7 +34,12 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
 
   const fetchProduct = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/loadProductDetail/${id}`, { credentials: 'include' });
+      const isDesignNo = sessionStorage.getItem('isDesignNo') === 'true';
+      const isNumeric = !isDesignNo && /^\d+$/.test(id);
+      const endpoint = isNumeric 
+        ? `${API_BASE}/loadProductDetail/${encodeURIComponent(id)}`
+        : `${API_BASE}/loadProduct/${encodeURIComponent(id)}`;
+      const res = await fetch(endpoint, { credentials: 'include' });
       if (!res.ok) throw new Error('Product not found');
       setProduct(await res.json());
     } catch (err) {
@@ -38,6 +57,7 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
       const payload = {
         productId: product.productId,
         designNo: product.designNo,
+        orderId: product.orders?.orderId || null,
         customerName: customerName || 'System Admin',
         imageUrl: product.imageUrl,
         price: product.price,
@@ -69,11 +89,118 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
   const currentPrice = includeAddons ? (product.priceWithFields || product.price) : product.price;
   const extras = product.customFields ? JSON.parse(product.customFields) : {};
 
+  const renderCategorySpecs = () => {
+    const cat = Number(product.categoryId);
+
+    const renderText = (value, suffix = '') => {
+      if (value === null || value === undefined || value === '') {
+        return <span className="empty-label">No value</span>;
+      }
+      return `${value}${suffix}`;
+    };
+
+    const renderWeight = (value) => {
+      if (value === null || value === undefined || value === '') {
+        return <span className="empty-label">No value</span>;
+      }
+      const num = Number(value);
+      return `${isNaN(num) ? value : num.toFixed(3)} gm`;
+    };
+
+    const renderCurrency = (value) => {
+      if (value === null || value === undefined || value === '') {
+        return <span className="empty-label">No value</span>;
+      }
+      return `₹${value}`;
+    };
+
+    switch (cat) {
+      case 1:
+      case 11:
+      case 12:
+      case 13:
+      case 19:
+      case 20:
+        return (
+          <>
+            <p><strong>Gross Weight:</strong> {renderWeight(product.gross)}</p>
+            <p><strong>Net Weight:</strong> {renderWeight(product.net)}</p>
+            <p><strong>Pcs:</strong> {renderText(product.pcs)}</p>
+            <p><strong>Diamonds:</strong> {renderText(product.diamondsCt, ' ct')}</p>
+            <p><strong>Other Stones:</strong> {renderText(product.otherStonesCt, ' ct')}</p>
+          </>
+        );
+      case 2:
+      case 14:
+      case 15:
+        return (
+          <>
+            <p><strong>Gross Weight:</strong> {renderWeight(product.gross)}</p>
+            <p><strong>Net Weight:</strong> {renderWeight(product.net)}</p>
+            <p><strong>Vilandi:</strong> {renderText(product.vilandiCt, ' ct')}</p>
+            <p><strong>Diamonds:</strong> {renderText(product.diamondsCt, ' ct')}</p>
+            <p><strong>Beads:</strong> {renderText(product.beadsCt, ' ct')}</p>
+            <p><strong>Pearls:</strong> {renderWeight(product.pearlsGm)}</p>
+            <p><strong>SS Pearl:</strong> {renderText(product.ssPearlCt, ' ct')}</p>
+            <p><strong>Other Stones:</strong> {renderText(product.otherStonesCt, ' ct')}</p>
+          </>
+        );
+      case 3:
+      case 16:
+      case 18:
+        return (
+          <>
+            <p><strong>Gross Weight:</strong> {renderWeight(product.gross)}</p>
+            <p><strong>Net Weight:</strong> {renderWeight(product.net)}</p>
+          </>
+        );
+      case 4:
+      case 9:
+      case 10:
+        return (
+          <>
+            <p><strong>Vilandi:</strong> {renderText(product.vilandiCt, ' ct')}</p>
+            <p><strong>Gross Weight:</strong> {renderWeight(product.gross)}</p>
+            <p><strong>Net Weight:</strong> {renderWeight(product.net)}</p>
+            <p><strong>Stones:</strong> {renderText(product.stones)}</p>
+            <p><strong>Beads:</strong> {renderText(product.beadsCt, ' ct')}</p>
+            <p><strong>Pearls:</strong> {renderWeight(product.pearlsGm)}</p>
+            <p><strong>SS Pearl:</strong> {renderText(product.ssPearlCt, ' ct')}</p>
+            <p><strong>Real Stone:</strong> {renderCurrency(product.realStone)}</p>
+            <p><strong>Fitting:</strong> {renderCurrency(product.fitting)}</p>
+          </>
+        );
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+      case 17:
+        return (
+          <>
+            <p><strong>Gross Weight:</strong> {renderWeight(product.gross)}</p>
+            <p><strong>Net Weight:</strong> {renderWeight(product.net)}</p>
+            <p><strong>Stones:</strong> {renderText(product.stones)}</p>
+            <p><strong>Beads:</strong> {renderText(product.beadsCt, ' ct')}</p>
+            <p><strong>Pearls:</strong> {renderWeight(product.pearlsGm)}</p>
+            <p><strong>SS Pearl:</strong> {renderText(product.ssPearlCt, ' ct')}</p>
+            <p><strong>Real Stone:</strong> {renderCurrency(product.realStone)}</p>
+            <p><strong>Vilandi:</strong> {renderText(product.vilandiCt, ' ct')}</p>
+            <p><strong>Mozonite:</strong> {renderText(product.mozonite)}</p>
+            <p><strong>Fitting:</strong> {renderCurrency(product.fitting)}</p>
+          </>
+        );
+      default:
+        return <p>Category not recognized.</p>;
+    }
+  };
+
   return (
     <>
       <header className="header">
         <div className="logo">Product <span>Manager</span></div>
-        <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        <div className="logout-container">
+          <button className="logout-btn" onClick={() => onSwitchPage('login')}>Logout</button>
+        </div>
       </header>
 
       <main className="home-main" style={{ maxWidth: '800px', textAlign: 'left' }}>
@@ -89,7 +216,7 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
                  alt="QR" style={{ width: '150px', border: '1px dashed #ccc' }} />
             <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button className="action-button" onClick={() => setShowVerifyModal(true)}>Verify / Actions</button>
-              <button className="action-button secondary" onClick={() => onSwitchPage('get-estimate')}>📊 Get Estimate</button>
+              <button className="action-button secondary" onClick={() => { sessionStorage.setItem('productId', product.productId); sessionStorage.setItem('isDesignNo', 'false'); onSwitchPage('get-estimate'); }}>📊 Get Estimate</button>
             </div>
           </div>
         </div>
@@ -99,6 +226,8 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
           <p style={{ color: product.verificationStatus === 1 ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
             {product.verificationStatus === 1 ? '✔ Verified' : '✘ Unverified'}
           </p>
+          <p><strong>Category:</strong> {categoryMap[product.categoryId] || 'Unknown'}</p>
+          <p><strong>Sub Category:</strong> {categoryMap[product.subCategoryId] || 'Unknown'}</p>
           <p><strong>Design No:</strong> {product.orders?.orderId || 'N/A'}/{product.designNo}</p>
           <p><strong>Gold:</strong> {product.karat} Karat</p>
           
@@ -114,10 +243,7 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
 
           <h3>Technical Specs</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <p><strong>Gross Weight:</strong> {Number(product.gross || 0).toFixed(3)} gm</p>
-            <p><strong>Net Weight:</strong> {Number(product.net || 0).toFixed(3)} gm</p>
-            {product.diamondsCt > 0 && <p><strong>Diamonds:</strong> {product.diamondsCt} ct</p>}
-            {product.vilandiCt > 0 && <p><strong>Vilandi:</strong> {product.vilandiCt} ct</p>}
+            {renderCategorySpecs()}
           </div>
 
           {Object.keys(extras).length > 0 && (

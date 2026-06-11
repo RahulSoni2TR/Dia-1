@@ -117,7 +117,7 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
     });
 
     const extras = {};
-    extraFields.forEach(f => { if (f.name) extras[f.name] = { qty: f.qty, rate: f.rate }; });
+    extraFields.forEach(f => { if (f.name) extras[f.name] = { qty: f.qty || '0', rate: f.rate || '0' }; });
     if (Object.keys(extras).length > 0) payload.append('customFields', JSON.stringify(extras));
 
     try {

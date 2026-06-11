@@ -66,7 +66,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/logSale").permitAll()
                 // keep login/registration public
                 .requestMatchers("/login", "/register", "/logout", "/process-login", "*.css","/get-security-question","/reset-password","/verify-security-answer",
-                		"/reset-ns-password","/modify-product",
+                		"/verify-credentials", "/reset-ns-password","/modify-product",
                 	"proxy-image","/loadProductByDesignNo/**","/load-product/**").permitAll() 
                 .requestMatchers("/add-product", "/remove-product", "/set-price","/available-order-ids","/categories",
                 		"/getCategoryNameById","/api/enquiries","/enquiries","/sales/logs","/verify","/frequency", "/batch-update").hasRole("ADMIN")
@@ -100,26 +100,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOrigins(Arrays.asList("*")); // Frontend origin
-//        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-//        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-//        configuration.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//        return source;
-//    }
-    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Remove this line to avoid IllegalArgumentException:
-        // configuration.setAllowedOrigins(Arrays.asList("*"));
 
         // Allow all origins with patterns while allowing credentials
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));

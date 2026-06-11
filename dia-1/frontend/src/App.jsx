@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './components/Login.jsx';
 import Signup from './components/Signup.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
@@ -21,14 +21,86 @@ import ProductSnapshot from './components/ProductSnapshot.jsx';
 import GenerateReport from './components/GenerateReport.jsx';
 import CustomFoldableTags from './components/CustomFoldableTags.jsx';
 import ImportData from './components/ImportData.jsx';
+import Permissions from './components/Permissions.jsx';
+import PriceHistory from './components/PriceHistory.jsx';
 import Modal from './components/Modal.jsx'; 
 import './components/Home.css';
 
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8080' : '';
+
 function App() {
-  const [page, setPage] = useState('login');
+  const getInitialPage = () => {
+    const path = window.location.pathname;
+    
+    // Check if it's the QR scan path (case-insensitive and optional s)
+    const decodedPath = decodeURIComponent(path);
+    const qrMatch = decodedPath.match(/^\/loadProducts?ByDesignNo\/([^/]+)/i);
+    if (qrMatch) {
+      const designNo = qrMatch[1];
+      try {
+        sessionStorage.setItem('productId', designNo);
+        sessionStorage.setItem('isDesignNo', 'true');
+      } catch (e) {
+        console.warn('sessionStorage is not accessible:', e);
+      }
+      return 'load-product';
+    }
+
+    const cleanPath = path.replace(/^\/|\/$/g, '');
+    if (!cleanPath || cleanPath === 'login') return 'login';
+    if (cleanPath === 'custom-tags') return 'custom-foldable-tags';
+    if (cleanPath === 'public-rates') return 'view-rates';
+    return cleanPath;
+  };
+
+  const [page, setPage] = useState(getInitialPage);
   const [modalMessage, setModalMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  
+  // Safely initialize user from localStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('localStorage is not accessible during initialization:', e);
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPage(getInitialPage());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSwitchPage = (newPage) => {
+    setPage(newPage);
+    let path = '/';
+    if (newPage !== 'login') {
+      if (newPage === 'custom-foldable-tags') {
+        path = '/custom-tags';
+      } else if (newPage === 'view-rates') {
+        path = '/public-rates';
+      } else {
+        path = `/${newPage}`;
+      }
+    }
+    window.history.pushState(null, '', path);
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    try {
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (e) {
+      console.warn('Failed to save user to localStorage:', e);
+    }
+  };
 
   const openModal = (message) => {
     setModalMessage(message);
@@ -44,55 +116,59 @@ function App() {
     <div className="home-page">
       <div className="flex-grow">
         {page === 'home' ? (
-          <Home onSwitchPage={setPage} user={user} />
+          <Home onSwitchPage={handleSwitchPage} user={user} />
         ) : page === 'set-price' ? (
-          <SetPrice onSwitchPage={setPage} />
+          <SetPrice onSwitchPage={handleSwitchPage} />
         ) : page === 'add-product' ? (
-          <AddProduct onSwitchPage={setPage} onOpenModal={openModal} />
+          <AddProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'modify-product' ? (
-          <ModifyProduct onSwitchPage={setPage} onOpenModal={openModal} />
+          <ModifyProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'batch-update' ? (
-          <BatchUpdate onSwitchPage={setPage} onOpenModal={openModal} />
+          <BatchUpdate onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'view-product' ? (
-          <ViewProduct onSwitchPage={setPage} onOpenModal={openModal} />
+          <ViewProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'remove-product' ? (
-          <RemoveProduct onSwitchPage={setPage} onOpenModal={openModal} />
+          <RemoveProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'load-product' ? (
-          <LoadProduct onSwitchPage={setPage} onOpenModal={openModal} />
+          <LoadProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'verify-product' ? (
-          <VerifyProducts onSwitchPage={setPage} onOpenModal={openModal} />
+          <VerifyProducts onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'get-estimate' ? (
-          <GetEstimate onSwitchPage={setPage} onOpenModal={openModal} />
+          <GetEstimate onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
         ) : page === 'enquiry-log' ? (
-          <EnquiryLog onSwitchPage={setPage} />
+          <EnquiryLog onSwitchPage={handleSwitchPage} />
         ) : page === 'estimate-snapshot' ? (
-          <EstimateSnapshot onSwitchPage={setPage} />
+          <EstimateSnapshot onSwitchPage={handleSwitchPage} />
         ) : page === 'product-snapshot' ? (
-          <ProductSnapshot onSwitchPage={setPage} />
+          <ProductSnapshot onSwitchPage={handleSwitchPage} />
         ) : page === 'sales-log' ? (
-          <SalesLog onSwitchPage={setPage} />
+          <SalesLog onSwitchPage={handleSwitchPage} />
         ) : page === 'generate-report' ? (
-          <GenerateReport onSwitchPage={setPage} />
+          <GenerateReport onSwitchPage={handleSwitchPage} />
         ) : page === 'custom-foldable-tags' ? (
-          <CustomFoldableTags onSwitchPage={setPage} />
+          <CustomFoldableTags onSwitchPage={handleSwitchPage} />
         ) : page === 'import-data' ? (
-          <ImportData onSwitchPage={setPage} />
+          <ImportData onSwitchPage={handleSwitchPage} />
+        ) : page === 'permissions' ? (
+          <Permissions onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
+        ) : page === 'price-history' ? (
+          <PriceHistory onSwitchPage={handleSwitchPage} />
         ) : (
           <main className="home-main">
             {page === 'login' && (
-              <Login onSwitchPage={setPage} onOpenModal={openModal} onLoginSuccess={setUser} />
+              <Login onSwitchPage={handleSwitchPage} onOpenModal={openModal} onLoginSuccess={handleLoginSuccess} />
             )}
             {page === 'signup' && (
-              <Signup onSwitchPage={setPage} onOpenModal={openModal} />
+              <Signup onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
             {page === 'forgot' && (
-              <ForgotPassword onSwitchPage={setPage} onOpenModal={openModal} />
+              <ForgotPassword onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
             {page === 'reset' && (
-              <ResetPassword onSwitchPage={setPage} onOpenModal={openModal} />
+              <ResetPassword onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
             {page === 'view-rates' && (
-              <ViewRates onSwitchPage={setPage} />
+              <ViewRates onSwitchPage={handleSwitchPage} />
             )}
           </main>
         )}

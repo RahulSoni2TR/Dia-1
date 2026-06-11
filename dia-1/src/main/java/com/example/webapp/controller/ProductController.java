@@ -189,105 +189,105 @@ public class ProductController {
 	@GetMapping("/add-product")
 	public String showAddProductPage() {
 
-		return "add_product";
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/remove-product")
 	public String removeProductPage() {
 		System.out.println("came inside remove");
-		return "remove_product"; // Return the remove_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/modify-product")
 	public String modifyProductPage() {
-		return "modify_product"; // Return the modify_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/set-price")
 	public String setPricePage() {
-		return "set_price"; // Return the modify_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/view-product")
 	public String viewProductPage() {
-		return "view_products"; // Return the view_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/load-product")
 	public String loadPoductPage() {
-		return "load_product"; // Return the view_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/verify-product")
 	public String verifyPoductPage() {
-		return "verify_products"; // Return the verify_products.html view
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/custom-tags")
 	public String verifCustomPage() {
-		return "custom_tags"; // Return the verify_products.html view
+		return "forward:/index.html";
 	}
 
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/get-estimate")
 	public String getEstimatePage() {
-		return "get_estimate"; // Return the view_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/generate-report")
 	public String getReportPage() {
-		return "get_report"; // Return the view_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/import-data")
 	public String getImportDataPage() {
-		return "import_data"; // Return the view_product.html view
+		return "forward:/index.html";
 	}
 
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/permissions")
 	public String permission() {
-		return "permission"; // Renders the permission.html page
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/enquiry-log")
 	public String enquiryLog() {
-		return "enquiry_log"; // Renders the enquiry_log.html page
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/sales-log")
 	public String salesLog() {
-		return "sales_log"; // Renders the sales_log.html page
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/batch-update")
 	public String batchUpdate() {
-		return "batchupdate"; // Renders the batchupdate.html page
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/product-snapshot")
 	public String productSnapshot() {
-		return "product_snapshot"; // Renders the product_snapshot.html page
+		return "forward:/index.html";
 	}
 	
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/estimate-snapshot")
 	public String estimateSnapshot() {
-		return "estimate_snapshot"; // Renders the estimate_snapshot.html page
+		return "forward:/index.html";
 	}
 	
 	@PostMapping("/logEnquiry")
@@ -613,55 +613,9 @@ public class ProductController {
 			logger.error("Error occurred while adding product: {}", productName, e);
 			throw new AddProductException("Error occurred while adding product: " + productName, e);
 		}
-	}
-	
-	@GetMapping("/loadProductByDesignNo/{designNo:[a-zA-Z0-9_-]+}")
-	public String getProductByDesignNo(@PathVariable String designNo, Model model) throws Exception {
-	    Product product = productService.findProductById(designNo)
-	            .orElseThrow(() -> new ProductNotFoundException("Product not found with design no: " + designNo));
-	    System.out.println(product);
-		RateWrapper rateWrapper = new RateWrapper();
-		List<Rate> rates = productService.getAllRates();
-		rateWrapper.resetRates();
-		Iterator<Rate> it = rates.iterator();
-		while (it.hasNext()) {
-		    Rate rate = it.next();
-		    String c = rate.getCommodity();
-		    if (c == null) continue;
-
-		    switch (c.toLowerCase(Locale.ROOT)) {
-		        case "diamond": rateWrapper.diamondPrice = rate.getPrice(); break;
-		        case "gst":     rateWrapper.gst = rate.getPrice(); break;
-		        case "silver":  rateWrapper.silver = rate.getPrice(); break;
-		        default: /* ignore */ 
-		    }
-		}
-        int verificationFreqcy = getVerificationFrequency(); // get from DB
-		Estimate e = new Estimate();
-		List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
-		product.setPrice(prices.get(0));
-		product.setPriceWithFields(prices.get(1));
-		 boolean verified = isProductVerified(product, verificationFreqcy);
-         if (verified) {
-        	 System.out.println("verified");
-         	  product.setVerificationStatus(1);
-         	} else {
-         	 
-         		System.out.println("unverified");// preserve -1; set 0 only if not -1
-         	  if (product.getVerificationStatus()!=-1) {
-         	    product.setVerificationStatus(0);
-         	  }
-         	}
-	    try {
-	    	ObjectMapper mapper = new ObjectMapper();
-	        mapper.registerModule(new JavaTimeModule());
-	        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-			model.addAttribute("productJson", mapper.writeValueAsString(product));
-		} catch (JsonProcessingException e1) {
-			throw new Exception();
-			//e1.printStackTrace();
-		}
-	    return "load_product"; 
+	}	@GetMapping("/loadProductByDesignNo/{designNo:.+}")
+	public String getProductByDesignNo(@PathVariable String designNo) {
+	    return "forward:/index.html"; 
 	}
 
 	
@@ -774,19 +728,12 @@ public class ProductController {
 		return ResponseEntity.ok(products);
 	}
 
-	@GetMapping("loadProduct/{id}")
-	public ResponseEntity<Product> getProduct(@PathVariable String id) {
-		Product product = productService.findProductById(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
-		return ResponseEntity.ok(product);
-	}
-
-	@GetMapping("loadProductDetail/{id}")
-	public ResponseEntity<Product> getProduct(@PathVariable Long id) {
-		Product product = productService.findProductFromId(id)
-				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+	private void populateProductPriceAndStatus(Product product) {
+		logger.info("[populateProductPriceAndStatus] Populating price/status for product id={}, designNo={}, name={}", 
+				product.getProductId(), product.getDesignNo(), product.getItem());
 		RateWrapper rateWrapper = new RateWrapper();
 		List<Rate> rates = productService.getAllRates();
+		logger.info("[populateProductPriceAndStatus] Loaded rates: size={}", rates != null ? rates.size() : 0);
 		rateWrapper.resetRates();
 		Iterator<Rate> it = rates.iterator();
 		while (it.hasNext()) {
@@ -802,25 +749,43 @@ public class ProductController {
 		    }
 		}
 	    
-			
-	         int verificationFreqcy = getVerificationFrequency();
-	         boolean verified = isProductVerified(product, verificationFreqcy);
-	         if (verified) {
-	        	 System.out.println("verified");
-	         	  product.setVerificationStatus(1);
-	         	} else {
-	         	 
-	         		System.out.println("unverified");// preserve -1; set 0 only if not -1
-	         	  if (product.getVerificationStatus()!=-1) {
-	         	    product.setVerificationStatus(0);
-	         	  }
-	         	}// get from DB
+		int verificationFreqcy = getVerificationFrequency();
+		boolean verified = isProductVerified(product, verificationFreqcy);
+		if (verified) {
+			logger.info("[populateProductPriceAndStatus] Product is verified");
+			product.setVerificationStatus(1);
+		} else {
+			logger.info("[populateProductPriceAndStatus] Product is unverified");
+			if (product.getVerificationStatus() != -1) {
+				product.setVerificationStatus(0);
+			}
+		}
 		Estimate e = new Estimate();
-		List<BigDecimal> prices= calculateProductPrice(product, rateWrapper, e, rates);
-		System.out.println("prices "+prices);
+		List<BigDecimal> prices = calculateProductPrice(product, rateWrapper, e, rates);
+		logger.info("[populateProductPriceAndStatus] Calculated prices: raw={}, withFields={}", prices.get(0), prices.get(1));
 		product.setPrice(prices.get(0));
 		product.setPriceWithFields(prices.get(1));
-		System.out.println(product);
+	}
+
+	@GetMapping("loadProduct/{id:.+}")
+	public ResponseEntity<Product> getProduct(@PathVariable String id) {
+		logger.info("[loadProduct] Fetching product by designNo: {}", id);
+		Product product = productService.findProductById(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+		populateProductPriceAndStatus(product);
+		logger.info("[loadProduct] Returning product: id={}, designNo={}, price={}, priceWithFields={}", 
+				product.getProductId(), product.getDesignNo(), product.getPrice(), product.getPriceWithFields());
+		return ResponseEntity.ok(product);
+	}
+
+	@GetMapping("loadProductDetail/{id}")
+	public ResponseEntity<Product> getProduct(@PathVariable Long id) {
+		logger.info("[loadProductDetail] Fetching product by PK ID: {}", id);
+		Product product = productService.findProductFromId(id)
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
+		populateProductPriceAndStatus(product);
+		logger.info("[loadProductDetail] Returning product: id={}, designNo={}, price={}, priceWithFields={}", 
+				product.getProductId(), product.getDesignNo(), product.getPrice(), product.getPriceWithFields());
 		return ResponseEntity.ok(product);
 	}
 
@@ -1156,7 +1121,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 			@RequestParam(value = "jfitting", required = false) BigDecimal jfitting,
 			@RequestParam(value = "jmoz", required = false) BigDecimal jmoz,
 			@RequestParam(value = "jmRate", required = false) BigDecimal jmRate,
-			@RequestParam("image") MultipartFile imageFile,
+			@RequestParam(value = "image", required = false) MultipartFile imageFile,
 			@RequestParam(value = "karat", required = false) BigDecimal karat,
 			@RequestParam(value = "labour", required = false) BigDecimal labour,
 			@RequestParam(value = "labourAll", required = false) BigDecimal labourAll,
@@ -1422,7 +1387,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	}
 
 
-	 @PutMapping("/verify/{designNo:[a-zA-Z0-9_-]+}")
+	 @PutMapping("/verify/{designNo:.+}")
 	    public ResponseEntity<Void> setVerification(
 	            @PathVariable String designNo,
 	            @RequestBody VerificationUpdate body) {
@@ -1994,12 +1959,12 @@ private void drawSingleTag(
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/price-history")
 	public String priceHistoryPage() {
-		return "price_history";
+		return "forward:/index.html";
 	}
 	
 	@GetMapping("/public-rates")
 	public String publicRatesPage() {
-		return "public_rates";
+		return "forward:/index.html";
 	}
 }
 
