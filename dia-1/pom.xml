@@ -73,11 +73,7 @@
             <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
-        
-        <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-thymeleaf</artifactId>
-</dependency>
+
 
         <!-- Validation API (optional, for input validation) -->
         <dependency>

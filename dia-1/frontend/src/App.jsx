@@ -56,7 +56,26 @@ function App() {
   const [page, setPage] = useState(getInitialPage);
   const [modalMessage, setModalMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  
+  const [licenseStatus, setLicenseStatus] = useState(null);
+  const [licenseDetails, setLicenseDetails] = useState(null);
+
+  const checkLicense = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/license/status`);
+      if (res.ok) {
+        const data = await res.json();
+        setLicenseStatus(data.status);
+        setLicenseDetails(data);
+        if (data.status === 'EXPIRED' || data.status === 'TAMPERED') {
+          setPage('login');
+          window.history.pushState(null, '', '/');
+        }
+      }
+    } catch (err) {
+      console.error('License check failed:', err);
+    }
+  };
+
   // Safely initialize user from localStorage
   const [user, setUser] = useState(() => {
     try {
@@ -71,6 +90,7 @@ function App() {
   });
 
   useEffect(() => {
+    checkLicense();
     const handlePopState = () => {
       setPage(getInitialPage());
     };
@@ -79,6 +99,9 @@ function App() {
   }, []);
 
   const handleSwitchPage = (newPage) => {
+    if ((licenseStatus === 'EXPIRED' || licenseStatus === 'TAMPERED') && newPage !== 'login') {
+      newPage = 'login';
+    }
     setPage(newPage);
     let path = '/';
     if (newPage !== 'login') {
@@ -112,62 +135,71 @@ function App() {
     setModalMessage('');
   };
 
+  const activePage = (licenseStatus === 'EXPIRED' || licenseStatus === 'TAMPERED') ? 'login' : page;
+
   return (
     <div className="home-page">
       <div className="flex-grow">
-        {page === 'home' ? (
+        {activePage === 'home' ? (
           <Home onSwitchPage={handleSwitchPage} user={user} />
-        ) : page === 'set-price' ? (
+        ) : activePage === 'set-price' ? (
           <SetPrice onSwitchPage={handleSwitchPage} />
-        ) : page === 'add-product' ? (
+        ) : activePage === 'add-product' ? (
           <AddProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'modify-product' ? (
+        ) : activePage === 'modify-product' ? (
           <ModifyProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'batch-update' ? (
+        ) : activePage === 'batch-update' ? (
           <BatchUpdate onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'view-product' ? (
+        ) : activePage === 'view-product' ? (
           <ViewProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'remove-product' ? (
+        ) : activePage === 'remove-product' ? (
           <RemoveProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'load-product' ? (
+        ) : activePage === 'load-product' ? (
           <LoadProduct onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'verify-product' ? (
+        ) : activePage === 'verify-product' ? (
           <VerifyProducts onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'get-estimate' ? (
+        ) : activePage === 'get-estimate' ? (
           <GetEstimate onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'enquiry-log' ? (
+        ) : activePage === 'enquiry-log' ? (
           <EnquiryLog onSwitchPage={handleSwitchPage} />
-        ) : page === 'estimate-snapshot' ? (
+        ) : activePage === 'estimate-snapshot' ? (
           <EstimateSnapshot onSwitchPage={handleSwitchPage} />
-        ) : page === 'product-snapshot' ? (
+        ) : activePage === 'product-snapshot' ? (
           <ProductSnapshot onSwitchPage={handleSwitchPage} />
-        ) : page === 'sales-log' ? (
+        ) : activePage === 'sales-log' ? (
           <SalesLog onSwitchPage={handleSwitchPage} />
-        ) : page === 'generate-report' ? (
+        ) : activePage === 'generate-report' ? (
           <GenerateReport onSwitchPage={handleSwitchPage} />
-        ) : page === 'custom-foldable-tags' ? (
+        ) : activePage === 'custom-foldable-tags' ? (
           <CustomFoldableTags onSwitchPage={handleSwitchPage} />
-        ) : page === 'import-data' ? (
+        ) : activePage === 'import-data' ? (
           <ImportData onSwitchPage={handleSwitchPage} />
-        ) : page === 'permissions' ? (
+        ) : activePage === 'permissions' ? (
           <Permissions onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
-        ) : page === 'price-history' ? (
+        ) : activePage === 'price-history' ? (
           <PriceHistory onSwitchPage={handleSwitchPage} />
         ) : (
           <main className="home-main">
-            {page === 'login' && (
-              <Login onSwitchPage={handleSwitchPage} onOpenModal={openModal} onLoginSuccess={handleLoginSuccess} />
+            {activePage === 'login' && (
+              <Login 
+                onSwitchPage={handleSwitchPage} 
+                onOpenModal={openModal} 
+                onLoginSuccess={handleLoginSuccess}
+                licenseStatus={licenseStatus}
+                licenseDetails={licenseDetails}
+                onLicenseActivated={checkLicense}
+              />
             )}
-            {page === 'signup' && (
+            {activePage === 'signup' && (
               <Signup onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
-            {page === 'forgot' && (
+            {activePage === 'forgot' && (
               <ForgotPassword onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
-            {page === 'reset' && (
+            {activePage === 'reset' && (
               <ResetPassword onSwitchPage={handleSwitchPage} onOpenModal={openModal} />
             )}
-            {page === 'view-rates' && (
+            {activePage === 'view-rates' && (
               <ViewRates onSwitchPage={handleSwitchPage} />
             )}
           </main>

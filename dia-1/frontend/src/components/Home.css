@@ -530,6 +530,9 @@
     margin: 0 -16px -16px;
     padding: 10px 16px;
   }
+  .filter-group {
+    flex: 1 1 100%;
+  }
 }
 
 /* Auth Form Styles */
@@ -628,8 +631,26 @@
   background: #dc3545;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.remove-btn:hover {
+  background: #c82333;
+}
+.remove-btn:active {
+  transform: scale(0.95);
 }
 
 /* Rates Card (Showroom Look) */
@@ -761,8 +782,8 @@
 /* View Product Page Layout */
 .view-product-page { color: #333; display: flex; flex-direction: column; min-height: 100vh; background: #f4f7f6; }
 .filters-bar { background: #fff; padding: 15px 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; border-bottom: 1px solid #ddd; }
-.filter-group { display: flex; gap: 5px; flex: 1; min-width: 300px; }
-.filter-group input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+.filter-group { display: flex; gap: 5px; flex: 1; min-width: 280px; }
+.filter-group input { flex: 1; min-width: 0; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
 .filters-bar select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
 
 .view-content { display: flex; flex: 1; }

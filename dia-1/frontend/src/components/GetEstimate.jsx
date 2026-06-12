@@ -95,14 +95,19 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
 
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...rows];
-    const row = updatedRows[index];
-    const numericValue = (field === 'qty' || field === 'rate' || field === 'amt') ? parseFloat(value) : value;
+    const row = { ...updatedRows[index] };
+    const numericValue = (field === 'qty' || field === 'rate' || field === 'amt') ? (value === '' ? '' : parseFloat(value)) : value;
     row[field] = numericValue;
     if (field === 'amt') row.manual = true;
     
-    if (field !== 'amt' && !row.manual && Number(row.qty) && Number(row.rate)) {
+    if (field === 'qty' || field === 'rate') {
+      const qty = parseFloat(row.qty) || 0;
+      const rate = parseFloat(row.rate) || 0;
+      row.amt = Math.round(qty * rate);
+    } else if (field !== 'amt' && !row.manual && Number(row.qty) && Number(row.rate)) {
       row.amt = Math.round(Number(row.qty) * Number(row.rate));
     }
+    updatedRows[index] = row;
     setRows(updatedRows);
   };
 

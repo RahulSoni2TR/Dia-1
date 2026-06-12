@@ -67,7 +67,7 @@ public class SecurityConfig {
                 // keep login/registration public
                 .requestMatchers("/login", "/register", "/logout", "/process-login", "*.css","/get-security-question","/reset-password","/verify-security-answer",
                 		"/verify-credentials", "/reset-ns-password","/modify-product",
-                	"proxy-image","/loadProductByDesignNo/**","/load-product/**").permitAll() 
+                	"proxy-image","/loadProductByDesignNo/**","/load-product/**", "/api/license/**").permitAll() 
                 .requestMatchers("/add-product", "/remove-product", "/set-price","/available-order-ids","/categories",
                 		"/getCategoryNameById","/api/enquiries","/enquiries","/sales/logs","/verify","/frequency", "/batch-update").hasRole("ADMIN")
                 .requestMatchers("/api/backups/**").hasRole("ADMIN")
