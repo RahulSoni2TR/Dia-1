@@ -1,0 +1,66 @@
+PRODUCT MANAGER: INSTALLATION & LICENSING GUIDE
+==============================================
+
+This application is packaged as a fully self-contained, portable Windows Bundle.
+- Zero Prerequisites: The target system does NOT need Java or MySQL installed. Both are fully bundled.
+- Native Desktop Experience: The app launches inside a borderless desktop window using Microsoft Edge's App Mode.
+
+--------------------------------------------------------------------------------
+PART 1: BUILD THE INSTALLER PACKAGE
+--------------------------------------------------------------------------------
+On your development machine, compile a fresh zip file containing the latest code:
+1. Open PowerShell in your project root directory.
+2. Run the build script:
+   powershell -ExecutionPolicy Bypass -File .\packaging\windows\Build-WindowsBundle.ps1
+3. Once completed, your installer package will be created at:
+   dist\ProductManager-Windows.zip
+
+--------------------------------------------------------------------------------
+PART 2: INSTALLING ON THE CLIENT'S SYSTEM
+--------------------------------------------------------------------------------
+1. Transfer the Package:
+   Copy the generated "ProductManager-Windows.zip" file onto a USB drive, or transfer it to the client's system.
+2. Extract the App:
+   Extract the ".zip" file into a clean folder of their choice on the target computer (e.g. C:\ProductManager or their Desktop).
+3. Launch the Application:
+   Inside the extracted folder, double-click "ProductManager.cmd".
+   * First-run Security Banner: Because the script is unsigned, Windows SmartScreen may show a security prompt ("Windows protected your PC"). Tell the client to click "More info" and then click "Run anyway".
+4. First Boot Initialization:
+   A terminal will briefly open while the launcher:
+   - Creates database directories inside the client's user profile folder (C:\Users\<Username>\.productmanager).
+   - Automatically spins up the embedded MySQL database engine on a local port.
+   - Imports seed schemas and starting data.
+   - Launches the Spring Boot backend server.
+   - Launches Microsoft Edge in app mode to open the interface.
+
+--------------------------------------------------------------------------------
+PART 3: ACTIVATING THE APP (LICENSING FLOW)
+--------------------------------------------------------------------------------
+When the app opens on a new machine, it runs in a 10-day trial mode by default. To unlock the full, permanent version for the client:
+
+1. Retrieve the Client's Machine ID:
+   If the 10-day trial expires, or if you navigate to the login screen, they will see a locked activation screen showing a unique Machine ID (e.g., 904C-B29A-2564-8AAE).
+   * Ask the client to copy this Machine ID and send it to you.
+
+2. Generate the Activation Key (On Your Machine):
+   Open a terminal in your project directory on your developer laptop and run the license generator tool, specifying the client's Machine ID and the type of license ("perpetual" for a lifetime key, or a specific date like "2026-12-31" for temporary access):
+   
+   .\mvnw.cmd exec:java "-Dexec.mainClass=com.example.webapp.cmd.LicenseGenerator" "-Dexec.args=<CLIENT-MACHINE-ID> perpetual"
+   
+   Example:
+   .\mvnw.cmd exec:java "-Dexec.mainClass=com.example.webapp.cmd.LicenseGenerator" "-Dexec.args=904C-B29A-2564-8AAE perpetual"
+   
+   This will output a signed, secure Base64 license key string. Copy this license key string and send it to the client.
+
+3. Activate the License (On the Client's Machine):
+   - On the client's locked activation screen, ask them to paste the Base64 key into the activation text box.
+   - Click "Activate".
+   - The app will immediately validate the cryptographic signature offline, update its status, and unlock the login screen. No internet connection is required.
+
+--------------------------------------------------------------------------------
+PART 4: BACKING UP AND MIGRATING DATA
+--------------------------------------------------------------------------------
+All client database files, image uploads, QR codes, and backups are stored safely under their Windows user profile:
+C:\Users\<Client-Username>\.productmanager\
+
+* Safe Updates: To update their application in the future, you only need to send them a new "dia-1.jar" file or extract a new zip. Their database and custom product images are stored outside the application folder and will NOT be lost when updating the app binaries.
