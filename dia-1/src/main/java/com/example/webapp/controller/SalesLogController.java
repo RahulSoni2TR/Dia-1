@@ -29,18 +29,18 @@ public class SalesLogController {
     @GetMapping("/api/sales-logs")
     @ResponseBody
     public Page<SalesLog> fetchSalesLogs(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String categoryIdStr,
-            @RequestParam(required = false) String subCategoryIdStr,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
+            @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "categoryIdStr", required = false) String categoryIdStr,
+            @RequestParam(value = "subCategoryIdStr", required = false) String subCategoryIdStr,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return salesLogRepository.searchWithJsonFilters(q, categoryIdStr, subCategoryIdStr, pageable);
     }
     
     @DeleteMapping("/api/sales-logs/{id}")
-    public ResponseEntity<Void> deleteSaleLog(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSaleLog(@PathVariable("id") Long id) {
     	service.deleteSaleLog(id);
         return ResponseEntity.noContent().build();
     }

@@ -158,7 +158,8 @@ function Home({ onSwitchPage, user }) {
         credentials: 'include',
         body: JSON.stringify({
           enabled: backupSettings.enabled,
-          frequency: backupSettings.frequency
+          frequency: backupSettings.frequency,
+          backupDirectory: backupSettings.backupDirectory
         })
       });
       if (!response.ok) throw new Error('Failed to save backup settings');
@@ -168,11 +169,31 @@ function Home({ onSwitchPage, user }) {
         ...data
       }));
       setBackupMessage(data.message || 'Backup settings saved.');
+      await loadBackupFiles();
     } catch (error) {
       console.error('Error saving backup settings:', error);
       setBackupMessage('Could not save backup settings.');
     } finally {
       setBackupSaving(false);
+    }
+  };
+
+  const browseBackupFolder = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/backups/browse-directory`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to open folder picker');
+      const data = await response.json();
+      if (data.success && data.path) {
+        setBackupSettings(prev => ({
+          ...prev,
+          backupDirectory: data.path
+        }));
+      }
+    } catch (error) {
+      console.error('Error picking backup directory:', error);
     }
   };
 
@@ -376,9 +397,32 @@ function Home({ onSwitchPage, user }) {
                 </div>
 
                 <div className="backup-card backup-meta-card">
-                  <div className="backup-meta-row">
+                  <div className="backup-meta-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '5px' }}>
                     <span>Backup Folder</span>
-                    <strong>{backupSettings.backupDirectory || 'Loading...'}</strong>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <input 
+                        type="text" 
+                        value={backupSettings.backupDirectory || ''} 
+                        onChange={(e) => setBackupSettings(prev => ({ ...prev, backupDirectory: e.target.value }))}
+                        style={{ 
+                          padding: '6px 10px', 
+                          border: '1px solid #cbd5e1', 
+                          borderRadius: '6px', 
+                          fontSize: '0.9rem',
+                          color: '#000',
+                          flex: 1,
+                          boxSizing: 'border-box'
+                        }} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={browseBackupFolder}
+                        className="action-button"
+                        style={{ padding: '6px 12px', fontSize: '0.9rem', width: 'fit-content', whiteSpace: 'nowrap', borderRadius: '6px', background: '#007bff' }}
+                      >
+                        Browse...
+                      </button>
+                    </div>
                   </div>
                   <div className="backup-meta-row">
                     <span>Last Backup</span>

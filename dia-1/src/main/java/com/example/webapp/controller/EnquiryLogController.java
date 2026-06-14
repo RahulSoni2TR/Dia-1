@@ -88,7 +88,7 @@ public class EnquiryLogController {
     }
     
     @DeleteMapping("/api/enquiries/{id}")
-    public ResponseEntity<Void> deleteEnquiry(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteEnquiry(@PathVariable("id") Integer id) {
     	service.deleteEnquiry(id);
         return ResponseEntity.noContent().build();
     }

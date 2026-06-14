@@ -23,8 +23,8 @@ PART 2: INSTALLING ON THE CLIENT'S SYSTEM
 2. Extract the App:
    Extract the ".zip" file into a clean folder of their choice on the target computer (e.g. C:\ProductManager or their Desktop).
 3. Launch the Application:
-   Inside the extracted folder, double-click "ProductManager.cmd".
-   * First-run Security Banner: Because the script is unsigned, Windows SmartScreen may show a security prompt ("Windows protected your PC"). Tell the client to click "More info" and then click "Run anyway".
+   Inside the extracted folder, double-click "ProductManager.exe".
+   * First-run Security Banner: Because the executable is unsigned, Windows SmartScreen may show a security prompt ("Windows protected your PC"). Tell the client to click "More info" and then click "Run anyway".
 4. First Boot Initialization:
    A terminal will briefly open while the launcher:
    - Creates database directories inside the client's user profile folder (C:\Users\<Username>\.productmanager).
@@ -64,3 +64,17 @@ All client database files, image uploads, QR codes, and backups are stored safel
 C:\Users\<Client-Username>\.productmanager\
 
 * Safe Updates: To update their application in the future, you only need to send them a new "dia-1.jar" file or extract a new zip. Their database and custom product images are stored outside the application folder and will NOT be lost when updating the app binaries.
+
+--------------------------------------------------------------------------------
+PART 5: TESTING A CLEAN INSTALL ON YOUR DEVELOPER MACHINE
+--------------------------------------------------------------------------------
+Since the database is saved under your Windows user profile folder (C:\Users\<Username>\.productmanager), double-clicking the app launcher will always load your existing database files and test data.
+
+If you want to test the clean bundle (the empty application with only the default "testuser" login) on your developer laptop:
+1. Close any running instances of the application.
+2. Open Windows Explorer and navigate to your user folder: C:\Users\<Your-Username>\
+3. Rename the directory ".productmanager" to ".productmanager_backup".
+4. Run the clean app by double-clicking "ProductManager.exe" in your newly built bundle folder (e.g. dist\ProductManager-Windows\).
+5. The launcher will automatically spin up a fresh database instance, import the clean seeds, and prompt you to log in with "testuser" / "password".
+6. When done testing: delete the newly created ".productmanager" folder and rename ".productmanager_backup" back to ".productmanager" to restore your testing database.
+

@@ -237,8 +237,21 @@ try {
     if ($Edge) {
         $EdgeProfile = Join-Path $Root "data\edge-profile"
         Ensure-Directory $EdgeProfile
+        $FaviconCache = Join-Path $EdgeProfile "Default\Favicons"
+        $FaviconJournal = Join-Path $EdgeProfile "Default\Favicons-journal"
+        if (Test-Path $FaviconCache) { Remove-Item $FaviconCache -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $FaviconJournal) { Remove-Item $FaviconJournal -Force -ErrorAction SilentlyContinue }
         $EdgeProcess = Start-Process -FilePath $Edge -ArgumentList @("--app=$AppUrl", "--user-data-dir=$EdgeProfile") -PassThru
-        Wait-Process -Id $EdgeProcess.Id
+        Start-Sleep -Seconds 3
+        if ($EdgeProcess.HasExited) {
+            # Edge exited too quickly (likely delegated to an existing background instance)
+            Write-Host "Product Manager is running at $AppUrl"
+            Write-Host "Press ENTER in this window to stop the application..." -ForegroundColor Yellow
+            Read-Host
+        } else {
+            # Edge is running as a dedicated process, wait for it to close
+            Wait-Process -Id $EdgeProcess.Id
+        }
     } else {
         Start-Process $AppUrl
         Write-Host "Product Manager is running at $AppUrl"

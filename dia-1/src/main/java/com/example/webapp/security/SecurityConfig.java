@@ -52,7 +52,7 @@ public class SecurityConfig {
             .cors()
             .and()
             .authorizeHttpRequests()
-                .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/static/**", "/files/**","/uploads/**").permitAll()
+                .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico", "/favicon.png", "/manifest.json", "/css/**", "/js/**", "/images/**", "/static/**", "/files/**","/uploads/**").permitAll()
                 // allow public loading of product details (GET)
                 .requestMatchers(HttpMethod.GET,"/get-estimate", "/loadProduct/**", "/load-product/**", "/loadProductByDesignNo/**","/available-order-ids"," \"/getTagsPdf/**\"").permitAll()
                 // allow anonymous updates (PUT) — BE CAREFUL: this opens modification without auth

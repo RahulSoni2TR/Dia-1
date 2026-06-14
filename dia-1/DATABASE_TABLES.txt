@@ -1,0 +1,82 @@
+=========================================
+DATABASE TABLES OVERVIEW
+=========================================
+Application Name: dia-1
+Database URL: jdbc:mysql://localhost:3306/local
+
+This document provides a breakdown of all the tables in the application database, their purpose, and their corresponding Java entity class files.
+
+----------------------------------------------------------------------
+1. core tables
+----------------------------------------------------------------------
+
+- Table: products
+  Description: Stores product details including design number, description, categories, metal tags, weight, and pricing options.
+  Entity Class: com.example.webapp.models.Product
+  Source File: src/main/java/com/example/webapp/models/Product.java
+
+- Table: categories
+  Description: Contains categories for organizing products (e.g., rings, necklaces, etc.).
+  Entity Class: com.example.webapp.models.Category
+  Source File: src/main/java/com/example/webapp/models/Category.java
+
+- Table: orders
+  Description: Stores order transactions and order configuration metadata.
+  Entity Class: com.example.webapp.models.Orders
+  Source File: src/main/java/com/example/webapp/models/Orders.java
+
+----------------------------------------------------------------------
+2. pricing & karat rates
+----------------------------------------------------------------------
+
+- Table: rates
+  Description: Manages the current live metal rates (e.g., gold and silver rates per gram/karat).
+  Entity Class: com.example.webapp.models.Rate
+  Source File: src/main/java/com/example/webapp/models/Rate.java
+
+- Table: rate_history
+  Description: Tracks historical rate changes for auditing and pricing analysis.
+  Entity Class: com.example.webapp.models.RateHistory
+  Source File: src/main/java/com/example/webapp/models/RateHistory.java
+
+----------------------------------------------------------------------
+3. user & access control
+----------------------------------------------------------------------
+
+- Table: users
+  Description: Stores system user credentials, status, and security verification details (security question/answer).
+  Entity Class: com.example.webapp.models.User
+  Source File: src/main/java/com/example/webapp/models/User.java
+
+- Table: roles
+  Description: Defines access control roles in the application (e.g., ROLE_USER, ROLE_ADMIN).
+  Entity Class: com.example.webapp.models.Role
+  Source File: src/main/java/com/example/webapp/models/Role.java
+
+- Table: user_roles
+  Description: A join/link table mapping the many-to-many relationship between users and roles.
+  Entity Class: com.example.webapp.models.User (mapped via @JoinTable)
+  Source File: src/main/java/com/example/webapp/models/User.java
+
+----------------------------------------------------------------------
+4. logs & configuration
+----------------------------------------------------------------------
+
+- Table: sales_log
+  Description: Contains logs of recorded sales transactions, including the product identifier, design number, sale price, and timestamp.
+  Entity Class: com.example.webapp.entity.SalesLog
+  Source File: src/main/java/com/example/webapp/entity/SalesLog.java
+
+- Table: enquiry_log
+  Description: Tracks customer product enquiries, including design number, customer details, and linked product image paths.
+  Entity Class: com.example.webapp.entity.EnquiryLog
+  Source File: src/main/java/com/example/webapp/entity/EnquiryLog.java
+
+- Table: verification_config
+  Description: Configures system security verification settings (e.g., number of days before verification expires/is required).
+  Entity Class: com.example.webapp.entity.VerificationConfig
+  Source File: src/main/java/com/example/webapp/entity/VerificationConfig.java
+
+=========================================
+Generated on: 2026-06-13
+=========================================

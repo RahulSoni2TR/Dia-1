@@ -80,9 +80,10 @@ public class DataInitializer {
             if (userRepository.findByUsername("testuser") == null) {
                 User user = new User();
                 user.setUsername("testuser");
-                user.setPassword("password");
+                // Set to BCrypt hash of "password" to match SecurityConfig encoding
+                user.setPassword("$2a$10$cu730O9GHYKqn54uS4sypOQm8T9sEfTHp9/OEfY/cOl/pTEFxiTkO");
                 user.setQuestion("In what city were you born?");
-                user.setAnswer("test");// Encode password
+                user.setAnswer("test");
                 user.getRoles().add(adminRole); // Assign the admin role
                 userRepository.save(user);
             }

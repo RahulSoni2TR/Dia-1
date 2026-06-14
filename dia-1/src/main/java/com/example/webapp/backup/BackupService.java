@@ -40,7 +40,7 @@ public class BackupService {
 
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
-    private final Path backupDirectory;
+    private final Path defaultBackupDirectory;
     private final Path settingsFile;
     private final Object lock = new Object();
 
@@ -58,8 +58,15 @@ public class BackupService {
             rootDir = Paths.get(System.getProperty("user.home"), "JewelleryStoreManager", "backups");
         }
 
-        this.backupDirectory = rootDir;
+        this.defaultBackupDirectory = rootDir;
         this.settingsFile = rootDir.resolve("backup-settings.json");
+    }
+
+    private Path getBackupDirectory(BackupSettings settings) {
+        if (settings != null && settings.getBackupDirectory() != null && !settings.getBackupDirectory().isBlank()) {
+            return Paths.get(settings.getBackupDirectory());
+        }
+        return defaultBackupDirectory;
     }
 
     public Map<String, Object> getSettingsView() {
@@ -74,6 +81,9 @@ public class BackupService {
             BackupSettings settings = loadSettings();
             settings.setEnabled(request.isEnabled());
             settings.setFrequency(request.getFrequency() == null ? BackupFrequency.WEEKLY : request.getFrequency());
+            if (request.getBackupDirectory() != null && !request.getBackupDirectory().isBlank()) {
+                settings.setBackupDirectory(request.getBackupDirectory());
+            }
             saveSettings(settings);
             return buildSettingsResponse(settings, true, "Backup settings updated successfully.");
         }
@@ -109,9 +119,11 @@ public class BackupService {
 
     public Map<String, Object> listBackups() {
         synchronized (lock) {
+            BackupSettings settings = loadSettings();
+            Path activeDir = getBackupDirectory(settings);
             Map<String, Object> response = new LinkedHashMap<>();
-            response.put("backupDirectory", backupDirectory.toString());
-            response.put("backups", getBackupFiles());
+            response.put("backupDirectory", activeDir.toString());
+            response.put("backups", getBackupFiles(settings));
             response.put("message", "Backup files loaded.");
             return response;
         }
@@ -135,16 +147,18 @@ public class BackupService {
                 response.put("error", ex.getMessage());
                 response.put("message", "Backup import failed.");
             }
-            response.put("backups", getBackupFiles());
+            BackupSettings settings = loadSettings();
+            response.put("backups", getBackupFiles(settings));
             return response;
         }
     }
 
     private BackupRunResult executeBackup(BackupSettings settings, String trigger) {
         try {
-            ensureDirectory();
+            Path activeDir = getBackupDirectory(settings);
+            ensureDirectory(activeDir);
             String fileName = "db-backup-" + FILE_TIMESTAMP.format(LocalDateTime.now()) + ".sql";
-            Path backupFile = backupDirectory.resolve(fileName);
+            Path backupFile = activeDir.resolve(fileName);
             writeBackupFile(backupFile);
             settings.setLastBackupAt(LocalDateTime.now());
             settings.setLastBackupFile(backupFile.toString());
@@ -198,13 +212,15 @@ public class BackupService {
 
     private BackupSettings loadSettings() {
         try {
-            ensureDirectory();
+            ensureDirectory(defaultBackupDirectory);
             if (Files.exists(settingsFile)) {
                 BackupSettings settings = objectMapper.readValue(settingsFile.toFile(), BackupSettings.class);
                 if (settings.getFrequency() == null) {
                     settings.setFrequency(BackupFrequency.WEEKLY);
                 }
-                settings.setBackupDirectory(backupDirectory.toString());
+                if (settings.getBackupDirectory() == null || settings.getBackupDirectory().isBlank()) {
+                    settings.setBackupDirectory(defaultBackupDirectory.toString());
+                }
                 return settings;
             }
         } catch (IOException ex) {
@@ -214,29 +230,32 @@ public class BackupService {
         BackupSettings defaults = new BackupSettings();
         defaults.setEnabled(true);
         defaults.setFrequency(BackupFrequency.WEEKLY);
-        defaults.setBackupDirectory(backupDirectory.toString());
+        defaults.setBackupDirectory(defaultBackupDirectory.toString());
         saveSettings(defaults);
         return defaults;
     }
 
     private void saveSettings(BackupSettings settings) {
         try {
-            ensureDirectory();
-            settings.setBackupDirectory(backupDirectory.toString());
+            ensureDirectory(defaultBackupDirectory);
+            if (settings.getBackupDirectory() == null || settings.getBackupDirectory().isBlank()) {
+                settings.setBackupDirectory(defaultBackupDirectory.toString());
+            }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(settingsFile.toFile(), settings);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to save backup settings", ex);
         }
     }
 
-    private void ensureDirectory() throws IOException {
-        Files.createDirectories(backupDirectory);
+    private void ensureDirectory(Path path) throws IOException {
+        Files.createDirectories(path);
     }
 
-    private List<Map<String, Object>> getBackupFiles() {
+    private List<Map<String, Object>> getBackupFiles(BackupSettings settings) {
         try {
-            ensureDirectory();
-            try (Stream<Path> files = Files.list(backupDirectory)) {
+            Path activeDir = getBackupDirectory(settings);
+            ensureDirectory(activeDir);
+            try (Stream<Path> files = Files.list(activeDir)) {
                 return files
                         .filter(Files::isRegularFile)
                         .filter(path -> path.getFileName().toString().startsWith("db-backup-"))
@@ -276,11 +295,13 @@ public class BackupService {
     }
 
     private Path resolveImportFile(BackupImportRequest request) throws IOException {
-        ensureDirectory();
+        BackupSettings settings = loadSettings();
+        Path activeDir = getBackupDirectory(settings);
+        ensureDirectory(activeDir);
         if (request == null || request.isLatest()) {
-            return getBackupFiles().stream()
+            return getBackupFiles(settings).stream()
                     .findFirst()
-                    .map(file -> backupDirectory.resolve(String.valueOf(file.get("name"))))
+                    .map(file -> activeDir.resolve(String.valueOf(file.get("name"))))
                     .orElseThrow(() -> new IllegalArgumentException("No backup files are available to import."));
         }
 
@@ -289,8 +310,8 @@ public class BackupService {
             throw new IllegalArgumentException("Select a backup file to import.");
         }
 
-        Path resolved = backupDirectory.resolve(Paths.get(requestedFile).getFileName()).normalize();
-        Path normalizedDirectory = backupDirectory.toAbsolutePath().normalize();
+        Path resolved = activeDir.resolve(Paths.get(requestedFile).getFileName()).normalize();
+        Path normalizedDirectory = activeDir.toAbsolutePath().normalize();
         Path normalizedFile = resolved.toAbsolutePath().normalize();
         if (!normalizedFile.startsWith(normalizedDirectory)) {
             throw new IllegalArgumentException("Backup file must be inside the configured backup folder.");
@@ -490,6 +511,38 @@ public class BackupService {
 
     private String escapeSql(String value) {
         return value.replace("\\", "\\\\").replace("'", "''");
+    }
+
+    public String browseBackupDirectory() {
+        try {
+            String script = "$shell = New-Object -ComObject Shell.Application; " +
+                            "$folder = $shell.BrowseForFolder(0, 'Select Database Backup Folder', 64, 17); " +
+                            "if ($folder) { $folder.Self.Path }";
+            ProcessBuilder pb = new ProcessBuilder(
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-Command",
+                script
+            );
+            Process process = pb.start();
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream())
+            );
+            String line;
+            StringBuilder sb = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            process.waitFor();
+            String selectedPath = sb.toString().trim();
+            if (!selectedPath.isEmpty()) {
+                return selectedPath;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static class BackupRunResult {

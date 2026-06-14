@@ -52,4 +52,14 @@ public class BackupController {
     public ResponseEntity<Map<String, Object>> importBackup(@RequestBody BackupImportRequest request) {
         return ResponseEntity.ok(backupService.importBackup(request));
     }
+
+    @PostMapping("/browse-directory")
+    public ResponseEntity<Map<String, Object>> browseDirectory() {
+        String path = backupService.browseBackupDirectory();
+        if (path != null) {
+            return ResponseEntity.ok(Map.of("success", true, "path", path));
+        } else {
+            return ResponseEntity.ok(Map.of("success", false, "message", "No folder selected"));
+        }
+    }
 }

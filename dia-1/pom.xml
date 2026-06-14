@@ -154,6 +154,68 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.github.wvengen</groupId>
+                <artifactId>proguard-maven-plugin</artifactId>
+                <version>2.7.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>proguard</goal></goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <proguardVersion>7.9.1</proguardVersion>
+                    <obfuscate>true</obfuscate>
+                    <injar>${project.build.finalName}.jar</injar>
+                    <outjar>${project.build.finalName}.jar</outjar>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                    <libs>
+                        <lib>${java.home}/jmods/java.base.jmod</lib>
+                    </libs>
+                    <options>
+                        <!-- Keep all classes and their members in our packages, EXCEPT the license classes -->
+                        <option>-keep class !com.example.webapp.service.LicenseService,
+                                      !com.example.webapp.security.LicenseFilter,
+                                      !com.example.webapp.controller.LicenseController,
+                                      !com.example.webapp.service.LicenseStatus,
+                                      !com.example.webapp.cmd.LicenseGenerator,
+                                      com.example.webapp.** { *; }</option>
+                        
+                        <!-- For the license classes, keep their class names and public/protected interfaces -->
+                        <option>-keep class com.example.webapp.service.LicenseService { public protected *; }</option>
+                        <option>-keep class com.example.webapp.security.LicenseFilter { public protected *; }</option>
+                        <option>-keep class com.example.webapp.controller.LicenseController { public protected *; }</option>
+                        <option>-keep class com.example.webapp.service.LicenseStatus { *; }</option>
+                        <option>-keep class com.example.webapp.cmd.LicenseGenerator { public protected *; }</option>
+                        
+                        <!-- Keep Spring Boot component scan and autowire annotations -->
+                        <option>-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions</option>
+                        
+                        <!-- Keep autowired constructors/fields so Spring can inject them -->
+                        <option>-keepclassmembers class * {
+                            @org.springframework.beans.factory.annotation.Autowired *;
+                            @org.springframework.beans.factory.annotation.Value *;
+                        }</option>
+                        
+                        <option>-dontwarn **</option>
+                        <option>-dontshrink</option>
+                        <option>-dontoptimize</option>
+                    </options>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.guardsquare</groupId>
+                        <artifactId>proguard-base</artifactId>
+                        <version>7.9.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.guardsquare</groupId>
+                        <artifactId>proguard-core</artifactId>
+                        <version>9.3.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>

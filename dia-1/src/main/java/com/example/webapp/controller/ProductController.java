@@ -614,7 +614,7 @@ public class ProductController {
 			throw new AddProductException("Error occurred while adding product: " + productName, e);
 		}
 	}	@GetMapping("/loadProductByDesignNo/{designNo:.+}")
-	public String getProductByDesignNo(@PathVariable String designNo) {
+	public String getProductByDesignNo(@PathVariable("designNo") String designNo) {
 	    return "forward:/index.html"; 
 	}
 
@@ -707,7 +707,7 @@ public class ProductController {
 	}
 
 	@PostMapping("/remove/{productId}")
-	public ResponseEntity<Map<String, Object>> removeProduct(@PathVariable String productId) {
+	public ResponseEntity<Map<String, Object>> removeProduct(@PathVariable("productId") String productId) {
 		try {
 			productService.removeProduct(productId);
 			Map<String, Object> response = new HashMap<>();
@@ -720,7 +720,7 @@ public class ProductController {
 	}
 
 	@GetMapping("/category/{categoryId}")
-	public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable Long categoryId) {
+	public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable("categoryId") Long categoryId) {
 		List<Product> products = productService.findProductsByCategoryId(categoryId);
 		if (products.isEmpty()) {
 			throw new CategoryNotFoundException("No products found for category ID: " + categoryId);
@@ -768,7 +768,7 @@ public class ProductController {
 	}
 
 	@GetMapping("loadProduct/{id:.+}")
-	public ResponseEntity<Product> getProduct(@PathVariable String id) {
+	public ResponseEntity<Product> getProduct(@PathVariable("id") String id) {
 		logger.info("[loadProduct] Fetching product by designNo: {}", id);
 		Product product = productService.findProductById(id)
 				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
@@ -779,7 +779,7 @@ public class ProductController {
 	}
 
 	@GetMapping("loadProductDetail/{id}")
-	public ResponseEntity<Product> getProduct(@PathVariable Long id) {
+	public ResponseEntity<Product> getProduct(@PathVariable("id") Long id) {
 		logger.info("[loadProductDetail] Fetching product by PK ID: {}", id);
 		Product product = productService.findProductFromId(id)
 				.orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + id));
@@ -791,13 +791,13 @@ public class ProductController {
 
 	 @GetMapping("/product/load")
 	    public ResponseEntity<ProductPage> loadProducts(
-	            @RequestParam int page,
-	            @RequestParam int size,
-	            @RequestParam(required = false) String category,
-	            @RequestParam(required = false, defaultValue = "") String searchTerm,
-	            @RequestParam(required = false, defaultValue = "name") String searchBy, // <-- new
-	            @RequestParam(required = false) String sortBy,
-				@RequestParam(required = false, defaultValue = "false") Boolean verifiedOnly,
+	            @RequestParam("page") int page,
+	            @RequestParam("size") int size,
+	            @RequestParam(value = "category", required = false) String category,
+	            @RequestParam(value = "searchTerm", required = false, defaultValue = "") String searchTerm,
+	            @RequestParam(value = "searchBy", required = false, defaultValue = "name") String searchBy, // <-- new
+	            @RequestParam(value = "sortBy", required = false) String sortBy,
+				@RequestParam(value = "verifiedOnly", required = false, defaultValue = "false") Boolean verifiedOnly,
 					HttpSession session) {
 	System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
 	System.out.println("sort by is "+sortBy+" and verified only is "+verifiedOnly);
@@ -1061,7 +1061,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	}
 
 	@PutMapping(value = "/updateProduct/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-	public ResponseEntity<Product> updateProduct(@PathVariable String id,
+	public ResponseEntity<Product> updateProduct(@PathVariable("id") String id,
 			@RequestParam(value = "productName", required = false) String productName,
 			@RequestParam(value = "productOrderid", required = false) String productOrderid,
 			@RequestParam(value = "productPrice", required = false) BigDecimal productPrice,
@@ -1221,7 +1221,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	}
 
 	@GetMapping("/getEstimate/{productId}")
-	public ResponseEntity<Map<String, Object>> getEstimate(@PathVariable Long productId) {
+	public ResponseEntity<Map<String, Object>> getEstimate(@PathVariable("productId") Long productId) {
 		Product product = productService.findProductFromId(productId)
 				.orElseThrow(() -> new ProductNotFoundException("product not not found for id " + productId));
 		RateWrapper rateWrapper = new RateWrapper();
@@ -1389,7 +1389,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 
 	 @PutMapping("/verify/{designNo:.+}")
 	    public ResponseEntity<Void> setVerification(
-	            @PathVariable String designNo,
+	            @PathVariable("designNo") String designNo,
 	            @RequestBody VerificationUpdate body) {
 		 System.out.println("came here");
 	        int status = body.verificationStatus() != null ? body.verificationStatus() : 1;
@@ -1432,7 +1432,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	}
 
 	@DeleteMapping("/removeUser/{id}")
-	public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
+	public ResponseEntity<String> deleteUser(@PathVariable("id") Integer id) {
 		try {
 			userService.deleteUser(id);
 			return ResponseEntity.ok("User deleted successfully.");
@@ -1442,7 +1442,7 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	}
 	
 	@GetMapping("/proxy-image")
-	public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
+	public ResponseEntity<byte[]> proxyImage(@RequestParam("url") String url) {
 	    try (InputStream in = new URL(url).openStream()) {
 	        byte[] imageBytes = in.readAllBytes();
 	        HttpHeaders headers = new HttpHeaders();
@@ -1464,14 +1464,14 @@ return ResponseEntity.ok(new ProductPage(processedProducts, totalCount));
 	        produces = MediaType.APPLICATION_PDF_VALUE
 	)
 	public ResponseEntity<byte[]> generateFoldedTagsPdf(
-	        @PathVariable Long categoryId,
+	        @PathVariable("categoryId") Long categoryId,
 	        @RequestParam(value = "subCategoryId", required = false) Long subCategoryId,
 
 	        // 👇 slot starts from 1 (user)
-	        @RequestParam(defaultValue = "1") int startSlot,
+	        @RequestParam(value = "startSlot", defaultValue = "1") int startSlot,
 
 	        // 👇 how many tags to print
-	        @RequestParam(required = false) Integer count,
+	        @RequestParam(value = "count", required = false) Integer count,
 
 	        // 👇 NEW: font size from UI
 	        @RequestParam(value = "fontSize", defaultValue = "5.5") float fontSize
@@ -1911,7 +1911,7 @@ private void drawSingleTag(
 	
 	@GetMapping("/rate-history/{commodity}")
 	public ResponseEntity<List<RateHistory>> getRateHistory(
-			@PathVariable String commodity,
+			@PathVariable("commodity") String commodity,
 			@RequestParam(value = "period", required = false) String period,
 			@RequestParam(value = "from", required = false)
 			@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

@@ -1,3 +1,7 @@
+param(
+    [switch]$Clean
+)
+
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -28,6 +32,15 @@ Pop-Location
 
 Ensure-Directory $StaticDir
 Copy-Item (Join-Path $FrontendDist "index.html") (Join-Path $StaticDir "index.html") -Force
+if (Test-Path (Join-Path $FrontendDist "favicon.png")) {
+    Copy-Item (Join-Path $FrontendDist "favicon.png") (Join-Path $StaticDir "favicon.png") -Force
+}
+if (Test-Path (Join-Path $FrontendDist "favicon.ico")) {
+    Copy-Item (Join-Path $FrontendDist "favicon.ico") (Join-Path $StaticDir "favicon.ico") -Force
+}
+if (Test-Path (Join-Path $FrontendDist "manifest.json")) {
+    Copy-Item (Join-Path $FrontendDist "manifest.json") (Join-Path $StaticDir "manifest.json") -Force
+}
 Ensure-Directory (Join-Path $StaticDir "assets")
 Copy-Item (Join-Path $FrontendDist "assets\*") (Join-Path $StaticDir "assets") -Recurse -Force
 
@@ -46,17 +59,45 @@ if (Test-Path $BundleRoot) {
             Remove-Item $subDir -Recurse -Force
         }
     }
+    # Clean up old command script
+    $OldCmdFile = Join-Path $BundleRoot "ProductManager.cmd"
+    if (Test-Path $OldCmdFile) {
+        Remove-Item $OldCmdFile -Force
+    }
 } else {
     Ensure-Directory $BundleRoot
     Ensure-Directory (Join-Path $BundleRoot "data")
     Ensure-Directory (Join-Path $BundleRoot "logs")
 }
 Ensure-Directory (Join-Path $BundleRoot "app")
-Ensure-Directory (Join-Path $BundleRoot "launcher")
 
-Copy-Item (Join-Path $PSScriptRoot "ProductManager.cmd") (Join-Path $BundleRoot "ProductManager.cmd") -Force
-Copy-Item (Join-Path $PSScriptRoot "launcher\Start-ProductManager.ps1") (Join-Path $BundleRoot "launcher\Start-ProductManager.ps1") -Force
+# Compile C# launcher to ProductManager.exe with custom icon
+$Csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+if (Test-Path $Csc) {
+    Write-Host "Compiling C# launcher..." -ForegroundColor Green
+    $IcoPath = Join-Path $RepoRoot "frontend\public\favicon.ico"
+    if (Test-Path $IcoPath) {
+        & $Csc /target:winexe "/out:$(Join-Path $BundleRoot "ProductManager.exe")" "/win32icon:$IcoPath" /r:System.Windows.Forms.dll /r:System.Drawing.dll "$(Join-Path $PSScriptRoot "launcher\Launcher.cs")"
+    } else {
+        & $Csc /target:winexe "/out:$(Join-Path $BundleRoot "ProductManager.exe")" /r:System.Windows.Forms.dll /r:System.Drawing.dll "$(Join-Path $PSScriptRoot "launcher\Launcher.cs")"
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "Launcher compilation failed."
+    }
+} else {
+    throw "C# compiler not found at $Csc."
+}
+
 Copy-Item (Join-Path $RepoRoot "target\your-project-name-0.0.1-SNAPSHOT.jar") (Join-Path $BundleRoot "app\dia-1.jar") -Force
+
+# Dev-only dummy test data tools are excluded from client builds
+# (Leftovers from previous builds are explicitly cleaned up)
+foreach ($file in @("Import-DummyData.cmd", "app\dummy_data.sql")) {
+    $oldFile = Join-Path $BundleRoot $file
+    if (Test-Path $oldFile) {
+        Remove-Item $oldFile -Force
+    }
+}
 
 $RuntimeDir = Join-Path $BundleRoot "runtime"
 if (!(Test-Path $RuntimeDir)) {
@@ -80,17 +121,43 @@ if (!(Test-Path $MysqlDest)) {
     Write-Host "MySQL Server binaries already exist. Skipping copying."
 }
 
-if (Test-Path $UploadsSource) {
-    Copy-Item $UploadsSource (Join-Path $BundleRoot "data\uploads") -Recurse -Force
+if ($Clean) {
+    Write-Host "Creating clean empty uploads directory structure..."
+    $CleanUploadsDir = Join-Path $BundleRoot "data\uploads"
+    Ensure-Directory $CleanUploadsDir
+    Ensure-Directory (Join-Path $CleanUploadsDir "qr_codes")
+} else {
+    if (Test-Path $UploadsSource) {
+        Copy-Item $UploadsSource (Join-Path $BundleRoot "data\uploads") -Recurse -Force
+    }
+}
+
+# Always copy the mandatory unavailable.jpg default fallback image to uploads
+$UnavailableSrc = Join-Path $PSScriptRoot "unavailable.jpg"
+if (Test-Path $UnavailableSrc) {
+    $UploadsDir = Join-Path $BundleRoot "data\uploads"
+    Ensure-Directory $UploadsDir
+    Copy-Item $UnavailableSrc (Join-Path $UploadsDir "unavailable.jpg") -Force
 }
 
 $DumpFile = Join-Path $BundleRoot "app\seed.sql"
-$DumpExe = Join-Path $MysqlSource "bin\mysqldump.exe"
-& $DumpExe --host=127.0.0.1 --port=3306 --user=root --password=new_password --databases local --routines --triggers --events --single-transaction --result-file="$DumpFile"
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "Could not export the current MySQL database. The bundle was created without seed data."
-    if (Test-Path $DumpFile) {
-        Remove-Item $DumpFile -Force
+
+if ($Clean) {
+    Write-Host "Copying pre-defined clean database seed schema..." -ForegroundColor Green
+    $CleanSeedSource = Join-Path $PSScriptRoot "clean_seed.sql"
+    if (!(Test-Path $CleanSeedSource)) {
+        throw "Clean database seed file was not found at $CleanSeedSource."
+    }
+    Copy-Item $CleanSeedSource $DumpFile -Force
+} else {
+    $DumpExe = Join-Path $MysqlSource "bin\mysqldump.exe"
+    Write-Host "Exporting current developer's database from local MySQL..."
+    & $DumpExe --host=127.0.0.1 --port=3306 --user=root --password=new_password --databases local --routines --triggers --events --single-transaction --result-file="$DumpFile"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not export the current MySQL database. The bundle was created without seed data."
+        if (Test-Path $DumpFile) {
+            Remove-Item $DumpFile -Force
+        }
     }
 }
 

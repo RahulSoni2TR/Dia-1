@@ -34,7 +34,7 @@ public class LicenseFilter implements Filter {
         }
 
         // 2. Always allow static web resources so the login/unlock page can be loaded
-        if (path.equals("/") || path.equals("/index.html") || path.equals("/favicon.ico")
+        if (path.equals("/") || path.equals("/index.html") || path.equals("/favicon.ico") || path.equals("/favicon.png") || path.equals("/manifest.json")
                 || path.startsWith("/assets/") || path.startsWith("/css/") 
                 || path.startsWith("/js/") || path.startsWith("/images/") 
                 || path.startsWith("/static/")) {

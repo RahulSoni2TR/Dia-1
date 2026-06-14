@@ -66,7 +66,7 @@ public class LoginController {
     
     @ResponseBody
     @PostMapping("/process-login")
-    public ResponseEntity<Map<String, Object>> processLogin(@RequestParam String username, @RequestParam String password, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> processLogin(@RequestParam("username") String username, @RequestParam("password") String password, HttpSession session) {
         System.out.println("login endpoint");
         User user = userService.findByUsername(username);
 
@@ -97,8 +97,8 @@ public class LoginController {
     
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestParam String username, @RequestParam String password, @RequestParam String securityQuestion,
-    		@RequestParam String securityAnswer) {
+    public ResponseEntity<String> register(@RequestParam("username") String username, @RequestParam("password") String password, @RequestParam("securityQuestion") String securityQuestion,
+    		@RequestParam("securityAnswer") String securityAnswer) {
         if (userService.existsByUsername(username)) {
             return ResponseEntity.badRequest().body("Username already exists!");
         }
@@ -120,7 +120,7 @@ public class LoginController {
     }
     
     @GetMapping("/get-security-question")
-    public ResponseEntity<Map<String, String>> getSecurityQuestion(@RequestParam String username) {
+    public ResponseEntity<Map<String, String>> getSecurityQuestion(@RequestParam("username") String username) {
         Optional<User> user = Optional.ofNullable(userService.findByUsername(username));
 
         if (user.isPresent()) {
