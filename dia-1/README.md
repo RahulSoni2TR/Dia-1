@@ -95,26 +95,7 @@ To package a clean, self-contained zip file ready to install on a client's compu
 
 ---
 
-## ⚙️ Client Installation & Licensing Flow
+## ⚙️ Client Installation
 
-### 1. Install on Client PC
 1. Extract `ProductManager-Windows.zip` to a writable directory (e.g. `C:\ProductManager`).
 2. Double-click `ProductManager.exe` to run. (The launcher will initialize the local MySQL server and JRE sandbox automatically).
-
-### 2. Offline Activation
-Upon first launch, the app starts a **10-day trial**. To activate the full version:
-1. Copy the **Machine ID** shown on the locked activation screen of the client machine (e.g. `904C-B29A-2564-8AAE`).
-2. On your developer laptop, generate the cryptographic key:
-   ```powershell
-   .\mvnw.cmd exec:java "-Dexec.mainClass=com.example.webapp.cmd.LicenseGenerator" "-Dexec.args=<CLIENT-MACHINE-ID> perpetual"
-   ```
-3. Copy the signed Base64 license key output and paste it into the client's activation screen to instantly unlock the application offline.
-
----
-
-## 💾 Backups & Migration
-All database files, uploaded product photos, generated QR images, and backup archives are stored safely under the user's home profile to prevent loss during updates:
-```text
-C:\Users\<Client-Username>\.productmanager\
-```
-To back up the database, run the `backup.cmd` script in the root directory. To apply updates, simply replace the `app/dia-1.jar` inside their installation folder.
