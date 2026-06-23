@@ -2,11 +2,18 @@ package com.example.webapp.backup;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.File;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -42,11 +49,13 @@ public class BackupService {
     private final ObjectMapper objectMapper;
     private final Path defaultBackupDirectory;
     private final Path settingsFile;
+    private final Path uploadsDirectory;
     private final Object lock = new Object();
 
     public BackupService(
             DataSource dataSource,
-            @Value("${app.backup.dir:}") String configuredBackupDir) {
+            @Value("${app.backup.dir:}") String configuredBackupDir,
+            @Value("${save.uploads.path:}") String uploadsDirectoryPath) {
         this.dataSource = dataSource;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
@@ -60,6 +69,12 @@ public class BackupService {
 
         this.defaultBackupDirectory = rootDir;
         this.settingsFile = rootDir.resolve("backup-settings.json");
+
+        if (uploadsDirectoryPath != null && !uploadsDirectoryPath.isBlank()) {
+            this.uploadsDirectory = Paths.get(uploadsDirectoryPath);
+        } else {
+            this.uploadsDirectory = Paths.get(System.getProperty("user.home"), ".productmanager", "data", "uploads");
+        }
     }
 
     private Path getBackupDirectory(BackupSettings settings) {
@@ -136,13 +151,43 @@ public class BackupService {
                 Path importFile = resolveImportFile(request);
                 BackupSettings settings = loadSettings();
                 BackupRunResult safetyBackup = executeBackup(settings, "before-import");
-                executeSqlFile(importFile);
+
+                String filename = importFile.getFileName().toString();
+                if (filename.endsWith(".zip")) {
+                    Path tempDir = Files.createTempDirectory("pm-restore-");
+                    try {
+                        unzip(importFile, tempDir);
+
+                        Path sqlFile = tempDir.resolve("database.sql");
+                        if (Files.exists(sqlFile)) {
+                            executeSqlFile(sqlFile);
+                        } else {
+                            try (Stream<Path> walk = Files.list(tempDir)) {
+                                Path fallbackSql = walk
+                                        .filter(p -> p.getFileName().toString().endsWith(".sql"))
+                                        .findFirst()
+                                        .orElseThrow(() -> new IllegalArgumentException("Backup ZIP does not contain a database SQL file."));
+                                executeSqlFile(fallbackSql);
+                            }
+                        }
+
+                        Path unzippedUploads = tempDir.resolve("uploads");
+                        if (Files.exists(unzippedUploads) && Files.isDirectory(unzippedUploads)) {
+                            copyDirectory(unzippedUploads, uploadsDirectory);
+                        }
+                    } finally {
+                        deleteDirectory(tempDir);
+                    }
+                } else {
+                    executeSqlFile(importFile);
+                }
 
                 response.put("success", true);
                 response.put("importedFile", importFile.toString());
                 response.put("preImportBackupFile", safetyBackup.getBackupFile());
                 response.put("message", "Backup imported successfully.");
             } catch (Exception ex) {
+                ex.printStackTrace();
                 response.put("success", false);
                 response.put("error", ex.getMessage());
                 response.put("message", "Backup import failed.");
@@ -157,14 +202,47 @@ public class BackupService {
         try {
             Path activeDir = getBackupDirectory(settings);
             ensureDirectory(activeDir);
-            String fileName = "db-backup-" + FILE_TIMESTAMP.format(LocalDateTime.now()) + ".sql";
+            String suffix = (trigger != null && !trigger.equals("manual") && !trigger.equals("automatic")) ? "-" + trigger : "";
+            String fileName = "db-backup-" + FILE_TIMESTAMP.format(LocalDateTime.now()) + suffix + ".zip";
             Path backupFile = activeDir.resolve(fileName);
-            writeBackupFile(backupFile);
+
+            Path tempSqlFile = Files.createTempFile("db-dump-", ".sql");
+            try {
+                writeBackupFile(tempSqlFile);
+
+                try (OutputStream os = Files.newOutputStream(backupFile);
+                     ZipOutputStream zos = new ZipOutputStream(os)) {
+
+                    // 1. Add database.sql
+                    ZipEntry sqlEntry = new ZipEntry("database.sql");
+                    zos.putNextEntry(sqlEntry);
+                    Files.copy(tempSqlFile, zos);
+                    zos.closeEntry();
+
+                    // 2. Add uploads folder recursively
+                    if (Files.exists(uploadsDirectory) && Files.isDirectory(uploadsDirectory)) {
+                        try (Stream<Path> walk = Files.walk(uploadsDirectory)) {
+                            List<Path> filesToZip = walk.filter(p -> !Files.isDirectory(p)).toList();
+                            for (Path p : filesToZip) {
+                                String relativePath = uploadsDirectory.relativize(p).toString().replace("\\", "/");
+                                ZipEntry mediaEntry = new ZipEntry("uploads/" + relativePath);
+                                zos.putNextEntry(mediaEntry);
+                                Files.copy(p, zos);
+                                zos.closeEntry();
+                            }
+                        }
+                    }
+                }
+            } finally {
+                Files.deleteIfExists(tempSqlFile);
+            }
+
             settings.setLastBackupAt(LocalDateTime.now());
             settings.setLastBackupFile(backupFile.toString());
             saveSettings(settings);
             return new BackupRunResult(true, trigger, backupFile.toString(), null);
         } catch (Exception ex) {
+            ex.printStackTrace();
             return new BackupRunResult(false, trigger, null, ex.getMessage());
         }
     }
@@ -259,7 +337,7 @@ public class BackupService {
                 return files
                         .filter(Files::isRegularFile)
                         .filter(path -> path.getFileName().toString().startsWith("db-backup-"))
-                        .filter(path -> path.getFileName().toString().endsWith(".sql"))
+                        .filter(path -> path.getFileName().toString().endsWith(".zip") || path.getFileName().toString().endsWith(".sql"))
                         .sorted(Comparator.comparing(this::getLastModified).reversed())
                         .map(this::buildBackupFileView)
                         .toList();
@@ -319,8 +397,9 @@ public class BackupService {
         if (!Files.isRegularFile(normalizedFile)) {
             throw new IllegalArgumentException("Selected backup file was not found.");
         }
-        if (!normalizedFile.getFileName().toString().startsWith("db-backup-")
-                || !normalizedFile.getFileName().toString().endsWith(".sql")) {
+        String name = normalizedFile.getFileName().toString();
+        if (!name.startsWith("db-backup-")
+                || (!name.endsWith(".sql") && !name.endsWith(".zip"))) {
             throw new IllegalArgumentException("Selected file is not a valid database backup.");
         }
         return normalizedFile;
@@ -461,7 +540,7 @@ public class BackupService {
                 insert.append(") VALUES (");
 
                 for (int i = 1; i <= columnCount; i++) {
-                    insert.append(toSqlLiteral(rows.getObject(i)));
+                    insert.append(toSqlLiteral(rows.getObject(i), metaData.getColumnName(i), metaData.getColumnTypeName(i)));
                     if (i < columnCount) {
                         insert.append(", ");
                     }
@@ -486,7 +565,7 @@ public class BackupService {
         throw new SQLException("Could not fetch CREATE TABLE for " + tableName);
     }
 
-    private String toSqlLiteral(Object value) {
+    private String toSqlLiteral(Object value, String columnName, String columnTypeName) {
         if (value == null) {
             return "NULL";
         }
@@ -497,6 +576,13 @@ public class BackupService {
             return bool ? "1" : "0";
         }
         if (value instanceof byte[] bytes) {
+            if ("JSON".equalsIgnoreCase(columnTypeName)
+                    || "custom_fields".equalsIgnoreCase(columnName)
+                    || "product_snapshot".equalsIgnoreCase(columnName)
+                    || "estimate_snapshot".equalsIgnoreCase(columnName)
+                    || isJsonBytes(bytes)) {
+                return "'" + escapeSql(new String(bytes, StandardCharsets.UTF_8)) + "'";
+            }
             StringBuilder hex = new StringBuilder("0x");
             for (byte b : bytes) {
                 hex.append(String.format("%02X", b));
@@ -507,6 +593,28 @@ public class BackupService {
             return "'" + escapeSql(timestamp.toLocalDateTime().toString().replace('T', ' ')) + "'";
         }
         return "'" + escapeSql(String.valueOf(value)) + "'";
+    }
+
+    private boolean isJsonBytes(byte[] bytes) {
+        if (bytes == null || bytes.length < 2) {
+            return false;
+        }
+        // Find first non-whitespace byte
+        int start = 0;
+        while (start < bytes.length && bytes[start] <= 32) {
+            start++;
+        }
+        if (start >= bytes.length) return false;
+
+        int end = bytes.length - 1;
+        while (end >= 0 && bytes[end] <= 32) {
+            end--;
+        }
+        if (end <= start) return false;
+
+        char first = (char) bytes[start];
+        char last = (char) bytes[end];
+        return (first == '{' && last == '}') || (first == '[' && last == ']');
     }
 
     private String escapeSql(String value) {
@@ -569,9 +677,55 @@ public class BackupService {
         public String getBackupFile() {
             return backupFile;
         }
-
         public String getError() {
             return error;
         }
     }
+
+    private void unzip(Path zipFilePath, Path destDirectory) throws IOException {
+        Files.createDirectories(destDirectory);
+        try (InputStream is = Files.newInputStream(zipFilePath);
+             ZipInputStream zis = new ZipInputStream(is)) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                Path resolvedPath = destDirectory.resolve(entry.getName()).normalize();
+                if (!resolvedPath.startsWith(destDirectory)) {
+                    throw new IOException("ZIP entry escapes destination directory: " + entry.getName());
+                }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(resolvedPath);
+                } else {
+                    Files.createDirectories(resolvedPath.getParent());
+                    Files.copy(zis, resolvedPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zis.closeEntry();
+            }
+        }
+    }
+
+    private void copyDirectory(Path source, Path target) throws IOException {
+        try (Stream<Path> walk = Files.walk(source)) {
+            List<Path> sources = walk.toList();
+            for (Path src : sources) {
+                Path dest = target.resolve(source.relativize(src));
+                if (Files.isDirectory(src)) {
+                    Files.createDirectories(dest);
+                } else {
+                    Files.createDirectories(dest.getParent());
+                    Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+    }
+
+    private void deleteDirectory(Path directory) throws IOException {
+        if (!Files.exists(directory)) return;
+        try (Stream<Path> walk = Files.walk(directory)) {
+            List<Path> paths = walk.sorted(Comparator.reverseOrder()).toList();
+            for (Path path : paths) {
+                Files.deleteIfExists(path);
+            }
+        }
+    }
 }
+

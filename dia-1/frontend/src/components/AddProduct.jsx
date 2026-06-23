@@ -158,6 +158,10 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
             <div><label>Diamonds (ct)</label><input type="number" name="diaWeight" step="0.01" onChange={handleInputChange} /></div>
             <div><label>Diamond Rate</label><input type="number" name="diaRate" onChange={handleInputChange} /></div>
           </div>
+          <div className="inline-fields">
+            <div><label>Other Stones</label><input type="number" name="diaSt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Other Stones Rate</label><input type="number" name="diaStRate" onChange={handleInputChange} /></div>
+          </div>
           <div className="labour-three-inline">
             <div><label>Labour/Gm</label><input type="number" name="drLabour" disabled={formData.drLabourAll || formData.drLabourP} onChange={handleInputChange} /></div>
             <div><label>Labour Amt</label><input type="number" name="drLabourAll" disabled={formData.drLabour || formData.drLabourP} onChange={handleInputChange} /></div>
@@ -184,6 +188,26 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
             <div><label>Vilandi (ct)</label><input type="number" name="vilandiCt" step="0.01" onChange={handleInputChange} /></div>
             <div><label>Vilandi Rate</label><input type="number" name="vilandiRate" onChange={handleInputChange} /></div>
           </div>
+          <div className="inline-fields">
+            <div><label>Diamonds (ct)</label><input type="number" name="diamondsCt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Diamonds Rate</label><input type="number" name="diamondsCtRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Beads (Ct.)</label><input type="number" name="beadsCt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Beads Rate</label><input type="number" name="vilandiBeadsRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Pearls (gm)</label><input type="number" name="pearlsGm" step="0.001" onChange={handleInputChange} /></div>
+            <div><label>Pearls Rate</label><input type="number" name="vilandiPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>SS Pearls (Ct.)</label><input type="number" name="ssPearlCts" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>SS Pearls Rate</label><input type="number" name="osSSPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Other Stones</label><input type="number" name="otherStonesCt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Other Stones Rate</label><input type="number" name="openStRate" onChange={handleInputChange} /></div>
+          </div>
         </div>
       );
     }
@@ -204,7 +228,32 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
       );
     }
 
-    // Group 4: Vilandi (9, 10)
+    // Group 4: Diamond Earrings / Rings (19, 20)
+    if (["19", "20"].includes(sc)) {
+      return (
+        <div className="category-specific">
+          <label>Design No</label><input type="text" name="designNoEarring" required onChange={handleInputChange} />
+          <label>Gross Weight</label><input type="number" name="earringGross" step="0.001" required onChange={handleInputChange} />
+          <label>Net Weight</label><input type="number" name="earringNet" step="0.001" required onChange={handleInputChange} />
+          <label>Pieces</label><input type="number" name="earringPcs" onChange={handleInputChange} />
+          <div className="inline-fields">
+            <div><label>Diamonds (ct)</label><input type="number" name="diamondWeightEarring" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Diamonds Rate</label><input type="number" name="diamondsWtRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Other Stones</label><input type="number" name="earSt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Other Stones Rate</label><input type="number" name="earStRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="labour-three-inline">
+            <div><label>Labour/Gm</label><input type="number" name="diamondLabour" disabled={formData.diamondLabourAll || formData.drLabourP} onChange={handleInputChange} /></div>
+            <div><label>Labour Amt</label><input type="number" name="diamondLabourAll" disabled={formData.diamondLabour || formData.drLabourP} onChange={handleInputChange} /></div>
+            <div><label>Labour %</label><input type="number" name="drLabourP" disabled={formData.diamondLabour || formData.diamondLabourAll} onChange={handleInputChange} /></div>
+          </div>
+        </div>
+      );
+    }
+
+    // Group 5: Vilandi (9, 10)
     if (["9", "10"].includes(sc)) {
       return (
         <div className="category-specific">
@@ -224,11 +273,27 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
             <div><label>Stones</label><input type="number" name="stones" onChange={handleInputChange} /></div>
             <div><label>Stones Rate</label><input type="number" name="vilandiStoneRate" onChange={handleInputChange} /></div>
           </div>
+          <div className="inline-fields">
+            <div><label>Beads (Ct.)</label><input type="number" name="beadsVilandi" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Beads Rate</label><input type="number" name="vilandiBeadsRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Pearls (gm)</label><input type="number" name="pearlsVilandi" step="0.001" onChange={handleInputChange} /></div>
+            <div><label>Pearls Rate</label><input type="number" name="vilandiPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>SS Pearls (Ct.)</label><input type="number" name="ssPearlCt" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>SS Pearls Rate</label><input type="number" name="vilandiSSPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Real Stones</label><input type="number" name="realStone" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Fitting</label><input type="number" name="vilandiFitting" onChange={handleInputChange} /></div>
+          </div>
         </div>
       );
     }
 
-    // Group 5: Jadtar (6, 7, 8, 17)
+    // Group 6: Jadtar Register (6, 7, 8, 17)
     if (["6", "7", "8", "17"].includes(sc)) {
       return (
         <div className="category-specific">
@@ -243,6 +308,30 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
           <div className="inline-fields">
             <div><label>Stones (ct)</label><input type="number" name="jadtarStones" step="0.01" onChange={handleInputChange} /></div>
             <div><label>Stones Rate</label><input type="number" name="jadtarStoneRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Beads (Ct.)</label><input type="number" name="jadtarBeads" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Beads Rate</label><input type="number" name="jadtarBeadsRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Pearls Weight (gm)</label><input type="number" name="jadtarPearls" step="0.001" onChange={handleInputChange} /></div>
+            <div><label>Pearls Rate</label><input type="number" name="jadtarPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>SS Pearls (Ct.)</label><input type="number" name="jadtarSSPearl" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>SS Pearls Rate</label><input type="number" name="jadtarSSPearlRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Real Stones</label><input type="number" name="jadtarRealStone" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Fitting</label><input type="number" name="jadtarFitting" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Vilandi (ct)</label><input type="number" name="jadvilandi" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Vilandi Rate</label><input type="number" name="jadvilandiRate" onChange={handleInputChange} /></div>
+          </div>
+          <div className="inline-fields">
+            <div><label>Mozonite</label><input type="number" name="mozStone" step="0.01" onChange={handleInputChange} /></div>
+            <div><label>Mozonite Rate</label><input type="number" name="mozStoneRate" onChange={handleInputChange} /></div>
           </div>
         </div>
       );
@@ -296,7 +385,7 @@ function AddProduct({ onSwitchPage, onOpenModal }) {
           <label>Gold Karat</label>
           <select name="karatId" required value={formData.karatId} onChange={handleInputChange}>
             <option value="">Select Karat</option>
-            <option value="10">10K</option>
+            <option value="10">9K</option>
             <option value="14">14K</option>
             <option value="18">18K</option>
             <option value="22">22K</option>

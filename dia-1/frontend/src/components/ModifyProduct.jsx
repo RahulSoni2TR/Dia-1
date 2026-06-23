@@ -81,7 +81,7 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
         categoryId: p.categoryId || '',
         subCategoryId: p.subCategoryId || '',
         productName: p.item || '',
-        karat: p.karat || '',
+        karat: (p.karat === 10 || p.karat === '10' || p.karat === '10.00' || String(p.karat).toLowerCase() === '10k') ? '9K' : (p.karat || ''),
         designNo: p.designNo || '',
         gross: p.gross || '',
         productNet: p.net || '',
@@ -142,8 +142,15 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
     const payload = new FormData();
     payload.append('productOrderid', finalOrderId);
     Object.keys(formData).forEach(k => {
-      if (formData[k] !== '' && formData[k] !== null && formData[k] !== undefined) {
-        payload.append(k, formData[k]);
+      let val = formData[k];
+      if (k === 'karat') {
+        const s = String(val).trim();
+        if (s === '9K' || s === '9k' || s === '9') {
+          val = '10';
+        }
+      }
+      if (val !== '' && val !== null && val !== undefined) {
+        payload.append(k, val);
       }
     });
     if (imageFile) payload.append('image', imageFile);
@@ -171,30 +178,109 @@ function ModifyProduct({ onSwitchPage, onOpenModal }) {
     const c = parseInt(formData.categoryId);
     if (c === 1) return (
       <div className="category-specific">
-        <label>Pieces</label><input type="number" name="pcs" value={formData.pcs} onChange={handleInputChange} />
+        <label>Pieces</label><input type="number" name="pcs" value={formData.pcs || ''} onChange={handleInputChange} />
         <div className="inline-fields">
-          <div><label>Diamonds (ct)</label><input type="number" name="diaWeight" value={formData.diaWeight} onChange={handleInputChange} /></div>
-          <div><label>Diamond Rate</label><input type="number" name="diaRate" value={formData.diaRate} onChange={handleInputChange} /></div>
+          <div><label>Diamonds (ct)</label><input type="number" step="any" name="diaWeight" value={formData.diaWeight || ''} onChange={handleInputChange} /></div>
+          <div><label>Diamond Rate</label><input type="number" step="any" name="diaRate" value={formData.diaRate || ''} onChange={handleInputChange} /></div>
         </div>
         <div className="inline-fields">
-          <div><label>Other Stones</label><input type="number" name="diaOs" value={formData.diaOs} onChange={handleInputChange} /></div>
-          <div><label>Other Rate</label><input type="number" name="diaOsRate" value={formData.diaOsRate} onChange={handleInputChange} /></div>
+          <div><label>Other Stones</label><input type="number" step="any" name="diaOs" value={formData.diaOs || ''} onChange={handleInputChange} /></div>
+          <div><label>Other Rate</label><input type="number" step="any" name="diaOsRate" value={formData.diaOsRate || ''} onChange={handleInputChange} /></div>
         </div>
       </div>
     );
     if (c === 2) return (
       <div className="category-specific">
         <div className="inline-fields">
-          <div><label>Vilandi CT</label><input type="number" name="vilandiCt" value={formData.vilandiCt} onChange={handleInputChange} /></div>
-          <div><label>Vilandi Rate</label><input type="number" name="vilandiRate" value={formData.vilandiRate} onChange={handleInputChange} /></div>
+          <div><label>Vilandi CT</label><input type="number" step="any" name="vilandiCt" value={formData.vilandiCt || ''} onChange={handleInputChange} /></div>
+          <div><label>Vilandi Rate</label><input type="number" step="any" name="vilandiRate" value={formData.vilandiRate || ''} onChange={handleInputChange} /></div>
         </div>
         <div className="inline-fields">
-          <div><label>Diamonds Weight</label><input type="number" name="diamondsCt" value={formData.diamondsCt} onChange={handleInputChange} /></div>
-          <div><label>Diamond Rate</label><input type="number" name="diamondsCtRate" value={formData.diamondsCtRate} onChange={handleInputChange} /></div>
+          <div><label>Diamonds Weight</label><input type="number" step="any" name="diamondsCt" value={formData.diamondsCt || ''} onChange={handleInputChange} /></div>
+          <div><label>Diamond Rate</label><input type="number" step="any" name="diamondsCtRate" value={formData.diamondsCtRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Beads (Ct.)</label><input type="number" step="any" name="beadsCt" value={formData.beadsCt || ''} onChange={handleInputChange} /></div>
+          <div><label>Beads Rate</label><input type="number" step="any" name="beadsRate" value={formData.beadsRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Pearls (gm)</label><input type="number" step="any" name="pearlsGm" value={formData.pearlsGm || ''} onChange={handleInputChange} /></div>
+          <div><label>Pearls Rate</label><input type="number" step="any" name="openPearlsRate" value={formData.openPearlsRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>SS Pearls (Ct.)</label><input type="number" step="any" name="ssosPearllbl" value={formData.ssosPearllbl || ''} onChange={handleInputChange} /></div>
+          <div><label>SS Pearls Rate</label><input type="number" step="any" name="ssosPearlCt" value={formData.ssosPearlCt || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Other Stones (Ct.)</label><input type="number" step="any" name="otherStonesCt" value={formData.otherStonesCt || ''} onChange={handleInputChange} /></div>
+          <div><label>Other Stones Rate</label><input type="number" step="any" name="otherOsRate" value={formData.otherOsRate || ''} onChange={handleInputChange} /></div>
         </div>
       </div>
     );
-    // ... add other category mappings as needed similar to AddProduct.jsx
+    if (c === 4) return (
+      <div className="category-specific">
+        <div className="inline-fields">
+          <div><label>Vilandi</label><input type="number" step="any" name="vilandi" value={formData.vilandi || ''} onChange={handleInputChange} /></div>
+          <div><label>Vilandi Rate</label><input type="number" step="any" name="vRate" value={formData.vRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Stones</label><input type="number" step="any" name="stones" value={formData.stones || ''} onChange={handleInputChange} /></div>
+          <div><label>Stones Rate</label><input type="number" step="any" name="vsRate" value={formData.vsRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Beads (Ct.)</label><input type="number" step="any" name="beadsCtVilandi" value={formData.beadsCtVilandi || ''} onChange={handleInputChange} /></div>
+          <div><label>Beads Rate</label><input type="number" step="any" name="vbRate" value={formData.vbRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Pearls (gm)</label><input type="number" step="any" name="pearlsGmVilandi" value={formData.pearlsGmVilandi || ''} onChange={handleInputChange} /></div>
+          <div><label>Pearls Rate</label><input type="number" step="any" name="vpRate" value={formData.vpRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>SS Pearls (Ct.)</label><input type="number" step="any" name="ssPearlCt" value={formData.ssPearlCt || ''} onChange={handleInputChange} /></div>
+          <div><label>SS Pearls Rate</label><input type="number" step="any" name="vssRate" value={formData.vssRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Real Stone</label><input type="number" step="any" name="vrealStone" value={formData.vrealStone || ''} onChange={handleInputChange} /></div>
+          <div><label>Fitting</label><input type="number" step="any" name="vfitting" value={formData.vfitting || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Mozonite</label><input type="number" step="any" name="vmoz" value={formData.vmoz || ''} onChange={handleInputChange} /></div>
+          <div><label>Mozonite Rate</label><input type="number" step="any" name="vmRate" value={formData.vmRate || ''} onChange={handleInputChange} /></div>
+        </div>
+      </div>
+    );
+    if (c === 5) return (
+      <div className="category-specific">
+        <div className="inline-fields">
+          <div><label>Stones</label><input type="number" step="any" name="stonesJadtar" value={formData.stonesJadtar || ''} onChange={handleInputChange} /></div>
+          <div><label>Stones Rate</label><input type="number" step="any" name="jsRate" value={formData.jsRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Beads (Ct.)</label><input type="number" step="any" name="beadsCtJadtar" value={formData.beadsCtJadtar || ''} onChange={handleInputChange} /></div>
+          <div><label>Beads Rate</label><input type="number" step="any" name="jbRate" value={formData.jbRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Pearls (gm)</label><input type="number" step="any" name="pearlsGmJadtar" value={formData.pearlsGmJadtar || ''} onChange={handleInputChange} /></div>
+          <div><label>Pearls Rate</label><input type="number" step="any" name="jpRate" value={formData.jpRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>SS Pearl (Ct.)</label><input type="number" step="any" name="ssPearlCtJadtar" value={formData.ssPearlCtJadtar || ''} onChange={handleInputChange} /></div>
+          <div><label>SS Pearls Rate</label><input type="number" step="any" name="jssRate" value={formData.jssRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Real Stone</label><input type="number" step="any" name="realStoneJadtar" value={formData.realStoneJadtar || ''} onChange={handleInputChange} /></div>
+          <div><label>Fitting</label><input type="number" step="any" name="jfitting" value={formData.jfitting || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Vilandi</label><input type="number" step="any" name="jadvilandi" value={formData.jadvilandi || ''} onChange={handleInputChange} /></div>
+          <div><label>Vilandi Rate</label><input type="number" step="any" name="jadvilandiRate" value={formData.jadvilandiRate || ''} onChange={handleInputChange} /></div>
+        </div>
+        <div className="inline-fields">
+          <div><label>Mozonite</label><input type="number" step="any" name="jmoz" value={formData.jmoz || ''} onChange={handleInputChange} /></div>
+          <div><label>Mozonite Rate</label><input type="number" step="any" name="jmRate" value={formData.jmRate || ''} onChange={handleInputChange} /></div>
+        </div>
+      </div>
+    );
     return null;
   };
 

@@ -465,6 +465,16 @@
   background: #fffbeb;
 }
 
+.qr-regen-panel {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+}
+
 .backup-radio-group {
   display: flex;
   gap: 14px;
@@ -863,10 +873,28 @@
 @media (max-width: 768px) {
   .view-content { flex-direction: column; }
   .view-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ddd; height: auto; max-height: 200px; }
+  .view-main { padding: 10px; min-width: 0; }
+  .product-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
   .product-list-container .view-card { flex-direction: column; height: auto; }
   .product-list-container .view-card img { width: 100%; height: 160px; }
   .product-list-container .card-actions { position: static; right: auto; bottom: auto; z-index: 2; }
   .product-list-container .card-info { padding-right: 0; }
+  
+  .view-card img { height: 120px; }
+  .card-info { padding: 10px; }
+  .card-info h4 { font-size: 0.9rem; }
+  .card-price { font-size: 1rem; margin: 5px 0; }
+  .card-actions { gap: 6px; }
+  .card-actions button {
+    font-size: 0.75rem;
+    height: 28px;
+    flex: 1 1 45%;
+    max-width: none;
+    padding: 0 4px;
+  }
 }
 
 /* Estimate Table Styles */

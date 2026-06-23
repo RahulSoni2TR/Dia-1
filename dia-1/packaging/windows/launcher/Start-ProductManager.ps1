@@ -21,7 +21,18 @@ $QrDir = (Join-Path $UploadsDir "qr_codes").Replace("\", "/") + "/"
 $BackupDir = Join-Path $PersistentRoot "data\backups"
 $LogsDir = Join-Path $PersistentRoot "logs"
 $MysqlPort = 33107
+$PortFile = Join-Path $Root "port.txt"
 $AppPort = 18080
+if (Test-Path $PortFile) {
+    $Content = (Get-Content $PortFile).Trim()
+    if ($Content -as [int] -and [int]$Content -gt 0 -and [int]$Content -lt 65536) {
+        $AppPort = [int]$Content
+    }
+} else {
+    try {
+        Set-Content -Path $PortFile -Value $AppPort -ErrorAction SilentlyContinue
+    } catch {}
+}
 $AppUrl = "http://127.0.0.1:$AppPort"
 
 function Ensure-Directory($Path) {
@@ -205,7 +216,7 @@ try {
         "-jar", $Jar,
         "--server.address=0.0.0.0",
         "--server.port=$AppPort",
-        "--spring.datasource.url=jdbc:mysql://127.0.0.1:$MysqlPort/local?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Kolkata",
+        "--spring.datasource.url=jdbc:mariadb://127.0.0.1:$MysqlPort/local?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Kolkata",
         "--spring.datasource.username=root",
         "--spring.datasource.password=",
         "--spring.jpa.hibernate.ddl-auto=none",

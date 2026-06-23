@@ -798,6 +798,7 @@ public class ProductController {
 	            @RequestParam(value = "searchBy", required = false, defaultValue = "name") String searchBy, // <-- new
 	            @RequestParam(value = "sortBy", required = false) String sortBy,
 				@RequestParam(value = "verifiedOnly", required = false, defaultValue = "false") Boolean verifiedOnly,
+				@RequestParam(value = "unverifiedOnly", required = false, defaultValue = "false") Boolean unverifiedOnly,
 					HttpSession session) {
 	System.out.println("search term is "+searchTerm+" and search by is "+searchBy);
 	System.out.println("sort by is "+sortBy+" and verified only is "+verifiedOnly);
@@ -872,10 +873,11 @@ else if ("unverifiedFirst".equalsIgnoreCase(sortBy)) {
 				Page<Product> products;
 				System.out.println("Pageable: " + pageable);
 
+				boolean dbVerifiedOnly = verifiedOnly && !unverifiedOnly;
 				if (categories == null) {
-					products = productService.searchWithoutCategory(searchTerm, searchBy, verifiedOnly, pageable);
+					products = productService.searchWithoutCategory(searchTerm, searchBy, dbVerifiedOnly, pageable);
 				} else {
-					products = productService.searchByCategory(categories, searchTerm, searchBy, verifiedOnly, pageable);
+					products = productService.searchByCategory(categories, searchTerm, searchBy, dbVerifiedOnly, pageable);
 				}
 
 				if (products.isEmpty()) {
@@ -916,8 +918,15 @@ for (Product product : products.getContent()) {
         }
     }
 
-    // ✅ FINAL FILTER (THIS WAS MISSING)
-    if (!verifiedOnly || product.getVerificationStatus() == 1) {
+    if (unverifiedOnly) {
+        if (product.getVerificationStatus() != 1) {
+            processedProducts.add(product);
+        }
+    } else if (verifiedOnly) {
+        if (product.getVerificationStatus() == 1) {
+            processedProducts.add(product);
+        }
+    } else {
         processedProducts.add(product);
     }
 }
@@ -933,7 +942,7 @@ else if ("unverifiedFirst".equalsIgnoreCase(sortBy)) {
         Integer.compare(p1.getVerificationStatus(), p2.getVerificationStatus())
     );
 }
-				long totalCount = verifiedOnly
+				long totalCount = (verifiedOnly || unverifiedOnly)
         ? processedProducts.size()   // filtered count
         : products.getTotalElements();
 

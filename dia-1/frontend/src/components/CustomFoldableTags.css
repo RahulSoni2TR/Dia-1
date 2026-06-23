@@ -541,7 +541,7 @@
   font-weight: 700;
 }
 
-.card-price {
+.tag-card-price {
   margin-top: auto;
   padding: 12px 14px;
   border: 1px solid #dceff0;
@@ -549,7 +549,7 @@
   background: linear-gradient(180deg, rgba(240, 253, 250, 0.95) 0%, rgba(236, 253, 245, 0.95) 100%);
 }
 
-.card-price-label {
+.tag-card-price-label {
   display: block;
   margin-bottom: 4px;
   color: #0f766e;
@@ -559,7 +559,7 @@
   letter-spacing: 0.05em;
 }
 
-.card-price strong {
+.tag-card-price strong {
   color: #0f172a;
   font-size: 1rem;
   font-weight: 800;

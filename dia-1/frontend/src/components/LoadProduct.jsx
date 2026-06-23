@@ -229,7 +229,7 @@ function LoadProduct({ onSwitchPage, onOpenModal }) {
           <p><strong>Category:</strong> {categoryMap[product.categoryId] || 'Unknown'}</p>
           <p><strong>Sub Category:</strong> {categoryMap[product.subCategoryId] || 'Unknown'}</p>
           <p><strong>Design No:</strong> {product.orders?.orderId || 'N/A'}/{product.designNo}</p>
-          <p><strong>Gold:</strong> {product.karat} Karat</p>
+          <p><strong>Gold:</strong> {(product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : product.karat} Karat</p>
           
           <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '20px 0' }}>
             <label className="checkbox-item" style={{ color: '#000' }}>

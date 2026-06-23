@@ -5,6 +5,7 @@ using System.Threading;
 using System.Net;
 using System.Windows.Forms;
 using System.Drawing;
+using System.Net.NetworkInformation;
 
 namespace ProductManagerLauncher
 {
@@ -27,6 +28,25 @@ namespace ProductManagerLauncher
         private static bool noUiGlobal = false;
         private static Form loadingForm;
         private static Label statusLabel;
+        private static Mutex singleInstanceMutex;
+
+        static bool IsPortInUse(int port)
+        {
+            try
+            {
+                IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+                IPEndPoint[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpListeners();
+                foreach (IPEndPoint tcpi in tcpConnInfoArray)
+                {
+                    if (tcpi.Port == port)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch {}
+            return false;
+        }
 
         static void StartLoadingScreen()
         {
@@ -129,6 +149,56 @@ namespace ProductManagerLauncher
         static void Main(string[] args)
         {
             string root = AppDomain.CurrentDomain.BaseDirectory;
+
+            bool createdNew;
+            singleInstanceMutex = new Mutex(true, "Local\\ProductManagerSingleInstanceMutex", out createdNew);
+            if (!createdNew)
+            {
+                // Parse arguments to check for -NoUi
+                bool isNoUi = false;
+                foreach (string arg in args)
+                {
+                    if (arg.Equals("-NoUi", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isNoUi = true;
+                    }
+                }
+
+                if (!isNoUi)
+                {
+                    int redirectPort = 18080;
+                    string redirectPortFile = Path.Combine(root, "port.txt");
+                    if (File.Exists(redirectPortFile))
+                    {
+                        try
+                        {
+                            string content = File.ReadAllText(redirectPortFile).Trim();
+                            int parsedPort;
+                            if (int.TryParse(content, out parsedPort) && parsedPort > 0 && parsedPort < 65536)
+                            {
+                                redirectPort = parsedPort;
+                            }
+                        }
+                        catch {}
+                    }
+
+                    try
+                    {
+                        string edge = FindEdge();
+                        if (edge != null)
+                        {
+                            string edgeProfile = Path.Combine(root, @"data\edge-profile");
+                            Process.Start(edge, string.Format("--app={0} --user-data-dir=\"{1}\"", "http://127.0.0.1:" + redirectPort, edgeProfile));
+                        }
+                        else
+                        {
+                            Process.Start("http://127.0.0.1:" + redirectPort);
+                        }
+                    }
+                    catch {}
+                }
+                return;
+            }
             
             // Check if NoUi switch or smoke test duration is passed
             bool noUi = false;
@@ -171,10 +241,46 @@ namespace ProductManagerLauncher
             
             int mysqlPort = 33107;
             int appPort = 18080;
+            string portFile = Path.Combine(root, "port.txt");
+            if (File.Exists(portFile))
+            {
+                try
+                {
+                    string content = File.ReadAllText(portFile).Trim();
+                    int parsedPort;
+                    if (int.TryParse(content, out parsedPort) && parsedPort > 0 && parsedPort < 65536)
+                    {
+                        appPort = parsedPort;
+                    }
+                }
+                catch {}
+            }
+            else
+            {
+                try
+                {
+                    File.WriteAllText(portFile, appPort.ToString());
+                }
+                catch {}
+            }
             string appUrl = "http://127.0.0.1:" + appPort;
 
             try
             {
+                // Wait for ports to clear if a previous instance is shutting down
+                if (IsPortInUse(appPort) || IsPortInUse(mysqlPort))
+                {
+                    UpdateStatus("Waiting for previous instance to close...");
+                    for (int i = 0; i < 15; i++)
+                    {
+                        if (!IsPortInUse(appPort) && !IsPortInUse(mysqlPort))
+                        {
+                            break;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                }
+
                 UpdateStatus("Checking configuration and folder structures...");
                 EnsureDirectory(dataDir);
                 EnsureDirectory(uploadsDir);
@@ -306,7 +412,7 @@ namespace ProductManagerLauncher
                     string javaArgs = string.Format("-jar \"{0}\" " +
                         "--server.address=0.0.0.0 " +
                         "--server.port={1} " +
-                        "--spring.datasource.url=\"jdbc:mysql://127.0.0.1:{2}/local?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Kolkata\" " +
+                        "--spring.datasource.url=\"jdbc:mariadb://127.0.0.1:{2}/local?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Kolkata\" " +
                         "--spring.datasource.username=root " +
                         "--spring.datasource.password= " +
                         "--spring.jpa.hibernate.ddl-auto=none " +

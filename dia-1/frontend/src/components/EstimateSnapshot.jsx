@@ -98,7 +98,7 @@ const reconstructEstimateFromProduct = (product, parsedEstimate) => {
   if (goldAmt > 0 || Number(product.net || 0) > 0) {
     const net = Number(product.net || 0);
     lines.push({
-      description: `Gold (${product.karat || 22}KT)`,
+      description: `Gold (${(product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : (product.karat || 22)}KT)`,
       qty: net,
       rate: net > 0 ? Math.round((goldAmt / net) * 100) / 100 : 0,
       amount: Math.round(goldAmt)

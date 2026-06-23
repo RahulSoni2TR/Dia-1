@@ -41,6 +41,7 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
     sortBy: sessionStorage.getItem('lastSortBy') || '',
     searchBy: sessionStorage.getItem('lastSearchBy') || 'name',
     verifiedOnly: sessionStorage.getItem('lastVerifiedOnly') === 'true',
+    unverifiedOnly: sessionStorage.getItem('lastUnverifiedOnly') === 'true',
     priceWithFields: true
   }));
 
@@ -55,7 +56,8 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
       searchTerm: filters.searchTerm,
       sortBy: filters.sortBy,
       searchBy: filters.searchBy,
-      verifiedOnly: String(filters.verifiedOnly)
+      verifiedOnly: String(filters.verifiedOnly),
+      unverifiedOnly: String(filters.unverifiedOnly)
     });
 
     try {
@@ -82,7 +84,7 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
   useEffect(() => {
     fetchProducts(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.category, filters.sortBy, filters.verifiedOnly]);
+  }, [filters.category, filters.sortBy, filters.verifiedOnly, filters.unverifiedOnly]);
 
   const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -168,8 +170,42 @@ function ViewProduct({ onSwitchPage, onOpenModal }) {
           Incl. Addons
         </label>
         <label className="checkbox-item" style={{color: '#000'}}>
-          <input type="checkbox" checked={filters.verifiedOnly} onChange={e => updateFilter('verifiedOnly', e.target.checked)} />
+          <input 
+            type="checkbox" 
+            checked={filters.verifiedOnly} 
+            onChange={e => {
+              const checked = e.target.checked;
+              setFilters(prev => {
+                const updated = { ...prev, verifiedOnly: checked };
+                if (checked) {
+                  updated.unverifiedOnly = false;
+                  sessionStorage.setItem('lastUnverifiedOnly', 'false');
+                }
+                return updated;
+              });
+              sessionStorage.setItem('lastVerifiedOnly', String(checked));
+            }} 
+          />
           Verified Only
+        </label>
+        <label className="checkbox-item" style={{color: '#000'}}>
+          <input 
+            type="checkbox" 
+            checked={filters.unverifiedOnly} 
+            onChange={e => {
+              const checked = e.target.checked;
+              setFilters(prev => {
+                const updated = { ...prev, unverifiedOnly: checked };
+                if (checked) {
+                  updated.verifiedOnly = false;
+                  sessionStorage.setItem('lastVerifiedOnly', 'false');
+                }
+                return updated;
+              });
+              sessionStorage.setItem('lastUnverifiedOnly', String(checked));
+            }} 
+          />
+          Unverified Only
         </label>
       </section>
 

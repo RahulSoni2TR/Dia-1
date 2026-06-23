@@ -9,18 +9,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.RequestParam;
 import com.example.webapp.backup.BackupImportRequest;
 import com.example.webapp.backup.BackupService;
 import com.example.webapp.backup.BackupSettingsRequest;
+import com.example.webapp.service.ProductService;
 
 @RestController
 @RequestMapping("/api/backups")
 public class BackupController {
 
     private final BackupService backupService;
+    private final ProductService productService;
 
-    public BackupController(BackupService backupService) {
+    public BackupController(BackupService backupService, ProductService productService) {
         this.backupService = backupService;
+        this.productService = productService;
     }
 
     @GetMapping("/config")
@@ -60,6 +64,25 @@ public class BackupController {
             return ResponseEntity.ok(Map.of("success", true, "path", path));
         } else {
             return ResponseEntity.ok(Map.of("success", false, "message", "No folder selected"));
+        }
+    }
+
+    @PostMapping("/regenerate-qrs")
+    public ResponseEntity<Map<String, Object>> regenerateQrs(@RequestParam(value = "customBaseUrl", required = false) String customBaseUrl) {
+        try {
+            int count = productService.regenerateAllQRCodes(customBaseUrl);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "count", count,
+                "message", "QR codes regenerated successfully."
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(Map.of(
+                "success", false,
+                "error", e.getMessage(),
+                "message", "QR code regeneration failed."
+            ));
         }
     }
 }

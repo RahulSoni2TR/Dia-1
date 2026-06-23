@@ -266,7 +266,7 @@ function CustomFoldableTags({ onSwitchPage }) {
           <p><strong>Category:</strong> {detailsMap[product.categoryId] || 'Unknown'}</p>
           <p><strong>Sub Category:</strong> {detailsMap[product.subCategoryId] || 'Unknown'}</p>
           <p><strong>Design No:</strong> {product.orderId || 'N/A'}/{product.designNo || 'N/A'}</p>
-          <p><strong>Gold:</strong> {product.karat || 'N/A'} Karat</p>
+          <p><strong>Gold:</strong> {(product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : (product.karat || 'N/A')} Karat</p>
 
           <label className="price-toggle-row">
             <input
@@ -729,8 +729,8 @@ function ProductCard({ product, isSelected, showPriceWithFields, onView, onToggl
           </div>
         </div>
 
-        <div className="card-price">
-          <span className="card-price-label">
+        <div className="tag-card-price">
+          <span className="tag-card-price-label">
             {showPriceWithFields ? 'Price With Addons' : 'Base Price'}
           </span>
           <strong>{formatCurrency(price)}</strong>

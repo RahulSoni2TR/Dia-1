@@ -110,9 +110,17 @@ function BatchUpdate({ onSwitchPage, onOpenModal }) {
   const handleUpdate = async () => {
     if (!categoryId || selectedFields.size === 0) return;
 
+    const updates = { ...fieldValues };
+    if (updates.karat) {
+      const val = String(updates.karat).trim();
+      if (val === '9K' || val === '9k' || val === '9') {
+        updates.karat = '10';
+      }
+    }
+
     const payload = {
       categoryId: parseInt(categoryId, 10),
-      updates: fieldValues
+      updates: updates
     };
 
     try {

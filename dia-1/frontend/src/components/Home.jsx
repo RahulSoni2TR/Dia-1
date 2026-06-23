@@ -26,6 +26,8 @@ function Home({ onSwitchPage, user }) {
   const [backupImportMode, setBackupImportMode] = useState('latest');
   const [selectedBackupFile, setSelectedBackupFile] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
+  const [customQrBaseUrl, setCustomQrBaseUrl] = useState('');
+  const [qrRegenerating, setQrRegenerating] = useState(false);
 
   useEffect(() => {
     fetchPrices();
@@ -293,6 +295,36 @@ function Home({ onSwitchPage, user }) {
     }
   };
 
+  const handleRegenerateQrs = async () => {
+    const confirmed = window.confirm("Are you sure you want to regenerate all QR codes? This might take a few moments.");
+    if (!confirmed) return;
+
+    setQrRegenerating(true);
+    setBackupMessage('');
+    try {
+      let url = `${API_BASE}/api/backups/regenerate-qrs`;
+      if (customQrBaseUrl.trim()) {
+        url += `?customBaseUrl=${encodeURIComponent(customQrBaseUrl.trim())}`;
+      }
+      const response = await fetch(url, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to regenerate QR codes');
+      const data = await response.json();
+      if (data.success) {
+        setBackupMessage(data.message || `QR codes regenerated successfully (${data.count} codes).`);
+      } else {
+        setBackupMessage(data.error || 'Failed to regenerate QR codes.');
+      }
+    } catch (error) {
+      console.error('Error regenerating QR codes:', error);
+      setBackupMessage('Could not regenerate QR codes right now.');
+    } finally {
+      setQrRegenerating(false);
+    }
+  };
+
   const formatFileSize = (sizeBytes) => {
     const size = Number(sizeBytes);
     if (!Number.isFinite(size) || size <= 0) return '0 KB';
@@ -302,7 +334,7 @@ function Home({ onSwitchPage, user }) {
 
   const priceLabel = loading
     ? "Loading prices..."
-    : `Gold 10K: ₹${prices.gold_10k} | Gold 14K: ₹${prices.gold_14k} | Gold 18K: ₹${prices.gold_18k} | Gold 22K: ₹${prices.gold_22k} | Gold 24K: ₹${prices.gold_24k} | Silver: ₹${prices.silver} | Diamond: ₹${prices.diamond} | GST: ${prices.gst}%`;
+    : `Gold 9K: ₹${prices.gold_10k} | Gold 14K: ₹${prices.gold_14k} | Gold 18K: ₹${prices.gold_18k} | Gold 22K: ₹${prices.gold_22k} | Gold 24K: ₹${prices.gold_24k} | Silver: ₹${prices.silver} | Diamond: ₹${prices.diamond} | GST: ${prices.gst}%`;
 
   return (
     <div className="home-screen">
@@ -490,6 +522,41 @@ function Home({ onSwitchPage, user }) {
                     ))
                   )}
                 </select>
+              </div>
+
+              <div className="qr-regen-panel">
+                <div>
+                  <label className="backup-label">Regenerate QR Codes</label>
+                  <p className="backup-note">
+                    Regenerate product QR codes. You can specify a custom base URL (e.g. if migrating to a new machine/URL). Leave blank to use default application URL.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. http://192.168.1.50:18080 (Optional)"
+                    value={customQrBaseUrl}
+                    onChange={(e) => setCustomQrBaseUrl(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      color: '#000',
+                      flex: 1,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRegenerateQrs}
+                    disabled={qrRegenerating || backupLoading}
+                    className="popup-button secondary"
+                    style={{ padding: '8px 16px', fontSize: '0.9rem', width: 'auto', whiteSpace: 'nowrap', margin: 0 }}
+                  >
+                    {qrRegenerating ? 'Regenerating...' : 'Regenerate'}
+                  </button>
+                </div>
               </div>
 
               {backupLoading && <p className="backup-feedback">Loading backup details...</p>}

@@ -34,7 +34,7 @@ function GetEstimate({ onSwitchPage, onOpenModal }) {
     }
 
     const allRows = [ // Ensure all quantities and amounts are numbers
-      { id: 'gold', desc: `Gold (${p.karat}KT)`, qty: Number(p.net || 0), rate: Number(adjGoldRate || 0), amt: Number(e.gold || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] },
+      { id: 'gold', desc: `Gold (${(p.karat === 10 || p.karat === '10' || p.karat === '10.00' || String(p.karat).toLowerCase() === '10k') ? '9' : p.karat}KT)`, qty: Number(p.net || 0), rate: Number(adjGoldRate || 0), amt: Number(e.gold || 0), unit: 'gm', categoryIds: [1, 2, 3, 4, 5] },
       ...labourRows,
       { id: 'stones', desc: 'Stones', qty: Number(p.stones || 0), rate: Number(p.stRate || 0), amt: Number(e.stones || 0), unit: 'ct', categoryIds: [2, 4, 5] },
       { id: 'beads', desc: 'Beads', qty: Number(p.beadsCt || 0), rate: Number(p.bdRate || 0), amt: Number(e.beads || 0), unit: 'ct', categoryIds: [2, 4, 5] },

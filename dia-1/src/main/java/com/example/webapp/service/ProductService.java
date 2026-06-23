@@ -1490,6 +1490,42 @@ public String updatePrices(Map<String, BigDecimal> prices) {
 	    return filePath;
 	}
 
+	public int regenerateAllQRCodes(String customBaseUrl) {
+		String activeBaseUrl = (customBaseUrl != null && !customBaseUrl.isBlank()) ? customBaseUrl.trim() : this.baseUrl;
+		if (activeBaseUrl.endsWith("/")) {
+			activeBaseUrl = activeBaseUrl.substring(0, activeBaseUrl.length() - 1);
+		}
+
+		List<Product> products = productRepository.findAll();
+		int count = 0;
+		for (Product product : products) {
+			try {
+				if (product.getDesignNo() == null || product.getDesignNo().trim().isEmpty()) {
+					continue;
+				}
+				// 1. Create QR URL
+				String qrUrl = activeBaseUrl + "/loadProductByDesignNo/" + product.getDesignNo();
+
+				// 2. Ensure folder exists
+				Files.createDirectories(Paths.get(qrDir));
+				String qrFileName = "QR_" + product.getDesignNo() + ".png";
+				String qrFilePath = qrDir + (qrDir.endsWith("/") || qrDir.endsWith("\\") ? "" : "/") + qrFileName;
+
+				// 3. Generate QR image file
+				generateQRCodeImage(qrUrl, qrFilePath);
+
+				// 4. Set public path
+				String qrPath = qrPublicPath + qrFileName;
+				product.setQrCodePath(qrPath);
+				count++;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		productRepository.saveAll(products);
+		return count;
+	}
+
 
 	public void saveProducts(List<Product> products) {
 		Set<String> uniqueDesignNos = new HashSet<>();

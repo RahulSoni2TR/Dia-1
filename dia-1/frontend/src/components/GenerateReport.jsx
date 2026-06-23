@@ -114,7 +114,7 @@ function productValue(product, field, serial) {
     case 'Sub Category': return details[product.subCategoryId] || '-';
     case 'Product Image': return product.imageUrl || '';
     case 'Product Name': return product.item || '-';
-    case 'Karat': return product.karat || '-';
+    case 'Karat': return (product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : (product.karat || '-');
     case 'Price': return money(product.price);
     case 'Net': return product.net || '-';
     case 'Gross': return product.gross || '-';
@@ -434,7 +434,7 @@ function GenerateReport({ onSwitchPage }) {
 
           const stack = [
             { text: `${product.orders?.orderId || product.orderNo || ''}/${product.designNo || '-'}`, margin: [2, 2, 0, 0] },
-            { text: `G-${product.gross || ''}gm N-${product.net || ''}gm(${product.karat || ''}K)`, noWrap: true, margin: [2, 1, 0, 0] },
+            { text: `G-${product.gross || ''}gm N-${product.net || ''}gm(${(product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : (product.karat || '')}K)`, noWrap: true, margin: [2, 1, 0, 0] },
             ...filledFields,
             { canvas: [{ type: 'line', x1: 0, y1: 0, x2: tagWidthPt - 4, y2: 0, lineWidth: 0.5, lineColor: '#aaa' }], margin: [2, 2, 2, 2] },
             qrImage ? { image: qrImage, width: Math.min(tagWidthPt, tagHeightPt), alignment: 'center', margin: [0, 3, 0, 0] } : { text: 'QR Not Found', alignment: 'center', color: 'red', margin: [0, 3, 0, 0] }

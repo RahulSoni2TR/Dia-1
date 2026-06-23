@@ -52,8 +52,8 @@ if ($LASTEXITCODE -ne 0) {
 Pop-Location
 
 if (Test-Path $BundleRoot) {
-    # Delete build artifacts app and launcher, but keep data, logs, mysql, and runtime to avoid file locks
-    foreach ($dir in @("app", "launcher")) {
+    # Delete build artifacts app, launcher, and old migration backups, but keep data, logs, mysql, and runtime to avoid file locks
+    foreach ($dir in @("app", "launcher", "data_migrated_backup", "logs_migrated_backup")) {
         $subDir = Join-Path $BundleRoot $dir
         if (Test-Path $subDir) {
             Remove-Item $subDir -Recurse -Force
@@ -161,7 +161,7 @@ if ($Clean) {
     }
 }
 
-Get-ChildItem -Path $BundleRoot -Exclude "data", "logs" | Compress-Archive -DestinationPath (Join-Path $RepoRoot "dist\ProductManager-Windows.zip") -Force
+Get-ChildItem -Path $BundleRoot -Exclude "data", "logs", "data_migrated_backup", "logs_migrated_backup" | Compress-Archive -DestinationPath (Join-Path $RepoRoot "dist\ProductManager-Windows.zip") -Force
 
 Write-Host "Bundle created:"
 Write-Host $BundleRoot

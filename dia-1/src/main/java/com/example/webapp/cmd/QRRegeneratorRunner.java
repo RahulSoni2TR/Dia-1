@@ -24,7 +24,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
-/*@Component*/
+@Component
 public class QRRegeneratorRunner implements CommandLineRunner {
 
     @Autowired
@@ -41,6 +41,18 @@ public class QRRegeneratorRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        boolean shouldRegenerate = false;
+        for (String arg : args) {
+            if ("--regenerate-qrs".equalsIgnoreCase(arg)) {
+                shouldRegenerate = true;
+                break;
+            }
+        }
+
+        if (!shouldRegenerate) {
+            return;
+        }
+
         System.out.println("Regenerating QR Codes for all products...");
 
         List<Product> products = productRepository.findAll();

@@ -116,7 +116,7 @@ function ProductSnapshot({ onSwitchPage }) {
                   </tr>
                   <tr>
                     <td style={{ padding: '8px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>Purity:</td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{product.karat ? `${product.karat} KT` : '-'}</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{product.karat ? `${(product.karat === 10 || product.karat === '10' || product.karat === '10.00' || String(product.karat).toLowerCase() === '10k') ? '9' : product.karat} KT` : '-'}</td>
                   </tr>
                   {product.diamondsCt > 0 && (
                     <tr>
